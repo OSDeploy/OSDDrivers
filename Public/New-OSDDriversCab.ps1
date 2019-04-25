@@ -33,28 +33,27 @@ function New-OSDDriversCab
         [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
         [ValidateNotNullOrEmpty()]
         [string]$SourceDirectory,
-		
-		#Path and Name of the Cab to create
+        
+        #Path and Name of the Cab to create
         [string]$DestinationDirectory,
-		
+        
         # Specifies if High Compression should be used.
         #[switch]$HighCompression,
-		
+        
         # Specifies if the Makecab definition file should be kept after processing.
         # Should be used for troubleshooting only.
         #[switch]$KeepDDF,
-		
+        
         # Specifies if the source files should be deleted after the archive has been created.
         [switch]$RemoveSource,
-		
+        
         # Specifies if the output of the Makecab command should be redirected to the console.
         # Should be used for troubleshooting only.
         [switch]$ShowOutput
     )
     begin {
-
     }
-	
+
     process {
         $SourceName = (Get-Item $SourceDirectory).Name
 
@@ -64,6 +63,10 @@ function New-OSDDriversCab
             if ( ! ( Test-Path $DestinationDirectory ) ) { new-item -Type Directory -Path $DestinationDirectory }
         } else {
             $DestinationDirectory = (Get-Item $SourceDirectory).Parent.FullName
+        }
+
+        if (Test-Path "$SourceDirectory\OSDDriver.xmlpnp") {
+            Copy-Item -Path "$SourceDirectory\OSDDriver.xmlpnp" -Destination "$DestinationDirectory\$SourceName.xmlpnp"
         }
         
         $CabFullName = Join-Path -Path $DestinationDirectory -ChildPath $CabName
@@ -84,7 +87,7 @@ function New-OSDDriversCab
         [void]$DirectiveString.AppendLine('.Set MaxDiskSize=0')
 
         Get-ChildItem $SourceDirectory -Recurse | Unblock-File
-			
+
         $DirectivePath = Join-Path -Path $DestinationDirectory -ChildPath "$SourceName.ddf"
         Get-ChildItem -Recurse $SourceDirectory | Where-Object { -Not($_.psiscontainer)} | Select-Object -ExpandProperty Fullname | Foreach-Object {
             [void]$DirectiveString.AppendLine("""$_"" ""$($_.SubString($SourceDirectory.Length + 1))""")
@@ -102,7 +105,6 @@ function New-OSDDriversCab
             if (Test-Path 'setup.inf') {Remove-Item 'setup.inf' -Force}
             if (Test-Path 'setup.rpt') {Remove-Item 'setup.rpt' -Force}
         }
-
         if ($RemoveSource.IsPresent) {Remove-Item -Path $SourceDirectory -Recurse -Force}
     }
     end {}

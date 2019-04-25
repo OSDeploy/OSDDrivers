@@ -35,6 +35,7 @@ function New-OSDDriversXml {
 
     if (Test-Path "$DriverDirectory") {
         Get-ChildItem "$DriverDirectory" autorun.inf -Recurse | Remove-Item -Force
+        Get-ChildItem "$DriverDirectory" setup.inf -Recurse | Remove-Item -Force
         $ExpandInfs = Get-ChildItem -Path "$DriverDirectory" -Recurse -Include *.inf -File | Where-Object {$_.Name -notlike "*autorun.inf*"} | Select-Object -Property FullName
         $CabDrivers = @()
         foreach ($ExpandInf in $ExpandInfs) {
@@ -56,10 +57,7 @@ function New-OSDDriversXml {
         #===================================================================================================
         #   DriverClass
         #===================================================================================================
-        if ($DriverClass) {
-            #Write-Host "Filtering results by DriverClass $DriverClass" -ForegroundColor Gray
-            $CabDrivers = $CabDrivers | Where-Object {$_.ClassName -eq $DriverClass}
-        }
+        if ($DriverClass) {$CabDrivers = $CabDrivers | Where-Object {$_.ClassName -eq $DriverClass}}
         #===================================================================================================
         #   Sort
         #===================================================================================================
@@ -71,7 +69,7 @@ function New-OSDDriversXml {
         #===================================================================================================
         #   Create XML
         #===================================================================================================
-        Write-Host "Generating $DriverDirectory\OSDDrivers.xmlpnp ..." -ForegroundColor Gray
-        $CabDrivers | Export-Clixml -Path "$DriverDirectory\OSDDrivers.xmlpnp"
+        Write-Host "Generating $DriverDirectory\OSDDriver.xmlpnp ..." -ForegroundColor Gray
+        $CabDrivers | Export-Clixml -Path "$DriverDirectory\OSDDriver.xmlpnp"
     }
 }
