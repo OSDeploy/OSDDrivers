@@ -1,0 +1,17 @@
+﻿    $Hardware = @()
+    $Hardware = Import-Clixml -Path "C:\Drivers\Hardware.xml" | Select-Object -Property DeviceID, Caption
+
+    $AllDrivers = @()
+    $DriverXmls = Get-ChildItem 'D:\CoreDivers\Display Intel' *.pnpxml
+    
+    foreach ($DriverXml in $DriverXmls) {
+        $AllDrivers += Import-CliXml -Path "$($DriverXml.FullName)"
+    }
+
+    foreach ($Driver in $AllDrivers) {
+        $HardwareDescription = $($Driver.HardwareDescription)
+        $HardwareId = $($Driver.HardwareId)
+
+        if ($Hardware -like "*$HardwareId*") {
+        Write-Host "Matching Hardware: $HardwareDescription $HardwareId" -Foregroundcolor Green}
+    }
