@@ -25,7 +25,7 @@
 	VERSION:	1.1.0.2
 #>
 
-function New-OSDDriversCab
+function New-OSDDriverCab
 {
 	[CmdletBinding()]
 	Param (
