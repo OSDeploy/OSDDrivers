@@ -62,27 +62,27 @@ function Get-DownOSDDrivers {
 
         foreach ($UrlDownload in $UrlDownloads) {
             $DriverVersion = $null
-            $CompatWin7 = $null
-            $CompatWin10 = $null
-            $CompatArch = $null
+            $OSVersionMin = $null
+            $OSVersionMax = $null
+            $OSArch = $null
             $DriverDownload = $UrlDownload.'data-direct-path'
 
             if ($DriverPage -eq 'https://downloadcenter.intel.com/download/22520/Graphics-Intel-Graphics-Media-Accelerator-Driver-for-Windows-7-Windows-Vista-64-Bit-zip-?product=80939') {
                 $DriverVersion = '15.22.58.2993'
-                $CompatWin7 = $true
-                $CompatArch = 'x64'
+                $OSVersionMin = $true
+                $OSArch = 'x64'
             }
             if ($DriverPage -eq 'https://downloadcenter.intel.com/download/22518/Intel-Graphics-Media-Accelerator-Driver-Windows-7-and-Windows-Vista-zip-?product=80939') {
                 $DriverVersion = '15.22.58.2993'
-                $CompatWin7 = $true
-                $CompatArch = 'x86'
+                $OSVersionMin = $true
+                $OSArch = 'x86'
             }
 
-            if ($null -eq $CompatArch) {
+            if ($null -eq $OSArch) {
                 if ($DriverDownload -like "*win64*") {
-                    $CompatArch = 'x64'
+                    $OSArch = 'x64'
                 } else {
-                    $CompatArch = 'x86'
+                    $OSArch = 'x86'
                 }
             }
 
@@ -98,36 +98,35 @@ function Get-DownOSDDrivers {
             if ($DriverVersion -eq '152824') {$DriverVersion = '15.28.24.4229'}
 
             if ($DriverName -eq 'Intel Graphics MA') {
-                $CompatWin7 = $true
-                $CompatWin10 = $false
+                $OSVersionMin = '6.1'
+                $OSVersionMax = '6.1'
             } 
             if ($DriverName -eq 'Intel Graphics HD') {
-                $CompatWin7 = $true
-                $CompatWin10 = $false
+                $OSVersionMin = '6.1'
+                $OSVersionMax = '6.3'
             }
             if ($DriverName -eq 'Intel Graphics 15.33') {
-                $CompatWin7 = $true
-                $CompatWin10 = $true
+                $OSVersionMin = '6.1'
+                $OSVersionMax = '10.0'
             }
             if ($DriverName -eq 'Intel Graphics 15.36') {
-                $CompatWin7 = $true
-                $CompatWin10 = $false
+                $OSVersionMin = '6.1'
+                $OSVersionMax = '6.3'
             }
             if ($DriverName -eq 'Intel Graphics 15.40') {
-                $CompatWin7 = $true
-                $CompatWin10 = $true
+                $OSVersionMin = '6.1'
+                $OSVersionMax = '10.0'
             }
             if ($DriverName -eq 'Intel Graphics 15.45') {
-                $CompatWin7 = $true
-                $CompatWin10 = $false
+                $OSVersionMin = '6.1'
+                $OSVersionMax = '6.3'
             }
             if ($DriverName -eq 'Intel Graphics DCH') {
-                $CompatWin7 = $false
-                $CompatWin10 = $true
+                $OSVersionMin = '10.0'
+                $OSVersionMax = '10.0'
             }
-            $DriverCab = "$DriverGroup $DriverVersion $CompatArch.cab"
-            $DriverZip = "$DriverGroup $DriverVersion $CompatArch.zip"
-            $DriverXmlPnp = "$DriverGroup $DriverVersion $CompatArch.xmlpnp"
+            $DriverCab = "$DriverGroup $DriverVersion $OSArch.cab"
+            $DriverZip = "$DriverGroup $DriverVersion $OSArch.zip"
             $DriverStatus = $null
             if (Test-Path "$DownloadPath\$DriverZip") {$DriverStatus = 'Downloaded'}
             if (Test-Path "$PackagePath\$DriverCab") {$DriverStatus = 'Packaged'}
@@ -140,22 +139,21 @@ function Get-DownOSDDrivers {
                 DriverStatus        = $DriverStatus
                 DriverName          = $DriverName
                 DriverVersion       = $DriverVersion
-                CompatArch          = $CompatArch
-                CompatWin7          = $CompatWin7
-                CompatWin10         = $CompatWin10
+                OSArch              = $OSArch
+                OSVersionMin        = $OSVersionMin
+                OSVersionMax        = $OSVersionMax
                 DriverClassGUID     = $DriverClassGUID
                 DriverPage          = $DriverPage
                 DriverDownload      = $DriverDownload
                 DriverZip           = $DriverZip
                 DriverCab           = $DriverCab
-                DriverXmlPnp        = $DriverXmlPnp
             }
             New-Object -TypeName PSObject -Property $ObjectProperties
         }
     }
 
 
-    $DriverDownloads = $DriverDownloads | Sort-Object -Property DriverVersion -Descending | Select-Object DriverGroup,DriverClass,DriverStatus,DriverName,DriverVersion,CompatArch,CompatWin7,CompatWin10,DriverDownload,DriverClassGUID,DriverPage,DriverZip,DriverCab,DriverXmlPnp
+    $DriverDownloads = $DriverDownloads | Sort-Object -Property DriverVersion -Descending | Select-Object DriverGroup,DriverClass,DriverStatus,DriverName,DriverVersion,OSArch,OSVersionMin,OSVersionMax,DriverDownload,DriverClassGUID,DriverPage,DriverZip,DriverCab
 
     $DriverDownloads | Export-Clixml "$DownloadPath\OSDDrivers $DriverGroup.xml"
     $DriverDownloads | Export-Clixml "$PackagePath\OSDDrivers $DriverGroup.xml"
@@ -171,14 +169,13 @@ function Get-DownOSDDrivers {
         $DriverClass = $($SelectedDriverDownload.DriverClass)
         $DriverClassGUID = $($SelectedDriverDownload.DriverClassGUID)
         $DriverDownload = $($SelectedDriverDownload.DriverDownload)
-        $CompatWin7 = $($SelectedDriverDownload.CompatWin7)
-        $CompatWin10 = $($SelectedDriverDownload.CompatWin10)
+        $DriverOSArch = $($SelectedDriverDownload.OSArch)
+        $DriverOSVersionMin = $($SelectedDriverDownload.OSVersionMin)
+        $DriverOSVersionMax = $($SelectedDriverDownload.OSVersionMax)
 
         $DriverCab = $($SelectedDriverDownload.DriverCab)
         $DriverZip = $($SelectedDriverDownload.DriverZip)
-        $DriverXmlPnp = $($SelectedDriverDownload.DriverXmlPnp)
         $DriverDirectory = ($DriverCab).replace('.cab','')
-        $DriverPnpTxt = "$PackagePath\$DriverDirectory.txt"
 
         Write-Host "DriverDownload: $DriverDownload" -ForegroundColor Cyan
         Write-Host "DriverZip: $DownloadPath\$DriverZip" -ForegroundColor Gray
@@ -192,6 +189,7 @@ function Get-DownOSDDrivers {
         }
         #===================================================================================================
         #   Expand Zip
+        #   Need to add logic to unzip if necessary
         #===================================================================================================
         if (-not(Test-Path "$PackagePath\$DriverCab")) {
             Write-Host "DriverDirectory: $DownloadPath\$DriverDirectory" -ForegroundColor Gray
@@ -206,25 +204,29 @@ function Get-DownOSDDrivers {
         }
 
         #===================================================================================================
-        #   Create XML
+        #   OSDDriverPnp
         #===================================================================================================
         if (Test-Path "$DownloadPath\$DriverDirectory") {
-            if ($CompatWin7 -eq $true -and $CompatWin10 -eq $false) {
-                New-OSDDriversXml -DriverDirectory "$DownloadPath\$DriverDirectory" -CompatArch $CompatArch -CompatClient 'Windows7' -DriverClass $DriverClass
-            } elseif ($CompatWin7 -eq $false -and $CompatWin10 -eq $true) {
-                New-OSDDriversXml -DriverDirectory "$DownloadPath\$DriverDirectory" -CompatArch $CompatArch -CompatClient 'Windows10' -DriverClass $DriverClass
-            } else {
-                New-OSDDriversXml -DriverDirectory "$DownloadPath\$DriverDirectory" -CompatArch $CompatArch -DriverClass $DriverClass
-            }
+            $OSDDriverPnp = (New-OSDDriverPnp -DriverDirectory "$DownloadPath\$DriverDirectory" -DriverClass $DriverClass)
         }
-
         #===================================================================================================
         #   Create CAB
         #===================================================================================================
         if (-not(Test-Path "$PackagePath\$DriverCab")) {
             Write-Host "Creating $PackagePath\$DriverCab ..." -ForegroundColor Gray
-            New-OSDDriversCab -SourceDirectory "$DownloadPath\$DriverDirectory" -DestinationDirectory "$PackagePath"
+            New-OSDDriverCab -SourceDirectory "$DownloadPath\$DriverDirectory" -DestinationDirectory "$PackagePath" -ShowOutput
         }
+
+        #===================================================================================================
+        #   OSDDriverTask
+        #===================================================================================================
+        Write-Host "Creating OSDDriverTask $DriverOSArch $DriverOSVersionMin $DriverOSVersionMax ..." -ForegroundColor Gray
+        New-OSDDriverTask -DriverCab "$PackagePath\$DriverCab" -OSArch $DriverOSArch -OSVersionMin $DriverOSVersionMin -OSVersionMax $DriverOSVersionMax
+        if (Test-Path "$OSDDriverPnp") {
+            Copy-Item "$OSDDriverPnp" "$PackagePath" -Force
+        }
+
+
     }
     Write-Host "Complete!" -ForegroundColor Green
 }

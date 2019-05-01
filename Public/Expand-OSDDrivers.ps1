@@ -2,7 +2,9 @@ function Expand-OSDDrivers {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory)]
-        [string]$OSDDriverRepository,
+        [string]$PathDriverCabs,
+
+        [string]$PathExpandedDrivers = 'C:\Drivers',
 
         [switch]$GridView,
 
@@ -18,8 +20,8 @@ function Expand-OSDDrivers {
     )
 
     begin {
-        Write-Host '========================================================================================' -ForegroundColor DarkGray
-        Write-Host "$($MyInvocation.MyCommand.Name) BEGIN" -ForegroundColor Green
+        #Write-Host '========================================================================================' -ForegroundColor DarkGray
+        #Write-Host "$($MyInvocation.MyCommand.Name) BEGIN" -ForegroundColor Green
         $global:OSDDriversVersion = $(Get-Module -Name OSDDrivers | Sort-Object Version | Select-Object Version -Last 1).Version
         Write-Host '========================================================================================' -ForegroundColor DarkGray
         #===================================================================================================
@@ -29,17 +31,24 @@ function Expand-OSDDrivers {
         $CimCsModel = (Get-CimInstance -ClassName Win32_ComputerSystem).Model
         $CimCsSystemFamily = (Get-CimInstance -ClassName Win32_ComputerSystem).SystemFamily
         $CimCsSystemSKUNumber = (Get-CimInstance -ClassName Win32_ComputerSystem).SystemSKUNumber
-        #===================================================================================================
-        #   Win32_OperatingSystem
-        #===================================================================================================
-        $CimOsCaption = (Get-CimInstance -ClassName Win32_OperatingSystem).Caption
-        $CimOsVersion = (Get-CimInstance -ClassName Win32_OperatingSystem).Version
-        $CimOsBuildNumber = (Get-CimInstance -ClassName Win32_OperatingSystem).BuildNumber
-        $CimOsOSArchitecture = (Get-CimInstance -ClassName Win32_OperatingSystem).OSArchitecture
-        #===================================================================================================
-        #   Registry
-        #===================================================================================================
-        $RegInstallationType = (Get-ItemProperty 'HKLM:SOFTWARE\Microsoft\Windows NT\CurrentVersion').InstallationType
+
+        if ($env:SystemDrive -eq 'X:') {
+
+        } else {
+            #===================================================================================================
+            #   Win32_OperatingSystem
+            #===================================================================================================
+            $CimOsCaption = (Get-CimInstance -ClassName Win32_OperatingSystem).Caption
+            $CimOsVersion = (Get-CimInstance -ClassName Win32_OperatingSystem).Version
+            $CimOsBuildNumber = (Get-CimInstance -ClassName Win32_OperatingSystem).BuildNumber
+            $CimOsOSArchitecture = (Get-CimInstance -ClassName Win32_OperatingSystem).OSArchitecture
+            #===================================================================================================
+            #   Registry
+            #===================================================================================================
+            $RegInstallationType = (Get-ItemProperty 'HKLM:SOFTWARE\Microsoft\Windows NT\CurrentVersion').InstallationType
+        }
+
+
         #===================================================================================================
         #   Set
         #===================================================================================================
@@ -66,7 +75,7 @@ function Expand-OSDDrivers {
         #   Get All Drivers Jsons
         #===================================================================================================
         $OSDDrivers = @()
-        $OSDDrivers = Get-OSDDrivers -OSDDriverRepository $OSDDriverRepository
+        $OSDDrivers = Get-OSDDrivers -PathDriverCabs $PathDriverCabs
         #===================================================================================================
     }
 
@@ -74,28 +83,34 @@ function Expand-OSDDrivers {
         Write-Host '========================================================================================' -ForegroundColor DarkGray
         #Write-Host "$($MyInvocation.MyCommand.Name) PROCESS" -ForegroundColor Green
 
+        $OSDDriversInventory = (New-OSDDriversInventory -PathExpandedDrivers $PathExpandedDrivers)
+        $Hardware = @()
+        $Hardware = Import-Clixml -Path "$OSDDriversInventory" | Select-Object -Property DeviceID, Caption
+
+        Write-Host "Processing Driver Cabs ..." -ForegroundColor Cyan
+
         foreach ($OSDDriver in $OSDDrivers) {
-            Write-Host ""
-            Write-Host "$($OSDDriver.DriverCabFullName)"
+            #Write-Host "$($OSDDriver.DriverCabFullName)"
             $ExpandDriverCab = $true
             #===================================================================================================
             #   CAB Ready
             #===================================================================================================
             if ($OSDDriver.DriverCab -eq 'Ready') {
             } else {
-                Write-Warning "Missing Driver CAB: $($OSDDriver.DriverCabFullName)"
+                Write-Host "Missing Driver CAB $($OSDDriver.DriverCabFullName)" -Foregroundcolor DarkGray
                 Continue
             }
             #===================================================================================================
             #   OSArch
             #===================================================================================================
             if ($OSDDriver.OSArch) {
+                Write-Verbose "Driver OSArch: $($OSDDriver.OSArch)"
                 if ($CimOsOSArchitecture -like "*64*" -and $OSDDriver.OSArch -eq 'x86') {
-                    Write-Verbose "OSArchitecture $CimOsOSArchitecture is not compatible"
+                    Write-Host "$($OSDDriver.DriverCabFullName) is not compatible with OSArchitecture $CimOsOSArchitecture" -Foregroundcolor DarkGray
                     Continue
                 }
                 if ($CimOsOSArchitecture -like "*32*" -and $OSDDriver.OSArch -eq 'x64') {
-                    Write-Verbose "OSArchitecture $CimOsOSArchitecture is not compatible"
+                    Write-Host "$($OSDDriver.DriverCabFullName) is not compatible with OSArchitecture $CimOsOSArchitecture" -Foregroundcolor DarkGray
                     Continue
                 }
             }
@@ -103,9 +118,9 @@ function Expand-OSDDrivers {
             #   OSVersionMin
             #===================================================================================================
             if ($OSDDriver.OSVersionMin) {
-                Write-Verbose "OSVersionMin: $($OSDDriver.OSVersionMin)"
+                Write-Verbose "Driver OSVersionMin: $($OSDDriver.OSVersionMin)"
                 if ([version]$CimOsVersion -lt [version]$OSDDriver.OSVersionMin) {
-                    Write-Verbose "OSVersion $CimOsVersion is not compatible"
+                    Write-Host "$($OSDDriver.DriverCabFullName) is not compatible with OSVersion $CimOsVersion" -Foregroundcolor DarkGray
                     Continue
                 }
             }
@@ -113,9 +128,9 @@ function Expand-OSDDrivers {
             #   OSVersionMax
             #===================================================================================================
             if ($OSDDriver.OSVersionMax) {
-                #Write-Host "OSVersionMax: $($OSDDriver.OSVersionMax)" -ForegroundColor DarkGray
+                Write-Verbose "Driver OSVersionMax: $($OSDDriver.OSVersionMax)"
                 if ([version]$CimOsVersion -gt [version]$OSDDriver.OSVersionMax) {
-                    Write-Verbose "OSVersion $CimOsVersion is not compatible"
+                    Write-Host "$($OSDDriver.DriverCabFullName) is not compatible with OSVersion $CimOsVersion" -Foregroundcolor DarkGray
                     Continue
                 }
             }
@@ -123,9 +138,9 @@ function Expand-OSDDrivers {
             #   OSBuildMin
             #===================================================================================================
             if ($OSDDriver.OSBuildMin) {
-                #Write-Host "OSBuildMin: $($OSDDriver.OSBuildMin)" -ForegroundColor DarkGray
+                Write-Verbose "Driver OSBuildMin: $($OSDDriver.OSBuildMin)"
                 if ([int]$CimOsBuildNumber -lt [int]$OSDDriver.OSBuildMin) {
-                    Write-Verbose "OSBuild $CimOsBuildNumber is not compatible"
+                    Write-Host "$($OSDDriver.DriverCabFullName) is not compatible with OSBuild $CimOsBuildNumber" -Foregroundcolor DarkGray
                     Continue
                 }
             }
@@ -133,9 +148,9 @@ function Expand-OSDDrivers {
             #   OSBuildMax
             #===================================================================================================
             if ($OSDDriver.OSBuildMax) {
-                #Write-Host "OSBuildMin: $($OSDDriver.OSBuildMin)" -ForegroundColor DarkGray
+                Write-Verbose "Driver OSBuildMax: $($OSDDriver.OSBuildMax)"
                 if ([int]$CimOsBuildNumber -gt [int]$OSDDriver.OSBuildMax) {
-                    Write-Verbose "OSBuild $CimOsBuildNumber is not compatible"
+                    Write-Host "$($OSDDriver.DriverCabFullName) is not compatible with OSBuild $CimOsBuildNumber" -Foregroundcolor DarkGray
                     Continue
                 }
             }
@@ -145,11 +160,11 @@ function Expand-OSDDrivers {
             if ($OSDDriver.MakeLike) {
                 $ExpandDriverCab = $false
                 foreach ($item in $OSDDriver.MakeLike) {
-                    #Write-Host "Driver CAB Compatible Make: $item" -ForegroundColor DarkGray
+                    Write-Verbose "Driver CAB Compatible Make: $item"
                     if ($CimCsManufacturer -like "*$item*") {$ExpandDriverCab = $true}
                 }
                 if ($ExpandDriverCab -eq $false) {
-                    Write-Verbose "Manufacturer $CimCsManufacturer is not compatible"
+                    Write-Host "$($OSDDriver.DriverCabFullName) is not compatible with Manufacturer $CimCsManufacturer" -Foregroundcolor DarkGray
                     Continue
                 }
             }
@@ -158,11 +173,11 @@ function Expand-OSDDrivers {
             #===================================================================================================
             if ($OSDDriver.MakeNotLike) {
                 foreach ($item in $OSDDriver.MakeNotLike) {
-                    #Write-Host "Driver CAB Not Compatible Make: $item" -ForegroundColor DarkGray
+                    Write-Verbose "Driver CAB Not Compatible Make: $item"
                     if ($CimCsManufacturer -like "*$item*") {$ExpandDriverCab = $false}
                 }
                 if ($ExpandDriverCab -eq $false) {
-                    Write-Verbose "Manufacturer $CimCsManufacturer is not compatible"
+                    Write-Host "$($OSDDriver.DriverCabFullName) is not compatible with Manufacturer $CimCsManufacturer" -Foregroundcolor DarkGray
                     Continue
                 }
             }
@@ -172,11 +187,11 @@ function Expand-OSDDrivers {
             if ($OSDDriver.ModelLike) {
                 $ExpandDriverCab = $false
                 foreach ($item in $OSDDriver.ModelLike) {
-                    #Write-Host "Driver CAB Compatible Model: $item" -ForegroundColor DarkGray
+                    Write-Verbose "Driver CAB Compatible Model: $item"
                     if ($CimCsModel -like "*$item*") {$ExpandDriverCab = $true}
                 }
                 if ($ExpandDriverCab -eq $false) {
-                    Write-Verbose "Model $CimCsModel is not compatible"
+                    Write-Host "$($OSDDriver.DriverCabFullName) is not compatible with Model $CimCsModel" -Foregroundcolor DarkGray
                     Continue
                 }
             }
@@ -185,60 +200,66 @@ function Expand-OSDDrivers {
             #===================================================================================================
             if ($OSDDriver.ModelNotLike) {
                 foreach ($item in $OSDDriver.ModelNotLike) {
-                    #Write-Host "Driver CAB Not Compatible Model: $item" -ForegroundColor DarkGray
+                    Write-Verbose "Driver CAB Not Compatible Model: $item"
                     if ($CimCsModel -like "*$item*") {$ExpandDriverCab = $false}
                 }
                 if ($ExpandDriverCab -eq $false) {
-                    Write-Verbose "Model $CimCsModel is not compatible"
+                    Write-Host "$($OSDDriver.DriverCabFullName) is not compatible with Model $CimCsModel" -Foregroundcolor DarkGray
                     Continue
                 }
             }
             #===================================================================================================
-            #   OSType
+            #   OSInstallationType
             #===================================================================================================
-            if ($OSDDriver.OSType) {
-                if ($RegInstallationType -notlike "*$($OSDDriver.OSType)*") {
-                    Write-Verbose "OS InstallationType $($OSDDriver.OSType) is not compatible"
+            if ($OSDDriver.OSInstallationType) {
+                Write-Verbose "Driver InstallationType: $($OSDDriver.OSInstallationType)"
+                if ($RegInstallationType -notlike "*$($OSDDriver.OSInstallationType)*") {
+                    Write-Host "$($OSDDriver.DriverCabFullName) is not compatible with OS InstallationType $($OSDDriver.OSInstallationType)" -Foregroundcolor DarkGray
                     Continue
                 }
             }
             #===================================================================================================
             #   Hardware
             #===================================================================================================
+            if ($OSDDriver.DriverPnpFullName) {
+                if (Test-Path "$($OSDDriver.DriverPnpFullName)") {
+                    Write-Verbose "Driver HardwareID Database: $($OSDDriver.DriverPnpFullName)"
+                    $ExpandDriverCab = $false
+                    $PnpCabDrivers = @()
+                    $PnpCabDrivers = Import-CliXml -Path "$($OSDDriver.DriverPnpFullName)"
+                
+                    foreach ($PnpDriverId in $PnpCabDrivers) {
+                        $HardwareDescription = $($PnpDriverId.HardwareDescription)
+                        $HardwareId = $($PnpDriverId.HardwareId)
+                
+                        if ($Hardware -like "*$HardwareId*") {
+                            Write-Host "$($OSDDriver.DriverCabFullName) HardwareID Match: $HardwareDescription $HardwareId" -Foregroundcolor Green
+                            $ExpandDriverCab = $true
+                        }
+                    }
 
+                    if ($ExpandDriverCab -eq $false) {
+                        Write-Host "$($OSDDriver.DriverCabFullName) is not compatbile with the Hardware on this system" -Foregroundcolor DarkGray
+                        Continue
+                    }
 
-
-
-            if ($ExpandDriverCab -eq $false) {Continue}
-            Write-Host "Expanding Driver CAB $($OSDDriver.DriverCabFullName)" -ForegroundColor Cyan
+                } else {
+                    Write-Host "Missing Driver HardwareID Database $($OSDDriver.DriverPnpFullName)" -Foregroundcolor DarkGray
+                    Continue
+                }
+            }
         }
 
-
-
-
-
-
-<#         $Hardware = @()
-        $Hardware = Import-Clixml -Path "C:\Drivers\Hardware.xml" | Select-Object -Property DeviceID, Caption
-    
-        $AllDrivers = @()
-        $DriverXmls = Get-ChildItem 'D:\CoreDivers\Display Intel' *.pnpxml
-        
-        foreach ($DriverXml in $DriverXmls) {
-            $AllDrivers += Import-CliXml -Path "$($DriverXml.FullName)"
+        if ($ExpandDriverCab -eq $false) {Continue}
+        Write-Host "Expanding $($OSDDriver.DriverCabFullName) to $PathExpandedDrivers\$($OSDDriver.TaskName)" -ForegroundColor Cyan
+        if (!(Test-Path "$PathExpandedDrivers\$($OSDDriver.TaskName)")) {
+            New-Item -Path "$PathExpandedDrivers\$($OSDDriver.TaskName)" -ItemType Directory -Force | Out-Null
         }
-    
-        foreach ($Driver in $AllDrivers) {
-            $HardwareDescription = $($Driver.HardwareDescription)
-            $HardwareId = $($Driver.HardwareId)
-    
-            if ($Hardware -like "*$HardwareId*") {
-            Write-Host "Matching Hardware: $HardwareDescription $HardwareId" -Foregroundcolor Green}
-        } #>
+        Expand -R "$($OSDDriver.DriverCabFullName)" -F:* "$PathExpandedDrivers\$($OSDDriver.TaskName)" | Out-Null
     }
 
     end {
-        Write-Host '========================================================================================' -ForegroundColor DarkGray
-        Write-Host "$($MyInvocation.MyCommand.Name) END" -ForegroundColor Green
+        #Write-Host '========================================================================================' -ForegroundColor DarkGray
+        #Write-Host "$($MyInvocation.MyCommand.Name) END" -ForegroundColor Green
     }
 }

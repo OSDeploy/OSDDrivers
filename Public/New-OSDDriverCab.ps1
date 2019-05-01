@@ -65,8 +65,8 @@ function New-OSDDriverCab
             $DestinationDirectory = (Get-Item $SourceDirectory).Parent.FullName
         }
 
-        if (Test-Path "$SourceDirectory\OSDDriver.xmlpnp") {
-            Copy-Item -Path "$SourceDirectory\OSDDriver.xmlpnp" -Destination "$DestinationDirectory\$SourceName.xmlpnp"
+        if (Test-Path "$SourceDirectory\OSDDriver.pnp.xml") {
+            Copy-Item -Path "$SourceDirectory\OSDDriver.pnp.xml" -Destination "$DestinationDirectory\$SourceName.pnp.xml"
         }
         
         $CabFullName = Join-Path -Path $DestinationDirectory -ChildPath $CabName
