@@ -2,7 +2,7 @@ function Get-OSDDrivers {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory)]
-        [string]$PathDriverCabs,
+        [string]$PathDriverPackages,
         [switch]$GridView
     )
 
@@ -15,7 +15,7 @@ function Get-OSDDrivers {
         #   Get All Drivers Jsons
         #===================================================================================================
         $OSDDriverJsons = @()
-        $OSDDriverJsons = Get-ChildItem -Path "$PathDriverCabs" *.cab.json -File -Recurse | Select-Object -Property *
+        $OSDDriverJsons = Get-ChildItem -Path "$PathDriverPackages" *.cab.json -File -Recurse | Select-Object -Property *
     }
 
     process {

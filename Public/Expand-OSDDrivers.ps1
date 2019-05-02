@@ -2,80 +2,48 @@ function Expand-OSDDrivers {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory)]
-        [string]$PathDriverCabs,
+        [string]$PathDriverPackages,
 
-        [string]$PathExpandedDrivers = 'C:\Drivers',
+        [string]$PathDrivers = "$env:SystemDrive\Drivers",
 
         [switch]$GridView,
 
+        [string]$SetMake,
+        [string]$SetModel,
+
         [ValidateSet('x64','x86')]
         [string]$SetOSArch,
+
         [string]$SetOSBuild,
+
         [ValidateSet('Client','Server')]
         [string]$SetOSInstallationType,
+
         [ValidateSet('6.1','6.2','6.3','10.0')]
-        [string]$SetOSVersion,
-        [string]$SetMake,
-        [string]$SetModel
+        [string]$SetOSVersion
     )
 
     begin {
         #Write-Host '========================================================================================' -ForegroundColor DarkGray
         #Write-Host "$($MyInvocation.MyCommand.Name) BEGIN" -ForegroundColor Green
+        #===================================================================================================
+        #   Module Version
+        #===================================================================================================
         $global:OSDDriversVersion = $(Get-Module -Name OSDDrivers | Sort-Object Version | Select-Object Version -Last 1).Version
-        Write-Host '========================================================================================' -ForegroundColor DarkGray
         #===================================================================================================
-        #   Win32_ComputerSystem
+        #   Microsoft.SMS.TSEnvironment
         #===================================================================================================
-        $CimCsManufacturer = (Get-CimInstance -ClassName Win32_ComputerSystem).Manufacturer
-        $CimCsModel = (Get-CimInstance -ClassName Win32_ComputerSystem).Model
-        $CimCsSystemFamily = (Get-CimInstance -ClassName Win32_ComputerSystem).SystemFamily
-        $CimCsSystemSKUNumber = (Get-CimInstance -ClassName Win32_ComputerSystem).SystemSKUNumber
-
-        if ($env:SystemDrive -eq 'X:') {
-
-        } else {
-            #===================================================================================================
-            #   Win32_OperatingSystem
-            #===================================================================================================
-            $CimOsCaption = (Get-CimInstance -ClassName Win32_OperatingSystem).Caption
-            $CimOsVersion = (Get-CimInstance -ClassName Win32_OperatingSystem).Version
-            $CimOsBuildNumber = (Get-CimInstance -ClassName Win32_OperatingSystem).BuildNumber
-            $CimOsOSArchitecture = (Get-CimInstance -ClassName Win32_OperatingSystem).OSArchitecture
-            #===================================================================================================
-            #   Registry
-            #===================================================================================================
-            $RegInstallationType = (Get-ItemProperty 'HKLM:SOFTWARE\Microsoft\Windows NT\CurrentVersion').InstallationType
+        try {
+            $TSEnv = New-Object -ComObject Microsoft.SMS.TSEnvironment
         }
-
-
-        #===================================================================================================
-        #   Set
-        #===================================================================================================
-        if ($SetOSArch -eq 'x64') {$CimOsOSArchitecture = '64-bit'}
-        if ($SetOSArch -eq 'x86') {$CimOsOSArchitecture = '32-bit'}
-        if ($SetOSBuild) {$CimOsBuildNumber = $SetOSBuild}
-        if ($SetOSInstallationType) {$RegInstallationType = $SetOSInstallationType}
-        if ($SetOSVersion) {$CimOsVersion = $SetOSVersion}
-        if ($SetMake) {$CimCsManufacturer = $SetMake}
-        if ($SetModel) {$CimCsModel = $SetModel}
-        #===================================================================================================
-        #   Inventory
-        #===================================================================================================
-        Write-Host "Manufacturer: $CimCsManufacturer"
-        Write-Host "Model: $CimCsModel"
-        Write-Host "SystemFamily: $CimCsSystemFamily"
-        Write-Host "SystemSKUNumber: $CimCsSystemSKUNumber"
-        Write-Host "Caption: $CimOsCaption"
-        Write-Host "Version: $CimOsVersion"
-        Write-Host "BuildNumber: $CimOsBuildNumber"
-        Write-Host "OSArchitecture: $CimOsOSArchitecture"
-        Write-Host "InstallationType: $RegInstallationType"
+        catch [System.Exception] {
+            Write-Warning -Message "Unable to construct Microsoft.SMS.TSEnvironment object"
+        }
         #===================================================================================================
         #   Get All Drivers Jsons
         #===================================================================================================
         $OSDDrivers = @()
-        $OSDDrivers = Get-OSDDrivers -PathDriverCabs $PathDriverCabs
+        $OSDDrivers = Get-OSDDrivers -PathDriverPackages $PathDriverPackages
         #===================================================================================================
     }
 
@@ -83,13 +51,127 @@ function Expand-OSDDrivers {
         Write-Host '========================================================================================' -ForegroundColor DarkGray
         #Write-Host "$($MyInvocation.MyCommand.Name) PROCESS" -ForegroundColor Green
 
-        $OSDDriversInventory = (New-OSDDriversInventory -PathExpandedDrivers $PathExpandedDrivers)
+        #===================================================================================================
+        #   PathDrivers
+        #===================================================================================================
+        if ($TSEnv) {
+            $TSEnvOSDisk = $TSEnv.Value("OSDisk")
+            $TSEnvOSDTargetDriveCache = $TSEnv.Value("OSDTargetDriveCache")
+
+            if ($null -eq $TSEnvOSDisk) {
+                $PathDrivers = "$TSEnvOSDTargetDriveCache\Drivers"
+            } else {
+                $PathDrivers = "$TSEnvOSDisk\Drivers"
+            }
+        } elseif ($env:SystemDrive -eq 'X:') {
+            $PathDrivers = 'C:\Drivers'
+        }
+        if (-not(Test-Path "$PathDrivers")) {New-Item -Path "$PathDrivers\" -ItemType Directory -Force -ErrorAction Stop | Out-Null}
+        #===================================================================================================
+        #   Start-Transcript
+        #===================================================================================================
+        $LogName = "$((Get-Date).ToString('yyyy-MM-dd-HHmmss'))-OSDDrivers.log"
+        Start-Transcript -Path "$PathDrivers\$LogName"
+        Write-Verbose "PathDrivers: $PathDrivers" -Verbose
+        #===================================================================================================
+        #   OSDArch
+        #===================================================================================================
+        if ($TSEnv) {
+            $OSDArch = $TSEnv.Value("ImageProcessor")
+        } else {
+            $CimOSArchitecture = (Get-CimInstance -ClassName Win32_OperatingSystem).OSArchitecture
+            if ($CimOSArchitecture -like "*64*") {$OSDArch = 'x64'}
+            if ($CimOSArchitecture -like "*32*") {$OSDArch = 'x86'}
+        }
+        if ($SetOSArch) {$OSDArch = $SetOSArch}
+        if ($null -eq $OSDArch) {$OSDArch = 'x64'}
+        Write-Verbose "Image OSDArch: $OSDArch" -Verbose
+        #===================================================================================================
+        #   OSDVersion
+        #===================================================================================================
+        if ($TSEnv) {
+            $TSEnvImageBuild = $TSEnv.Value("ImageBuild")
+            $OSDVersion = "$(([version]$TSEnvImageBuild).Major).$(([version]$TSEnvImageBuild).Minor)"
+        } else {
+            $CimOSVersion = (Get-CimInstance -ClassName Win32_OperatingSystem).Version
+            $OSDVersion = "$(([version]$CimOSVersion).Major).$(([version]$CimOSVersion).Minor)"
+        }
+        if ($SetOSVersion) {$OSDVersion = $SetOSVersion}
+        if ($null -eq $SetOSVersion) {$SetOSVersion = '10.0'}
+        Write-Verbose "Image OSDVersion: $OSDVersion" -Verbose
+        #===================================================================================================
+        #   OSDBuild
+        #===================================================================================================
+        if ($TSEnv) {
+            $TSEnvImageBuild = $TSEnv.Value("ImageBuild")
+            $OSDBuild = ([version]$TSEnvImageBuild).Build
+        } else {
+            $OSDBuild = (Get-CimInstance -ClassName Win32_OperatingSystem).BuildNumber
+        }
+        if ($SetOSBuild) {$OSDBuild = $SetOSBuild}
+        if ($null -eq $SetOSBuild) {$SetOSBuild = '17763'}
+        Write-Verbose "Image OSDBuild: $OSDBuild" -Verbose
+        #===================================================================================================
+        #   OSDInstallationType
+        #===================================================================================================
+        if ($TSEnv) {
+            $OSDInstallationType = $TSEnv.Value("TaskSequenceTemplate")
+            if ($OSDInstallationType -like "*Client*") {$OSDInstallationType = 'Client'}
+            if ($OSDInstallationType -like "*Server*") {$OSDInstallationType = 'Server'}
+        } elseif ($env:SystemDrive -eq 'X:') {
+            $OSDInstallationType = 'Client'
+        } else {
+            $OSDInstallationType = (Get-ItemProperty 'HKLM:SOFTWARE\Microsoft\Windows NT\CurrentVersion').InstallationType
+        }
+
+        if ($SetOSInstallationType) {$OSDInstallationType = $SetOSInstallationType}
+        if ($null -eq $OSDInstallationType) {$OSDInstallationType = 'Client'}
+        if ((-not($OSDInstallationType -eq 'Client')) -or (-not($OSDInstallationType -eq 'Server'))) {
+            $OSDInstallationType = 'Client'
+        }
+        Write-Verbose "Image OSDInstallationType: $OSDInstallationType" -Verbose
+        #===================================================================================================
+        #   OSDMake
+        #===================================================================================================
+        if ($TSEnv) {
+            $OSDMake = $TSEnv.Value("Make")
+        } else {
+            $OSDMake = (Get-CimInstance -ClassName Win32_ComputerSystem).Manufacturer
+        }
+        if ($SetMake) {$OSDMake = $SetMake}
+        if ($null -eq $OSDMake) {$OSDMake = 'Microsoft'}
+        Write-Verbose "System OSDMake: $OSDMake" -Verbose
+        #===================================================================================================
+        #   OSDModel
+        #===================================================================================================
+        if ($TSEnv) {
+            $OSDModel = $TSEnv.Value("Model")
+        } else {
+            $OSDModel = (Get-CimInstance -ClassName Win32_ComputerSystem).Model
+        }
+        if ($SetModel) {$OSDModel = $SetModel}
+        if ($null -eq $OSDModel) {$OSDModel = 'Virtual Machine'}
+        Write-Verbose "System OSDModel: $OSDModel" -Verbose
+        #===================================================================================================
+        #   Other
+        #===================================================================================================
+        $SystemFamily = (Get-CimInstance -ClassName Win32_ComputerSystem).SystemFamily
+        Write-Verbose "System SystemFamily: $SystemFamily" -Verbose
+        $SystemSKUNumber = (Get-CimInstance -ClassName Win32_ComputerSystem).SystemSKUNumber
+        Write-Verbose "System SystemSKUNumber: $SystemSKUNumber" -Verbose
+        #===================================================================================================
+        #   New-OSDDriversInventory
+        #===================================================================================================
+        $OSDDriversInventory = (New-OSDDriversInventory -PathDrivers $PathDrivers)
         $Hardware = @()
         $Hardware = Import-Clixml -Path "$OSDDriversInventory" | Select-Object -Property DeviceID, Caption
-
+        #===================================================================================================
+        #   Expand-OSDDrivers
+        #===================================================================================================
         Write-Host "Processing Driver Cabs ..." -ForegroundColor Cyan
 
         foreach ($OSDDriver in $OSDDrivers) {
+            #Write-Host ""
             #Write-Host "$($OSDDriver.DriverCabFullName)"
             $ExpandDriverCab = $true
             #===================================================================================================
@@ -105,12 +187,12 @@ function Expand-OSDDrivers {
             #===================================================================================================
             if ($OSDDriver.OSArch) {
                 Write-Verbose "Driver OSArch: $($OSDDriver.OSArch)"
-                if ($CimOsOSArchitecture -like "*64*" -and $OSDDriver.OSArch -eq 'x86') {
-                    Write-Host "$($OSDDriver.DriverCabFullName) is not compatible with OSArchitecture $CimOsOSArchitecture" -Foregroundcolor DarkGray
+                if ($OSDArch -like "*64*" -and $OSDDriver.OSArch -eq 'x86') {
+                    Write-Host "$($OSDDriver.DriverCabFullName) is not compatible with OSArchitecture $OSDArch" -Foregroundcolor DarkGray
                     Continue
                 }
-                if ($CimOsOSArchitecture -like "*32*" -and $OSDDriver.OSArch -eq 'x64') {
-                    Write-Host "$($OSDDriver.DriverCabFullName) is not compatible with OSArchitecture $CimOsOSArchitecture" -Foregroundcolor DarkGray
+                if ($OSDArch -like "*32*" -and $OSDDriver.OSArch -eq 'x64') {
+                    Write-Host "$($OSDDriver.DriverCabFullName) is not compatible with OSArchitecture $OSDArch" -Foregroundcolor DarkGray
                     Continue
                 }
             }
@@ -119,8 +201,8 @@ function Expand-OSDDrivers {
             #===================================================================================================
             if ($OSDDriver.OSVersionMin) {
                 Write-Verbose "Driver OSVersionMin: $($OSDDriver.OSVersionMin)"
-                if ([version]$CimOsVersion -lt [version]$OSDDriver.OSVersionMin) {
-                    Write-Host "$($OSDDriver.DriverCabFullName) is not compatible with OSVersion $CimOsVersion" -Foregroundcolor DarkGray
+                if ([version]$OSDVersion -lt [version]$OSDDriver.OSVersionMin) {
+                    Write-Host "$($OSDDriver.DriverCabFullName) is not compatible with OSVersion $OSDVersion" -Foregroundcolor DarkGray
                     Continue
                 }
             }
@@ -129,8 +211,8 @@ function Expand-OSDDrivers {
             #===================================================================================================
             if ($OSDDriver.OSVersionMax) {
                 Write-Verbose "Driver OSVersionMax: $($OSDDriver.OSVersionMax)"
-                if ([version]$CimOsVersion -gt [version]$OSDDriver.OSVersionMax) {
-                    Write-Host "$($OSDDriver.DriverCabFullName) is not compatible with OSVersion $CimOsVersion" -Foregroundcolor DarkGray
+                if ([version]$OSDVersion -gt [version]$OSDDriver.OSVersionMax) {
+                    Write-Host "$($OSDDriver.DriverCabFullName) is not compatible with OSVersion $OSDVersion" -Foregroundcolor DarkGray
                     Continue
                 }
             }
@@ -139,8 +221,8 @@ function Expand-OSDDrivers {
             #===================================================================================================
             if ($OSDDriver.OSBuildMin) {
                 Write-Verbose "Driver OSBuildMin: $($OSDDriver.OSBuildMin)"
-                if ([int]$CimOsBuildNumber -lt [int]$OSDDriver.OSBuildMin) {
-                    Write-Host "$($OSDDriver.DriverCabFullName) is not compatible with OSBuild $CimOsBuildNumber" -Foregroundcolor DarkGray
+                if ([int]$OSDBuild -lt [int]$OSDDriver.OSBuildMin) {
+                    Write-Host "$($OSDDriver.DriverCabFullName) is not compatible with OSBuild $OSDBuild" -Foregroundcolor DarkGray
                     Continue
                 }
             }
@@ -149,8 +231,8 @@ function Expand-OSDDrivers {
             #===================================================================================================
             if ($OSDDriver.OSBuildMax) {
                 Write-Verbose "Driver OSBuildMax: $($OSDDriver.OSBuildMax)"
-                if ([int]$CimOsBuildNumber -gt [int]$OSDDriver.OSBuildMax) {
-                    Write-Host "$($OSDDriver.DriverCabFullName) is not compatible with OSBuild $CimOsBuildNumber" -Foregroundcolor DarkGray
+                if ([int]$OSDBuild -gt [int]$OSDDriver.OSBuildMax) {
+                    Write-Host "$($OSDDriver.DriverCabFullName) is not compatible with OSBuild $OSDBuild" -Foregroundcolor DarkGray
                     Continue
                 }
             }
@@ -161,10 +243,10 @@ function Expand-OSDDrivers {
                 $ExpandDriverCab = $false
                 foreach ($item in $OSDDriver.MakeLike) {
                     Write-Verbose "Driver CAB Compatible Make: $item"
-                    if ($CimCsManufacturer -like "*$item*") {$ExpandDriverCab = $true}
+                    if ($OSDMake -like "*$item*") {$ExpandDriverCab = $true}
                 }
                 if ($ExpandDriverCab -eq $false) {
-                    Write-Host "$($OSDDriver.DriverCabFullName) is not compatible with Manufacturer $CimCsManufacturer" -Foregroundcolor DarkGray
+                    Write-Host "$($OSDDriver.DriverCabFullName) is not compatible with Manufacturer $OSDMake" -Foregroundcolor DarkGray
                     Continue
                 }
             }
@@ -174,10 +256,10 @@ function Expand-OSDDrivers {
             if ($OSDDriver.MakeNotLike) {
                 foreach ($item in $OSDDriver.MakeNotLike) {
                     Write-Verbose "Driver CAB Not Compatible Make: $item"
-                    if ($CimCsManufacturer -like "*$item*") {$ExpandDriverCab = $false}
+                    if ($OSDMake -like "*$item*") {$ExpandDriverCab = $false}
                 }
                 if ($ExpandDriverCab -eq $false) {
-                    Write-Host "$($OSDDriver.DriverCabFullName) is not compatible with Manufacturer $CimCsManufacturer" -Foregroundcolor DarkGray
+                    Write-Host "$($OSDDriver.DriverCabFullName) is not compatible with Manufacturer $OSDMake" -Foregroundcolor DarkGray
                     Continue
                 }
             }
@@ -188,10 +270,10 @@ function Expand-OSDDrivers {
                 $ExpandDriverCab = $false
                 foreach ($item in $OSDDriver.ModelLike) {
                     Write-Verbose "Driver CAB Compatible Model: $item"
-                    if ($CimCsModel -like "*$item*") {$ExpandDriverCab = $true}
+                    if ($OSDModel -like "*$item*") {$ExpandDriverCab = $true}
                 }
                 if ($ExpandDriverCab -eq $false) {
-                    Write-Host "$($OSDDriver.DriverCabFullName) is not compatible with Model $CimCsModel" -Foregroundcolor DarkGray
+                    Write-Host "$($OSDDriver.DriverCabFullName) is not compatible with Model $OSDModel" -Foregroundcolor DarkGray
                     Continue
                 }
             }
@@ -201,10 +283,10 @@ function Expand-OSDDrivers {
             if ($OSDDriver.ModelNotLike) {
                 foreach ($item in $OSDDriver.ModelNotLike) {
                     Write-Verbose "Driver CAB Not Compatible Model: $item"
-                    if ($CimCsModel -like "*$item*") {$ExpandDriverCab = $false}
+                    if ($OSDModel -like "*$item*") {$ExpandDriverCab = $false}
                 }
                 if ($ExpandDriverCab -eq $false) {
-                    Write-Host "$($OSDDriver.DriverCabFullName) is not compatible with Model $CimCsModel" -Foregroundcolor DarkGray
+                    Write-Host "$($OSDDriver.DriverCabFullName) is not compatible with Model $OSDModel" -Foregroundcolor DarkGray
                     Continue
                 }
             }
@@ -213,7 +295,7 @@ function Expand-OSDDrivers {
             #===================================================================================================
             if ($OSDDriver.OSInstallationType) {
                 Write-Verbose "Driver InstallationType: $($OSDDriver.OSInstallationType)"
-                if ($RegInstallationType -notlike "*$($OSDDriver.OSInstallationType)*") {
+                if ($OSDInstallationType -notlike "*$($OSDDriver.OSInstallationType)*") {
                     Write-Host "$($OSDDriver.DriverCabFullName) is not compatible with OS InstallationType $($OSDDriver.OSInstallationType)" -Foregroundcolor DarkGray
                     Continue
                 }
@@ -244,22 +326,22 @@ function Expand-OSDDrivers {
                     }
 
                 } else {
-                    Write-Host "Missing Driver HardwareID Database $($OSDDriver.DriverPnpFullName)" -Foregroundcolor DarkGray
-                    Continue
+                    #Write-Host "Missing Driver HardwareID Database $($OSDDriver.DriverPnpFullName)" -Foregroundcolor DarkGray
+                    #Continue
                 }
             }
+            if ($ExpandDriverCab -eq $false) {Continue}
+            if (!(Test-Path "$PathDrivers\$($OSDDriver.TaskName)")) {
+                New-Item -Path "$PathDrivers\$($OSDDriver.TaskName)" -ItemType Directory -Force | Out-Null
+            }
+            Write-Host "Expanding $($OSDDriver.DriverCabFullName) to $PathDrivers\$($OSDDriver.TaskName)" -ForegroundColor Cyan
+            Expand -R "$($OSDDriver.DriverCabFullName)" -F:* "$PathDrivers\$($OSDDriver.TaskName)" | Out-Null
         }
-
-        if ($ExpandDriverCab -eq $false) {Continue}
-        Write-Host "Expanding $($OSDDriver.DriverCabFullName) to $PathExpandedDrivers\$($OSDDriver.TaskName)" -ForegroundColor Cyan
-        if (!(Test-Path "$PathExpandedDrivers\$($OSDDriver.TaskName)")) {
-            New-Item -Path "$PathExpandedDrivers\$($OSDDriver.TaskName)" -ItemType Directory -Force | Out-Null
-        }
-        Expand -R "$($OSDDriver.DriverCabFullName)" -F:* "$PathExpandedDrivers\$($OSDDriver.TaskName)" | Out-Null
     }
 
     end {
         #Write-Host '========================================================================================' -ForegroundColor DarkGray
         #Write-Host "$($MyInvocation.MyCommand.Name) END" -ForegroundColor Green
+        Stop-Transcript
     }
 }
