@@ -7,7 +7,7 @@
 RootModule = 'OSDDrivers.psm1'
 
 # Version number of his module.
-ModuleVersion = '19.4.26.0'
+ModuleVersion = '19.5.2.0'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()

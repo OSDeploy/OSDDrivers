@@ -10,7 +10,8 @@ function Get-DownDisplayIntel {
     $Global:DriverClassGUID = '{4D36E968-E325-11CE-BFC1-08002BE10318}'
 }
 function Get-DownDisplayIntelLinks {
-
+    [CmdletBinding()]
+    Param ()
     $URLLinks = $URLLinks | Select-Object -Property innerText, href
     $URLLinks = $URLLinks | Where-Object {$_.innerText -notlike "*Beta*"}
     $URLLinks = $URLLinks | Where-Object {$_.innerText -notlike "*embedded*"}
@@ -48,18 +49,26 @@ function Get-DownDisplayIntelLinks {
 
     Return $URLLinks
 }
-
-
-
-
-function DownIntelWireless {
+function Get-DownWirelessIntel {
+    [CmdletBinding()]
+    Param ()
     $Global:OSDInfoUrl = $null
     $Global:OSDDownloadUrl = 'https://www.intel.com/content/www/us/en/support/articles/000017246/network-and-i-o/wireless-networking.html'
     $Global:OSDPageUrl = $null
     $Global:OSDDownloadFileName = ''
     $Global:OSDDownloadMethod = 'BITS'
+    $Global:DriverClass = 'Net'
+    $Global:DriverClassGUID = '{4D36E972-E325-11CE-BFC1-08002BE10318}'
 }
-function DownIntelBluetooth {
+function Get-DownWirelessIntelLinks {
+    [CmdletBinding()]
+    Param ()
+    $URLLinks = $URLLinks | Select-Object -Property innerText, href
+    $URLLinks = $URLLinks | Where-Object {$_.href -like "*downloadcenter.intel.com/download*"}
+    $URLLinks = $URLLinks | Select-Object -First 1
+    Return $URLLinks
+}
+function Get-DownNetIntelBluetooth {
     $Global:OSDInfoUrl = $null
     $Global:OSDDownloadUrl = 'https://www.intel.com/content/www/us/en/support/articles/000005773/network-and-i-o/wireless-networking.html'
     $Global:OSDPageUrl = $null

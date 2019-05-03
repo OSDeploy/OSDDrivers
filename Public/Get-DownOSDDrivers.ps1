@@ -8,7 +8,7 @@ function Get-DownOSDDrivers {
         [string]$PathDriverPackages,
 
         [Parameter(Mandatory)]
-        [ValidateSet('Display Intel')]
+        [ValidateSet('Display Intel','Wireless Intel')]
         [string]$DriverGroup
     )
     #===================================================================================================
@@ -29,7 +29,7 @@ function Get-DownOSDDrivers {
     #   DriverGroup
     #===================================================================================================
     if ($DriverGroup -eq 'Display Intel') {Get-DownDisplayIntel}
-    else {Exit}
+    if ($DriverGroup -eq 'Wireless Intel') {Get-DownWirelessIntel}
     #===================================================================================================
     #   OSDDownloadUrl
     #===================================================================================================
@@ -42,15 +42,21 @@ function Get-DownOSDDrivers {
     $URLLinks = (Invoke-WebRequest -Uri "$OSDDownloadUrl").Links
 
     if ($DriverGroup -eq 'Display Intel') {$URLLinks = Get-DownDisplayIntelLinks}
-    else {Exit}
+    if ($DriverGroup -eq 'Wireless Intel') {$URLLinks = Get-DownWirelessIntelLinks}
     #===================================================================================================
     #   Return Downloads
     #===================================================================================================
     $UrlDownloads = @()
     $DriverDownloads = @()
     $DriverDownloads = foreach ($URLLink in $URLLinks) {
-        $DriverName = $($URLLink.innerText)
-        Write-Host "$DriverName"
+
+        if ($DriverGroup -eq 'Display Intel') {
+            $DriverName = $($URLLink.innerText)
+            Write-Host "$DriverName"
+        }
+        if ($DriverGroup -eq 'Wireless Intel') {
+            $WirelessIntelVersion = $($URLLink.innerText)
+        }
 
         $DriverPage = $($URLLink.href)
         Write-Host "$DriverPage" -ForegroundColor DarkGray
@@ -59,6 +65,8 @@ function Get-DownOSDDrivers {
 
         #if ($DownloadType -eq 'exe') {$UrlDownload = $UrlDownload | Where-Object {$_.'data-direct-path' -like "*.exe"}}
         $UrlDownloads = $UrlDownloads | Where-Object {$_.'data-direct-path' -like "*.zip"}
+        $UrlDownloads = $UrlDownloads | Where-Object {$_.innerText -notlike "*wifi*all*"}
+        $UrlDownloads = $UrlDownloads | Where-Object {$_.innerText -notlike "*proset*"}
 
         foreach ($UrlDownload in $UrlDownloads) {
             $DriverVersion = $null
@@ -79,54 +87,80 @@ function Get-DownOSDDrivers {
             }
 
             if ($null -eq $OSArch) {
-                if ($DriverDownload -like "*win64*") {
+                if (($DriverDownload -like "*win64*") -or ($DriverDownload -like "*Driver64*")) {
                     $OSArch = 'x64'
                 } else {
                     $OSArch = 'x86'
                 }
             }
 
-            if ($null -eq $DriverVersion) {
-                $DriverVersion = Split-Path $DriverDownload -Leaf
+            if ($DriverGroup -eq 'Wireless Intel') {
+                $DriverVersion = $WirelessIntelVersion
+                if ($DriverDownload -like "*Win7*") {
+                    $OSVersionMin = '6.1'
+                    $OSVersionMax = '6.1'
+                    $DriverName = "$DriverGroup $DriverVersion $OSArch Win7"
+                }
+                if ($DriverDownload -like "*Win8.1*") {
+                    $OSVersionMin = '6.3'
+                    $OSVersionMax = '6.3'
+                    $DriverName = "$DriverGroup $DriverVersion $OSArch Win8.1"
+                }
+                if ($DriverDownload -like "*Win10*") {
+                    $OSVersionMin = '10.0'
+                    $OSVersionMax = '10.0'
+                    $DriverName = "$DriverGroup $DriverVersion $OSArch Win10"
+                }
+                $DriverCab = "$DriverName.cab"
+                $DriverZip = "$DriverName.zip"
             }
-            $DriverVersion = ($DriverVersion).replace('.zip','')
-            $DriverVersion = ($DriverVersion).replace('win64_','')
-            $DriverVersion = ($DriverVersion).replace('win32_','')
-            $DriverVersion = ($DriverVersion).replace('dch_igcc_','')
-            if ($DriverVersion -eq '15407.4279') {$DriverVersion = '15.40.7.4279'}
-            if ($DriverVersion -eq '154014.4352') {$DriverVersion = '15.40.14.4352'}
-            if ($DriverVersion -eq '152824') {$DriverVersion = '15.28.24.4229'}
 
-            if ($DriverName -eq 'Intel Graphics MA') {
-                $OSVersionMin = '6.1'
-                $OSVersionMax = '6.1'
-            } 
-            if ($DriverName -eq 'Intel Graphics HD') {
-                $OSVersionMin = '6.1'
-                $OSVersionMax = '6.3'
+            if ($DriverGroup -eq 'Display Intel') {
+                if ($null -eq $DriverVersion) {
+                    $DriverVersion = Split-Path $DriverDownload -Leaf
+                }
+                $DriverVersion = ($DriverVersion).replace('.zip','')
+                $DriverVersion = ($DriverVersion).replace('win64_','')
+                $DriverVersion = ($DriverVersion).replace('win32_','')
+                $DriverVersion = ($DriverVersion).replace('dch_igcc_','')
+                if ($DriverVersion -eq '15407.4279') {$DriverVersion = '15.40.7.4279'}
+                if ($DriverVersion -eq '154014.4352') {$DriverVersion = '15.40.14.4352'}
+                if ($DriverVersion -eq '152824') {$DriverVersion = '15.28.24.4229'}
+    
+                if ($DriverName -eq 'Intel Graphics MA') {
+                    $OSVersionMin = '6.1'
+                    $OSVersionMax = '6.1'
+                } 
+                if ($DriverName -eq 'Intel Graphics HD') {
+                    $OSVersionMin = '6.1'
+                    $OSVersionMax = '6.3'
+                }
+                if ($DriverName -eq 'Intel Graphics 15.33') {
+                    $OSVersionMin = '6.1'
+                    $OSVersionMax = '10.0'
+                }
+                if ($DriverName -eq 'Intel Graphics 15.36') {
+                    $OSVersionMin = '6.1'
+                    $OSVersionMax = '6.3'
+                }
+                if ($DriverName -eq 'Intel Graphics 15.40') {
+                    $OSVersionMin = '6.1'
+                    $OSVersionMax = '10.0'
+                }
+                if ($DriverName -eq 'Intel Graphics 15.45') {
+                    $OSVersionMin = '6.1'
+                    $OSVersionMax = '6.3'
+                }
+                if ($DriverName -eq 'Intel Graphics DCH') {
+                    $OSVersionMin = '10.0'
+                    $OSVersionMax = '10.0'
+                }
+                $DriverCab = "$DriverGroup $DriverVersion $OSArch.cab"
+                $DriverZip = "$DriverGroup $DriverVersion $OSArch.zip"
             }
-            if ($DriverName -eq 'Intel Graphics 15.33') {
-                $OSVersionMin = '6.1'
-                $OSVersionMax = '10.0'
-            }
-            if ($DriverName -eq 'Intel Graphics 15.36') {
-                $OSVersionMin = '6.1'
-                $OSVersionMax = '6.3'
-            }
-            if ($DriverName -eq 'Intel Graphics 15.40') {
-                $OSVersionMin = '6.1'
-                $OSVersionMax = '10.0'
-            }
-            if ($DriverName -eq 'Intel Graphics 15.45') {
-                $OSVersionMin = '6.1'
-                $OSVersionMax = '6.3'
-            }
-            if ($DriverName -eq 'Intel Graphics DCH') {
-                $OSVersionMin = '10.0'
-                $OSVersionMax = '10.0'
-            }
-            $DriverCab = "$DriverGroup $DriverVersion $OSArch.cab"
-            $DriverZip = "$DriverGroup $DriverVersion $OSArch.zip"
+
+
+
             $DriverStatus = $null
             if (Test-Path "$PathDriverDownloads\$DriverZip") {$DriverStatus = 'Downloaded'}
             if (Test-Path "$PathDriverDownloads\$DriverCab") {$DriverStatus = 'Packaged'}
