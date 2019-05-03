@@ -7,7 +7,7 @@
 RootModule = 'OSDDrivers.psm1'
 
 # Version number of his module.
-ModuleVersion = '19.5.2.0'
+ModuleVersion = '19.5.3.0'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -25,7 +25,7 @@ CompanyName = 'osdeploy.com'
 Copyright = '(c) 2019 David Segura osdeploy.com. All rights reserved.'
 
 # Description of the functionality provided by this module
-Description = 'OSDDrivers is used to download the latest Google Chrome, Microsoft ADK, Microsoft MDT, and the latest Microsoft VS code'
+Description = 'OSDDrivers is for Testing only'
 
 # Minimum version of the Windows PowerShell engine required by this module
 PowerShellVersion = '5.0'
@@ -93,19 +93,19 @@ PrivateData = @{
     PSData = @{
 
         # Tags applied to this module. These help with module discovery in online galleries.
-        Tags = @('OSDeploy','OSD','Update')
+        Tags = @('OSDeploy','OSD','Drivers')
 
         # A URL to the license for this module.
         # LicenseUri = ''
 
         # A URL to the main website for this project.
-        ProjectUri = 'https://www.osdeploy.com/OSDDrivers/home'
+        ProjectUri = 'https://www.osdeploy.com/osddrivers'
 
         # A URL to an icon representing this module.
         # IconUri = ''
 
         # ReleaseNotes of this module
-        ReleaseNotes = 'https://www.osdeploy.com/OSDDrivers/releases'
+        ReleaseNotes = 'https://www.osdeploy.com/osddrivers/releases'
 
     } # End of PSData hashtable
 

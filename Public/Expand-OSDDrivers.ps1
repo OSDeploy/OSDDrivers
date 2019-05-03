@@ -4,7 +4,7 @@ function Expand-OSDDrivers {
         [Parameter(Mandatory)]
         [string]$PathDriverPackages,
 
-        [string]$PathDrivers = "$env:SystemDrive\Drivers",
+        [string]$PathDrivers,
 
         [switch]$GridView,
 
@@ -54,19 +54,34 @@ function Expand-OSDDrivers {
         #===================================================================================================
         #   PathDrivers
         #===================================================================================================
-        if ($TSEnv) {
-            $TSEnvOSDisk = $TSEnv.Value("OSDisk")
-            $TSEnvOSDTargetDriveCache = $TSEnv.Value("OSDTargetDriveCache")
-
-            if ($null -eq $TSEnvOSDisk) {
-                $PathDrivers = "$TSEnvOSDTargetDriveCache\Drivers"
-            } else {
-                $PathDrivers = "$TSEnvOSDisk\Drivers"
+        if (-not ($PathDrivers)) {
+            $OSDDriversDrive = $null
+            if ($TSEnv) {
+                $OSDDriversDrive = $TSEnv.Value("OSDisk")
+                if ($null -eq $OSDDriversDrive) {$OSDDriversDrive = $TSEnv.Value("OSDTargetDriveCache")}
             }
-        } elseif ($env:SystemDrive -eq 'X:') {
-            $PathDrivers = 'C:\Drivers'
+
+            if ($null -eq $OSDDriversDrive) {$OSDDriversDrive = $env:SystemDrive}
+            if ($OSDDriversDrive -eq 'X:') {$OSDDriversDrive = 'C:'}
+
+            if (-not (Test-Path "$OSDDriversDrive\")) {
+                Write-Warning "Could not locate a Drive to Expand-OSDDrivers ... Exiting"
+                Start-Sleep 10
+                Exit 0
+            }
+            $PathDrivers = "$OSDDriversDrive\Drivers"
         }
-        if (-not(Test-Path "$PathDrivers")) {New-Item -Path "$PathDrivers\" -ItemType Directory -Force -ErrorAction Stop | Out-Null}
+
+        if (-not (Test-Path "$PathDrivers")) {
+            try {
+                New-Item -Path "$PathDrivers\" -ItemType Directory -Force | Out-Null
+            }
+            catch {
+                Write-Warning "Could not locate a Drive to Expand-OSDDrivers ... Exiting"
+                Start-Sleep 10
+                Exit 0
+            }
+        }
         #===================================================================================================
         #   Start-Transcript
         #===================================================================================================
