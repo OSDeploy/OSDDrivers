@@ -68,6 +68,62 @@ function Get-DownWirelessIntelLinks {
     $URLLinks = $URLLinks | Select-Object -First 1
     Return $URLLinks
 }
+
+function Get-DownWirelessNetworking {
+    [CmdletBinding()]
+    Param ()
+    $Global:OSDInfoUrl = $null
+    $Global:OSDDownloadUrl = 'https://downloadcenter.intel.com/product/59485/Wireless-Networking'
+    $Global:OSDPageUrl = $null
+    $Global:OSDDownloadFileName = ''
+    $Global:OSDDownloadMethod = 'BITS'
+    $Global:DriverClass = 'Net'
+    $Global:DriverClassGUID = '{4D36E972-E325-11CE-BFC1-08002BE10318}'
+}
+
+
+function Get-DownWirelessNetworkingLinks {
+    [CmdletBinding()]
+    Param ()
+    $URLLinks = $URLLinks | Select-Object -Property innerText, href
+    $URLLinks = $URLLinks | Where-Object {$_.innerText -notlike "*exe*"}
+    $URLLinks = $URLLinks | Where-Object {$_.innerText -notlike "*bluetooth*"}
+    
+    $URLLinks = $URLLinks | Where-Object {$_.href -like "/download*"}
+    foreach ($URLLink in $URLLinks) {
+        $URLLink.innerText = ($URLLink).innerText.replace('][',' ')
+        $URLLink.innerText = $URLLink.innerText -replace '[[]', ''
+        $URLLink.innerText = $URLLink.innerText -replace '[]]', ''
+        $URLLink.innerText = $URLLink.innerText -replace '[®]', ''
+        $URLLink.innerText = $URLLink.innerText -replace '[*]', ''
+    }
+
+    foreach ($URLLink in $URLLinks) {
+        $URLLink.href = "https://downloadcenter.intel.com$($URLLink.href)"
+    }
+    #===================================================================================================
+    #   Exclude Drivers
+    #===================================================================================================
+
+
+    Return $URLLinks
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 function Get-DownNetIntelBluetooth {
     $Global:OSDInfoUrl = $null
     $Global:OSDDownloadUrl = 'https://www.intel.com/content/www/us/en/support/articles/000005773/network-and-i-o/wireless-networking.html'
