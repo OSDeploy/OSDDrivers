@@ -11,7 +11,7 @@ function Get-DownOSDDriversPNP3 {
         [string]$DriverGroup,
 
         [Parameter(Position=1,Mandatory=$true)]
-        [string]$PathDriverDownloads,
+        [string]$DownloadPath,
 
         [ValidateSet('Win10','Win7')]
         [string]$OS,
@@ -29,9 +29,9 @@ function Get-DownOSDDriversPNP3 {
     $Global:OSDDownloadMethod = 'BITS'
     $UrlDownloads = @()
     #===================================================================================================
-    #   PathDriverDownloads
+    #   DownloadPath
     #===================================================================================================
-    if (!(Test-Path "$PathDriverDownloads")) {New-Item -Path "$PathDriverDownloads" -ItemType Directory -Force | Out-Null}
+    if (!(Test-Path "$DownloadPath")) {New-Item -Path "$DownloadPath" -ItemType Directory -Force | Out-Null}
     #===================================================================================================
     #   IntelWireless
     #===================================================================================================
@@ -140,26 +140,26 @@ function Get-DownOSDDriversPNP3 {
         $DownloadLink = $($UrlDownload.'data-direct-path')
         $OSDDownloadFileName = Split-Path -Path $DownloadLink -Leaf
         Write-Host "Download Link: $DownloadLink" -ForegroundColor Cyan
-        Write-Host "Download Full Path: $PathDriverDownloads\$OSDDownloadFileName" -ForegroundColor Cyan
+        Write-Host "Download Full Path: $DownloadPath\$OSDDownloadFileName" -ForegroundColor Cyan
         Write-Host "Download Method: $OSDDownloadMethod" -ForegroundColor Cyan
 
-        if (Test-Path "$PathDriverDownloads\$OSDDownloadFileName") {
-            Write-Warning "$PathDriverDownloads\$OSDDownloadFileName already exists!"
+        if (Test-Path "$DownloadPath\$OSDDownloadFileName") {
+            Write-Warning "$DownloadPath\$OSDDownloadFileName already exists!"
         } else {
             if ($OSDDownloadMethod -eq 'BITS') {
-                Start-BitsTransfer -Source "$DownloadLink" -Destination "$PathDriverDownloads"
+                Start-BitsTransfer -Source "$DownloadLink" -Destination "$DownloadPath"
             }
             if ($OSDDownloadMethod -eq 'WebClient') {
                 Write-Warning "Downloading without progress ..."
-                (New-Object System.Net.WebClient).DownloadFile("$UrlDownload", "$PathDriverDownloads\$OSDDownloadFileName")
-                #Start-BitsTransfer -Source $UrlDownload -Destination "$PathDriverDownloads\$OSDDownloadFileName"
+                (New-Object System.Net.WebClient).DownloadFile("$UrlDownload", "$DownloadPath\$OSDDownloadFileName")
+                #Start-BitsTransfer -Source $UrlDownload -Destination "$DownloadPath\$OSDDownloadFileName"
             }
             if ($OSDDownloadMethod -eq 'WebRequest') {
                 #$DownloadFileName = [System.IO.Path]::GetFileName((Get-RedirectedUrl "$UrlDownload"))
                 #Write-Host $DownloadFileName
-                Invoke-WebRequest -Uri $UrlDownload -OutFile "$PathDriverDownloads\$OSDDownloadFileName"
+                Invoke-WebRequest -Uri $UrlDownload -OutFile "$DownloadPath\$OSDDownloadFileName"
             }
         }
-        Expand-Archive -Path "$PathDriverDownloads\$OSDDownloadFileName" -DestinationPath "$PathDriverDownloads\$Name $DriverVersion Win 10 x64"
+        Expand-Archive -Path "$DownloadPath\$OSDDownloadFileName" -DestinationPath "$DownloadPath\$Name $DriverVersion Win 10 x64"
     }
 }

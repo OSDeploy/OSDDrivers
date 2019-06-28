@@ -11,11 +11,11 @@ https://www.osdeploy.com/OSDDriver/docs/functions/get-OSDDriver
 .PARAMETER Name
 Name of the software to download
 
-.PARAMETER PathDriverDownloads
+.PARAMETER DownloadPath
 This is the path to download the updates
 
 .EXAMPLE
-Get-OSDDriver -Name 'Google Chrome Enterprise x64' -PathDriverDownloads C:\Temp
+Get-OSDDriver -Name 'Google Chrome Enterprise x64' -DownloadPath C:\Temp
 Downloads googlechromestandaloneenterprise64.msi to C:\Temp
 Alternatively, use the shorter command line
 OSDDriver 'Google Chrome Enterprise x64' C:\Temp
@@ -31,7 +31,7 @@ function Get-DownOSDCoreDrivers2 {
         )]
         [string]$Name,
         [Parameter(Position=1)]
-        [string]$PathDriverDownloads,
+        [string]$DownloadPath,
         [ValidateSet('Exe','Zip')]
         [string]$DownloadType,
         [ValidateSet('Win10 x64','Win7 x64','Win10 x86','Win7 x86')]
@@ -49,8 +49,8 @@ function Get-DownOSDCoreDrivers2 {
     #   Paths
     #===================================================================================================
     #{374DE290-123F-4565-9164-39C4925E467B}
-    if (!($PathDriverDownloads)) {$PathDriverDownloads = [Environment]::GetFolderPath("Desktop")}
-    if (!(Test-Path "$PathDriverDownloads")) {New-Item -Path "$PathDriverDownloads" -ItemType Directory -Force | Out-Null}
+    if (!($DownloadPath)) {$DownloadPath = [Environment]::GetFolderPath("Desktop")}
+    if (!(Test-Path "$DownloadPath")) {New-Item -Path "$DownloadPath" -ItemType Directory -Force | Out-Null}
     #===================================================================================================
     #   Software
     #===================================================================================================
@@ -136,26 +136,26 @@ function Get-DownOSDCoreDrivers2 {
         $DownloadLink = $($UrlDownload.'data-direct-path')
         $OSDDownloadFileName = Split-Path -Path $DownloadLink -Leaf
         Write-Host "Download Link: $DownloadLink" -ForegroundColor Cyan
-        Write-Host "Download Full Path: $PathDriverDownloads\$OSDDownloadFileName" -ForegroundColor Cyan
+        Write-Host "Download Full Path: $DownloadPath\$OSDDownloadFileName" -ForegroundColor Cyan
         Write-Host "Download Method: $OSDDownloadMethod" -ForegroundColor Cyan
 
-        if (Test-Path "$PathDriverDownloads\$OSDDownloadFileName") {
-            Write-Warning "$PathDriverDownloads\$OSDDownloadFileName already exists!"
+        if (Test-Path "$DownloadPath\$OSDDownloadFileName") {
+            Write-Warning "$DownloadPath\$OSDDownloadFileName already exists!"
         } else {
             if ($OSDDownloadMethod -eq 'BITS') {
-                Start-BitsTransfer -Source "$DownloadLink" -Destination "$PathDriverDownloads"
+                Start-BitsTransfer -Source "$DownloadLink" -Destination "$DownloadPath"
             }
             if ($OSDDownloadMethod -eq 'WebClient') {
                 Write-Warning "Downloading without progress ..."
-                (New-Object System.Net.WebClient).DownloadFile("$UrlDownload", "$PathDriverDownloads\$OSDDownloadFileName")
-                #Start-BitsTransfer -Source $UrlDownload -Destination "$PathDriverDownloads\$OSDDownloadFileName"
+                (New-Object System.Net.WebClient).DownloadFile("$UrlDownload", "$DownloadPath\$OSDDownloadFileName")
+                #Start-BitsTransfer -Source $UrlDownload -Destination "$DownloadPath\$OSDDownloadFileName"
             }
             if ($OSDDownloadMethod -eq 'WebRequest') {
                 #$DownloadFileName = [System.IO.Path]::GetFileName((Get-RedirectedUrl "$UrlDownload"))
                 #Write-Host $DownloadFileName
-                Invoke-WebRequest -Uri $UrlDownload -OutFile "$PathDriverDownloads\$OSDDownloadFileName"
+                Invoke-WebRequest -Uri $UrlDownload -OutFile "$DownloadPath\$OSDDownloadFileName"
             }
         }
-        Expand-Archive -Path "$PathDriverDownloads\$OSDDownloadFileName" -DestinationPath "$PathDriverDownloads\$Name $DriverVersion Win 10 x64"
+        Expand-Archive -Path "$DownloadPath\$OSDDownloadFileName" -DestinationPath "$DownloadPath\$Name $DriverVersion Win 10 x64"
     }
 }

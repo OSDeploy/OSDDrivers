@@ -7,7 +7,7 @@
 RootModule = 'OSDDrivers.psm1'
 
 # Version number of his module.
-ModuleVersion = '19.5.3.0'
+ModuleVersion = '19.6.28.0'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -64,8 +64,8 @@ PowerShellVersion = '5.0'
 # NestedModules = @()
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-FunctionsToExport = 'Get-OSDDrivers',
-                    'Get-DownOSDDrivers','Update-ModuleOSDDrivers','New-OSDDriversInventory',
+FunctionsToExport = 'Get-DownOSDDriverPackage',
+                    'Get-OSDDrivers','Update-ModuleOSDDrivers','New-OSDDriversInventory',
                     'New-OSDDriverPnp','New-OSDDriverCab','New-OSDDriverTask',
                     'Expand-OSDDrivers'
 

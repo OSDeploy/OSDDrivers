@@ -2,26 +2,21 @@ function Get-OSDDrivers {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory)]
-        [string]$PathDriverPackages,
+        [string]$PackagePath,
         [switch]$GridView
     )
 
     begin {
-        #Write-Host '========================================================================================' -ForegroundColor DarkGray
-        #Write-Host "$($MyInvocation.MyCommand.Name) BEGIN" -ForegroundColor Green
         $global:OSDDriversVersion = $(Get-Module -Name OSDDrivers | Sort-Object Version | Select-Object Version -Last 1).Version
 
         #===================================================================================================
         #   Get All Drivers Jsons
         #===================================================================================================
         $OSDDriverJsons = @()
-        $OSDDriverJsons = Get-ChildItem -Path "$PathDriverPackages" *.cab.json -File -Recurse | Select-Object -Property *
+        $OSDDriverJsons = Get-ChildItem -Path "$PackagePath" *.cab.json -File -Recurse | Select-Object -Property *
     }
 
     process {
-        #Write-Host '========================================================================================' -ForegroundColor DarkGray
-        #Write-Host "$($MyInvocation.MyCommand.Name) PROCESS" -ForegroundColor Green
-
         $OSDDrivers = foreach ($Item in $OSDDriverJsons) {
             #===================================================================================================
             #   
@@ -80,8 +75,5 @@ function Get-OSDDrivers {
         Return $OSDDrivers
     }
 
-    end {
-        #Write-Host '========================================================================================' -ForegroundColor DarkGray
-        #Write-Host "$($MyInvocation.MyCommand.Name) END" -ForegroundColor Green
-    }
+    end {}
 }
