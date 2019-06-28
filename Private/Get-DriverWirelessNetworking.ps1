@@ -229,10 +229,6 @@ function Get-DriverWirelessNetworking {
             if (Test-Path "$OSDDriverPnp") {
                 Copy-Item "$OSDDriverPnp" "$PackagePath" -Force
             }
-            #===================================================================================================
-            #   Use-OSDDrivers
-            #===================================================================================================
-            Copy-Item "$($MyInvocation.MyCommand.Module.ModuleBase)\Scripts\Use-OSDDrivers.ps1" "$PackagePath" -Force | Out-Null
         }
     }
 }
