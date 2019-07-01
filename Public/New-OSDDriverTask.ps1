@@ -2,7 +2,7 @@ function New-OSDDriverTask {
     [CmdletBinding()]
     Param (
         [Parameter(Mandatory)]
-        [string]$DriverCab,
+        [string]$DriverCabPath,
 
         [ValidateSet('x64','x86')]
         [string]$OSArch,
@@ -32,13 +32,13 @@ function New-OSDDriverTask {
     }
 
     process {
-        $DriverCab = Get-Item "$DriverCab" -ErrorAction Stop | Select-Object -Property *
+        $DriverCabFile = Get-Item "$DriverCabPath" -ErrorAction Stop | Select-Object -Property *
 
-        $TaskName = $DriverCab.BaseName
+        $TaskName = $DriverCabFile.BaseName
         $TaskFileName = "$TaskName.cab.json"
-        $DriverPnpName = "$TaskName.pnp.xml"
+        $DriverPnpFile = "$TaskName.pnp.xml"
 
-        $TaskJsonFullName = Join-Path "$($DriverCab.DirectoryName)" "$TaskFileName"
+        $TaskJsonFullName = Join-Path "$($DriverCabFile.DirectoryName)" "$TaskFileName"
         #===================================================================================================
         #   Task
         #===================================================================================================
@@ -47,8 +47,8 @@ function New-OSDDriverTask {
             "TaskVersion"       = [string] $OSDDriversVersion;
             "TaskName"          = [string] $TaskName;
             "TaskGuid"          = [string] $(New-Guid);
-            "DriverCabName"     = [string] $DriverCab.Name;
-            "DriverPnpName"     = [string] $DriverPnpName;
+            "DriverCabFile"     = [string] $DriverCabFile;
+            "DriverPnpFile"     = [string] $DriverPnpFile;
 
             "OSArch"            = [string] $OSArch;
             "OSBuildMin"        = [string] $OSBuildMin;

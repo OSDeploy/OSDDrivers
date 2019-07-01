@@ -39,68 +39,69 @@ function Get-DownOSDDriver {
             if ($DriverGroup -eq 'Display Intel') {$OnlineOSDDriver = Get-OnlineOSDDriverDisplayIntel}
             if ($DriverGroup -eq 'Wireless Intel') {$OnlineOSDDriver = Get-OnlineOSDDriverWirelessIntel}
         }
-        $OnlineOSDDriver = $OnlineOSDDriver | Sort-Object -Property LastUpdated -Descending | Select-Object OSDDriverStatus,DriverGroup,DriverClass,LastUpdated,DriverName,DriverVersion,OSArch,OSVersionMin,OSVersionMax,Description,DriverDownload,DriverClassGUID,DriverPage,DriverZipFileName,DriverCab
+        $OnlineOSDDriver = $OnlineOSDDriver | Sort-Object -Property LastUpdated -Descending | Select-Object OSDDriverStatus,DriverGroup,DriverClass,LastUpdated,DriverName,DriverVersion,OSArch,OSVersionMin,OSVersionMax,DriverClassGUID,Description,OnlineDriver,DriverPage,DriverZipFile,DriverCabFile
 
         foreach ($OSDDriverItem in $OnlineOSDDriver) {
-            if (Test-Path "$DownloadPath\$($OSDDriverItem.DriverZipFileName)") {$OSDDriverItem.OSDDriverStatus = 'Downloaded'}
-            if (Test-Path "$DownloadPath\$($OSDDriverItem.DriverCab)") {$OSDDriverItem.OSDDriverStatus = 'Packaged'}
+            if (Test-Path "$DownloadPath\$($OSDDriverItem.DriverZipFile)") {$OSDDriverItem.OSDDriverStatus = 'Downloaded'}
+            if (Test-Path "$DownloadPath\$($OSDDriverItem.DriverCabFile)") {$OSDDriverItem.OSDDriverStatus = 'Packaged'}
             if ($PublishPath) {
-                if (Test-Path "$PublishPath\$($OSDDriverItem.DriverCab)") {$OSDDriverItem.OSDDriverStatus = 'Published'}
+                if (Test-Path "$PublishPath\$($OSDDriverItem.DriverCabFile)") {$OSDDriverItem.OSDDriverStatus = 'Published'}
             }
         }
 
-<#         $OnlineOSDDriver | Export-Clixml "$DownloadPath\OSDDrivers $DriverGroup.xml"
+        $OnlineOSDDriver | Export-Clixml "$DownloadPath\OSDDrivers $DriverGroup.xml"
         if ($PublishPath) {
             $OnlineOSDDriver | Export-Clixml "$PublishPath\OSDDrivers $DriverGroup.xml"
-        } #>
+        }
 
         $OnlineOSDDriver = $OnlineOSDDriver | Out-GridView -PassThru -Title 'Select Driver Downloads to Package and press OK'
-        #Return $OnlineOSDDriver
         
-<#         #===================================================================================================
-        #   Download
+        #===================================================================================================
+        #   Process Drivers
         #===================================================================================================
         foreach ($OSDDriverItem in $OnlineOSDDriver) {
             $OSDDriverStatus = $($OSDDriverItem.OSDDriverStatus)
             $DriverGroup = $($OSDDriverItem.DriverGroup)
             $DriverClass = $($OSDDriverItem.DriverClass)
             $DriverClassGUID = $($OSDDriverItem.DriverClassGUID)
-            $DriverDownload = $($OSDDriverItem.DriverDownload)
+            $OnlineDriver = $($OSDDriverItem.OnlineDriver)
             $DriverOSArch = $($OSDDriverItem.OSArch)
             $DriverOSVersionMin = $($OSDDriverItem.OSVersionMin)
             $DriverOSVersionMax = $($OSDDriverItem.OSVersionMax)
 
-            $DriverCab = $($OSDDriverItem.DriverCab)
-            $DriverZipFileName = $($OSDDriverItem.DriverZipFileName)
-            $DriverDirectory = ($DriverCab).replace('.cab','')
+            $DriverCabFile = $($OSDDriverItem.DriverCabFile)
+            $DriverZipFile = $($OSDDriverItem.DriverZipFile)
+            $DriverDirectory = ($DriverCabFile).replace('.cab','')
 
-            Write-Host "DriverDownload: $DriverDownload" -ForegroundColor Cyan
-            Write-Host "DriverZipFileName: $DownloadPath\$DriverZipFileName" -ForegroundColor Gray
+            Write-Host "OnlineDriver: $OnlineDriver" -ForegroundColor Gray
 
-            if (Test-Path "$PublishPath\$DriverCab") {
-                Write-Warning "$PublishPath\$DriverCab ... Exists!"
-            } elseif (Test-Path "$DownloadPath\$DriverZipFileName") {
-                Write-Warning "$DownloadPath\$DriverZipFileName ... Exists!"
+            #===================================================================================================
+            #   Download
+            #===================================================================================================
+            if (Test-Path "$DownloadPath\$DriverZipFile") {
+                Write-Warning "$DownloadPath\$DriverZipFile ... Skip Download"
             } else {
-                Start-BitsTransfer -Source "$DriverDownload" -Destination "$DownloadPath\$DriverZipFileName"
+                Write-Host "DriverZipFile: $DownloadPath\$DriverZipFile" -ForegroundColor Gray
+                Start-BitsTransfer -Source "$OnlineDriver" -Destination "$DownloadPath\$DriverZipFile"
             }
+            #===================================================================================================
+            #   Publish
+            #===================================================================================================
             if ($PublishPath) {
                 #===================================================================================================
                 #   Expand Zip
-                #   Need to add logic to unzip if necessary
                 #===================================================================================================
-                if (-not(Test-Path "$PublishPath\$DriverCab")) {
+                if (-not(Test-Path "$PublishPath\$DriverCabFile")) {
                     Write-Host "DriverDirectory: $DownloadPath\$DriverDirectory" -ForegroundColor Gray
 
                     if (Test-Path "$DownloadPath\$DriverDirectory") {
-                        Write-Warning "$DownloadPath\$DriverDirectory ... Removing!"
+                        Write-Warning "$DownloadPath\$DriverDirectory ... Remove Existing"
                         Remove-Item -Path "$DownloadPath\$DriverDirectory" -Recurse -Force | Out-Null
                     }
 
-                    Write-Host "Expanding $DownloadPath\$DriverZipFileName ..." -ForegroundColor Gray
-                    Expand-Archive -Path "$DownloadPath\$DriverZipFileName" -DestinationPath "$DownloadPath\$DriverDirectory" -Force
+                    Write-Host "Expand $DownloadPath\$DriverZipFile ..." -ForegroundColor Gray
+                    Expand-Archive -Path "$DownloadPath\$DriverZipFile" -DestinationPath "$DownloadPath\$DriverDirectory" -Force
                 }
-
                 #===================================================================================================
                 #   OSDDriverPnp
                 #===================================================================================================
@@ -110,27 +111,31 @@ function Get-DownOSDDriver {
                 #===================================================================================================
                 #   Create CAB
                 #===================================================================================================
-                if ( -not (Test-Path "$DownloadPath\$DriverCab")) {
-                    Write-Verbose "Creating $DownloadPath\$DriverCab ..." -Verbose
-                    New-OSDDriverCAB -SourceDirectory "$DownloadPath\$DriverDirectory" -ShowOutput
+                if (Test-Path "$DownloadPath\$DriverCabFile") {
+                    Write-Warning "$DownloadPath\$DriverCabFile ... Remove Existing"
+
+                } else {
+                    Write-Verbose "Creating $DownloadPath\$DriverCabFile ..." -Verbose
+                    New-OSDDriverCab -SourceDirectory "$DownloadPath\$DriverDirectory" -ShowOutput
                 }
                 #===================================================================================================
                 #   Copy CAB
                 #===================================================================================================
-                if ( -not (Test-Path "$PublishPath\$DriverCab")) {
-                    Write-Verbose "Copying $DownloadPath\$DriverCab to $PublishPath\$DriverCab ..." -Verbose
-                    Copy-Item -Path "$DownloadPath\$DriverCab" -Destination "$PublishPath" -Force | Out-Null
+                if ( -not (Test-Path "$PublishPath\$DriverCabFile")) {
+                    Write-Verbose "Copying $DownloadPath\$DriverCabFile to $PublishPath\$DriverCabFile ..." -Verbose
+                    Copy-Item -Path "$DownloadPath\$DriverCabFile" -Destination "$PublishPath" -Force | Out-Null
                 }
                 #===================================================================================================
                 #   OSDDriverTask
                 #===================================================================================================
                 Write-Host "Creating OSDDriverTask $DriverOSArch $DriverOSVersionMin $DriverOSVersionMax ..." -ForegroundColor Gray
-                New-OSDDriverTask -DriverCab "$PublishPath\$DriverCab" -OSArch $DriverOSArch -OSVersionMin $DriverOSVersionMin -OSVersionMax $DriverOSVersionMax
+                Write-Host "DriverCabFile: $PublishPath\$DriverCabFile"
+                New-OSDDriverTask -DriverCabPath "$PublishPath\$DriverCabFile" -OSArch $DriverOSArch -OSVersionMin $DriverOSVersionMin -OSVersionMax $DriverOSVersionMax
                 if (Test-Path "$OSDDriverPnp") {
                     Copy-Item "$OSDDriverPnp" "$PublishPath" -Force
                 }
             }
-        } #>
+        }
     }
 
     END {
@@ -138,11 +143,11 @@ function Get-DownOSDDriver {
         #   Export Module
         #===================================================================================================
         if ($PublishPath) {
-            Get-Content "$($MyInvocation.MyCommand.Module.ModuleBase)\Public\Expand-OSDDrivers.ps1" | Set-Content "$PublishPath\OSDDrivers.psm1"
-            Get-Content "$($MyInvocation.MyCommand.Module.ModuleBase)\Public\Get-OSDDrivers.ps1" | Add-Content "$PublishPath\OSDDrivers.psm1"
-            Get-Content "$($MyInvocation.MyCommand.Module.ModuleBase)\Public\New-OSDDriversInventory.ps1" | Add-Content "$PublishPath\OSDDrivers.psm1"
-            Get-Content "$($MyInvocation.MyCommand.Module.ModuleBase)\Scripts\Use-OSDDrivers.ps1" | Add-Content "$PublishPath\OSDDrivers.psm1"
-            Copy-Item "$($MyInvocation.MyCommand.Module.ModuleBase)\Scripts\Use-OSDDrivers.ps1" "$PublishPath" -Force | Out-Null
+            #Get-Content "$($MyInvocation.MyCommand.Module.ModuleBase)\Public\Expand-OSDDrivers.ps1" | Set-Content "$PublishPath\OSDDrivers.psm1"
+            #Get-Content "$($MyInvocation.MyCommand.Module.ModuleBase)\Public\Get-OSDDrivers.ps1" | Add-Content "$PublishPath\OSDDrivers.psm1"
+            #Get-Content "$($MyInvocation.MyCommand.Module.ModuleBase)\Public\New-OSDDriversInventory.ps1" | Add-Content "$PublishPath\OSDDrivers.psm1"
+            #Get-Content "$($MyInvocation.MyCommand.Module.ModuleBase)\Scripts\Use-OSDDrivers.ps1" | Add-Content "$PublishPath\OSDDrivers.psm1"
+            #Copy-Item "$($MyInvocation.MyCommand.Module.ModuleBase)\Scripts\Use-OSDDrivers.ps1" "$PublishPath" -Force | Out-Null
         }
         #===================================================================================================
         #   Complete

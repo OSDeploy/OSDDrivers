@@ -29,24 +29,24 @@ function Get-OSDDrivers {
             $OSDDTaskProps = @()
             $OSDDTaskProps = Get-Item "$($Item.FullName)" | Select-Object -Property *
 
-            $DriverCabName = $OSDDTask.DriverCabName
-            $DriverCabFullName = "$($Item.Directory)\$DriverCabName"
-            if (Test-Path "$DriverCabFullName") {$DriverCab = 'Ready'}
-            else {$DriverCab = 'Missing'}
+            $DriverCabFile = $OSDDTask.DriverCabFile
+            $DriverCabFileFullName = "$($Item.Directory)\$DriverCabFile"
+            if (Test-Path "$DriverCabFileFullName") {$DriverCabFile = 'Ready'}
+            else {$DriverCabFile = 'Missing'}
 
-            $DriverPnpName = $OSDDTask.DriverPnpName
-            $DriverPnpFullName = "$($Item.Directory)\$DriverPnpName"
-            if (Test-Path "$DriverPnpFullName") {$DriverPnp = 'Detect'}
-            else {$DriverPnp = $null}
+            $DriverPnpFile = $OSDDTask.DriverPnpFile
+            $DriverPnpFullName = "$($Item.Directory)\$DriverPnpFile"
+            if (Test-Path "$DriverPnpFullName") {$DriverPnpFile = 'Detect'}
+            else {$DriverPnpFile = $null}
 
             $ObjectProperties = @{
                 TaskType            = $OSDDTask.TaskType
                 TaskVersion         = [version]$OSDDTask.TaskVersion
                 TaskName            = $OSDDTask.TaskName
                 TaskGuid            = $OSDDTask.TaskGuid
-                DriverCab           = $DriverCab
-                DriverCabFullName   = $DriverCabFullName
-                DriverPnp           = $DriverPnp
+                DriverCabFile       = $DriverCabFile
+                DriverCabFullName   = $DriverCabFileFullName
+                DriverPnpFile       = $DriverPnpFile
                 DriverPnpFullName   = $DriverPnpFullName
 
                 OSInstallationType  = $OSDDTask.OSInstallationType
@@ -68,7 +68,7 @@ function Get-OSDDrivers {
         #===================================================================================================
         #Write-Verbose '19.1.3 Output'
         #===================================================================================================
-        $OSDDrivers = $OSDDrivers | Select-Object -Property TaskType,TaskVersion,TaskName,DriverCab,DriverPnp,OSInstallationType,OSArch,OSVersionMin,OSVersionMax,OSBuildMin,OSBuildMax,MakeLike,MakeNotLike,ModelLike,ModelNotLike,TaskGuid,DriverCabFullName,DriverPnpFullName | Sort-Object TaskName
+        $OSDDrivers = $OSDDrivers | Select-Object -Property TaskType,TaskVersion,TaskName,DriverCabFile,DriverPnpFile,OSInstallationType,OSArch,OSVersionMin,OSVersionMax,OSBuildMin,OSBuildMax,MakeLike,MakeNotLike,ModelLike,ModelNotLike,TaskGuid,DriverCabFullName,DriverPnpFullName | Sort-Object TaskName
 
         if ($GridView.IsPresent) {$OSDDrivers = $OSDDrivers | Out-GridView -PassThru -Title 'OSDDrivers'}
 

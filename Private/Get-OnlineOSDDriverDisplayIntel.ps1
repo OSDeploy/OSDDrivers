@@ -95,10 +95,10 @@ function Get-OnlineOSDDriverDisplayIntel {
             $OSVersionMin = $null
             $OSVersionMax = $null
             $OSArch = $null
-            $DriverDownload = $UrlDownload.'data-direct-path'
+            $OnlineDriver = $UrlDownload.'data-direct-path'
 
             if ($null -eq $OSArch) {
-                if (($DriverDownload -like "*win64*") -or ($DriverDownload -like "*Driver64*") -or ($DriverDownload -like "*64_*") -or ($DriverPage -like "*64-Bit*")) {
+                if (($OnlineDriver -like "*win64*") -or ($OnlineDriver -like "*Driver64*") -or ($OnlineDriver -like "*64_*") -or ($DriverPage -like "*64-Bit*")) {
                     $OSArch = 'x64'
                 } else {
                     $OSArch = 'x86'
@@ -134,8 +134,8 @@ function Get-OnlineOSDDriverDisplayIntel {
                 $OSVersionMax = '10.0'
                 $OSArch = 'x64'
             }
-            $DriverCab = "$DriverGroup $DriverVersion $OSArch.cab"
-            $DriverZipFileName = "$DriverGroup $DriverVersion $OSArch.zip"
+            $DriverCabFile = "$DriverGroup $DriverVersion $OSArch.cab"
+            $DriverZipFile = "$DriverGroup $DriverVersion $OSArch.zip"
             #===================================================================================================
             #   Create Object
             #===================================================================================================
@@ -152,13 +152,13 @@ function Get-OnlineOSDDriverDisplayIntel {
                 Description         = $DriverMETA | Where-Object {$_.name -eq 'Description'} | Select-Object -ExpandProperty Content
                 DriverClassGUID     = $DriverClassGUID
                 DriverPage          = $DriverPage
-                DriverDownload      = $DriverDownload
-                DriverZipFileName           = $DriverZipFileName
-                DriverCab           = $DriverCab
+                OnlineDriver      = $OnlineDriver
+                DriverZipFile       = $DriverZipFile
+                DriverCabFile       = $DriverCabFile
             }
             New-Object -TypeName PSObject -Property $ObjectProperties
         }
     }
-    $OnlineOSDDriver = $OnlineOSDDriver | Sort-Object -Property LastUpdated -Descending | Select-Object OSDDriverStatus,DriverGroup,DriverClass,LastUpdated,DriverName,DriverVersion,OSArch,OSVersionMin,OSVersionMax,Description,DriverDownload,DriverClassGUID,DriverPage,DriverZipFileName,DriverCab
+    $OnlineOSDDriver = $OnlineOSDDriver | Sort-Object -Property LastUpdated -Descending | Select-Object OSDDriverStatus,DriverGroup,DriverClass,LastUpdated,DriverName,DriverVersion,OSArch,OSVersionMin,OSVersionMax,DriverClassGUID,Description,OnlineDriver,DriverPage,DriverZipFile,DriverCabFile
     Return $OnlineOSDDriver
 }

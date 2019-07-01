@@ -12,20 +12,20 @@
 .PARAMETER MakeCABsFromSubDirs
 	Creates CAB files from Path Subdirectories
 .EXAMPLE
-	New-OSDDriverCAB -Path C:\Temp\Dell\LatitudeE10_A01
+	New-OSDDriverCab -Path C:\Temp\Dell\LatitudeE10_A01
 	Creates MSZIP Fast Compression CAB from of C:\Temp\Dell\LatitudeE10_A01
 .EXAMPLE
-	New-OSDDriverCAB -Path C:\Temp\Dell -HighCompression -MakeCABsFromSubDirs
+	New-OSDDriverCab -Path C:\Temp\Dell -HighCompression -MakeCABsFromSubDirs
 	Creates LZX High Compression CABS from all subdirectories of C:\Temp\Dell
 .NOTES
-	NAME:	New-OSDDriverCAB.ps1
+	NAME:	New-OSDDriverCab.ps1
 	AUTHOR:	David Segura, david@segura.org
 	BLOG:	http://www.osdeploy.com
 	CREATED:	02/18/2018
 	VERSION:	1.1.0.2
 #>
 
-function New-OSDDriverCAB
+function New-OSDDriverCab
 {
 	[CmdletBinding()]
 	Param (
