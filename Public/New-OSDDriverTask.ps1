@@ -32,13 +32,13 @@ function New-OSDDriverTask {
     }
 
     process {
-        $giDriverCab = Get-Item "$DriverCab" -ErrorAction Stop | Select-Object -Property *
+        $DriverCab = Get-Item "$DriverCab" -ErrorAction Stop | Select-Object -Property *
 
-        $TaskName = $giDriverCab.BaseName
+        $TaskName = $DriverCab.BaseName
         $TaskFileName = "$TaskName.cab.json"
         $DriverPnpName = "$TaskName.pnp.xml"
 
-        $TaskJsonFullName = Join-Path "$($giDriverCab.DirectoryName)" "$TaskFileName"
+        $TaskJsonFullName = Join-Path "$($DriverCab.DirectoryName)" "$TaskFileName"
         #===================================================================================================
         #   Task
         #===================================================================================================
@@ -47,7 +47,7 @@ function New-OSDDriverTask {
             "TaskVersion"       = [string] $OSDDriversVersion;
             "TaskName"          = [string] $TaskName;
             "TaskGuid"          = [string] $(New-Guid);
-            "DriverCabName"     = [string] $giDriverCab.Name;
+            "DriverCabName"     = [string] $DriverCab.Name;
             "DriverPnpName"     = [string] $DriverPnpName;
 
             "OSArch"            = [string] $OSArch;

@@ -100,21 +100,21 @@ function Get-DriverWirelessIntel {
                 $DriverName = "$DriverGroup $DriverVersion $OSArch Win10"
             }
             $DriverCab = "$DriverName.cab"
-            $DriverZip = "$DriverName.zip"
+            $DriverZipFileName = "$DriverName.zip"
             #===================================================================================================
             #   Driver Status
             #===================================================================================================
-            $DriverStatus = $null
-            if (Test-Path "$DownloadPath\$DriverZip") {$DriverStatus = 'Downloaded'}
-            if (Test-Path "$DownloadPath\$DriverCab") {$DriverStatus = 'Packaged'}
-            if (Test-Path "$PackagePath\$DriverCab") {$DriverStatus = 'Published'}
+            $OSDDriverStatus = $null
+            if (Test-Path "$DownloadPath\$DriverZipFileName") {$OSDDriverStatus = 'Downloaded'}
+            if (Test-Path "$DownloadPath\$DriverCab") {$OSDDriverStatus = 'Packaged'}
+            if (Test-Path "$PackagePath\$DriverCab") {$OSDDriverStatus = 'Published'}
             #===================================================================================================
             #   Create Object
             #===================================================================================================
             $ObjectProperties = @{
                 DriverGroup         = $DriverGroup
                 DriverClass         = $DriverClass
-                DriverStatus        = $DriverStatus
+                OSDDriverStatus        = $OSDDriverStatus
                 LastUpdated         = $DriverMETA | Where-Object {$_.name -eq 'LastUpdate'} | Select-Object -ExpandProperty Content
                 DriverName          = $DriverName
                 DriverVersion       = $DriverVersion
@@ -125,7 +125,7 @@ function Get-DriverWirelessIntel {
                 DriverClassGUID     = $DriverClassGUID
                 DriverPage          = $DriverPage
                 DriverDownload      = $DriverDownload
-                DriverZip           = $DriverZip
+                DriverZipFileName           = $DriverZipFileName
                 DriverCab           = $DriverCab
             }
             New-Object -TypeName PSObject -Property $ObjectProperties
@@ -133,7 +133,7 @@ function Get-DriverWirelessIntel {
     }
     Write-Host "Exporting $env:Temp\OSDDrivers $DriverGroup.xml" -ForegroundColor Cyan
     $DriverDownloads | Export-Clixml "$env:Temp\OSDDrivers $DriverGroup.xml" -Force
-    $DriverDownloads = $DriverDownloads | Sort-Object -Property LastUpdated -Descending | Select-Object DriverGroup,DriverClass,DriverStatus,LastUpdated,DriverName,DriverVersion,OSArch,OSVersionMin,OSVersionMax,Description,DriverDownload,DriverClassGUID,DriverPage,DriverZip,DriverCab
+    $DriverDownloads = $DriverDownloads | Sort-Object -Property LastUpdated -Descending | Select-Object DriverGroup,DriverClass,OSDDriverStatus,LastUpdated,DriverName,DriverVersion,OSArch,OSVersionMin,OSVersionMax,Description,DriverDownload,DriverClassGUID,DriverPage,DriverZipFileName,DriverCab
 
     $DriverDownloads | Export-Clixml "$DownloadPath\OSDDrivers $DriverGroup.xml"
     if ($PackagePath) {
@@ -147,7 +147,7 @@ function Get-DriverWirelessIntel {
     #   Download
     #===================================================================================================
     foreach ($SelectedDriverDownload in $DriverDownloads) {
-        $DriverStatus = $($SelectedDriverDownload.DriverStatus)
+        $OSDDriverStatus = $($SelectedDriverDownload.OSDDriverStatus)
         $DriverGroup = $($SelectedDriverDownload.DriverGroup)
         $DriverClass = $($SelectedDriverDownload.DriverClass)
         $DriverClassGUID = $($SelectedDriverDownload.DriverClassGUID)
@@ -157,18 +157,18 @@ function Get-DriverWirelessIntel {
         $DriverOSVersionMax = $($SelectedDriverDownload.OSVersionMax)
 
         $DriverCab = $($SelectedDriverDownload.DriverCab)
-        $DriverZip = $($SelectedDriverDownload.DriverZip)
+        $DriverZipFileName = $($SelectedDriverDownload.DriverZipFileName)
         $DriverDirectory = ($DriverCab).replace('.cab','')
 
         Write-Host "DriverDownload: $DriverDownload" -ForegroundColor Cyan
-        Write-Host "DriverZip: $DownloadPath\$DriverZip" -ForegroundColor Gray
+        Write-Host "DriverZipFileName: $DownloadPath\$DriverZipFileName" -ForegroundColor Gray
 
         if (Test-Path "$PackagePath\$DriverCab") {
             Write-Warning "$PackagePath\$DriverCab ... Exists!"
-        } elseif (Test-Path "$DownloadPath\$DriverZip") {
-            Write-Warning "$DownloadPath\$DriverZip ... Exists!"
+        } elseif (Test-Path "$DownloadPath\$DriverZipFileName") {
+            Write-Warning "$DownloadPath\$DriverZipFileName ... Exists!"
         } else {
-            Start-BitsTransfer -Source "$DriverDownload" -Destination "$DownloadPath\$DriverZip"
+            Start-BitsTransfer -Source "$DriverDownload" -Destination "$DownloadPath\$DriverZipFileName"
         }
         if ($PackagePath) {
             #===================================================================================================
@@ -183,8 +183,8 @@ function Get-DriverWirelessIntel {
                     Remove-Item -Path "$DownloadPath\$DriverDirectory" -Recurse -Force | Out-Null
                 }
 
-                Write-Host "Expanding $DownloadPath\$DriverZip ..." -ForegroundColor Gray
-                Expand-Archive -Path "$DownloadPath\$DriverZip" -DestinationPath "$DownloadPath\$DriverDirectory" -Force
+                Write-Host "Expanding $DownloadPath\$DriverZipFileName ..." -ForegroundColor Gray
+                Expand-Archive -Path "$DownloadPath\$DriverZipFileName" -DestinationPath "$DownloadPath\$DriverDirectory" -Force
             }
 
             #===================================================================================================
@@ -198,7 +198,7 @@ function Get-DriverWirelessIntel {
             #===================================================================================================
             if ( -not (Test-Path "$DownloadPath\$DriverCab")) {
                 Write-Verbose "Creating $DownloadPath\$DriverCab ..." -Verbose
-                New-OSDDriverCab -SourceDirectory "$DownloadPath\$DriverDirectory" -ShowOutput
+                New-OSDDriverCAB -SourceDirectory "$DownloadPath\$DriverDirectory" -ShowOutput
             }
             #===================================================================================================
             #   Copy CAB

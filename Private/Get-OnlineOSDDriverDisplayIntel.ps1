@@ -1,10 +1,6 @@
-function Get-DriverDisplayIntel {
+function Get-OnlineOSDDriverDisplayIntel {
     [CmdletBinding()]
-    Param (
-        [Parameter(Mandatory)]
-        [string]$DownloadPath,
-        [string]$PackagePath
-    )
+    Param ()
     #===================================================================================================
     #   Defaults DisplayIntel
     #===================================================================================================
@@ -18,8 +14,7 @@ function Get-DriverDisplayIntel {
     #===================================================================================================
     #   OSDDownloadUrl
     #===================================================================================================
-    Write-Host "Validating $OSDDownloadUrl" -ForegroundColor Cyan
-    Write-Host ""
+    Write-Verbose "Validating $OSDDownloadUrl" -Verbose
     #===================================================================================================
     #   Get DownloadPages
     #===================================================================================================
@@ -67,13 +62,13 @@ function Get-DriverDisplayIntel {
     #   Return Downloads
     #===================================================================================================
     $UrlDownloads = @()
-    $DriverDownloads = @()
-    $DriverDownloads = foreach ($Link in $DownloadPages) {
+    $OnlineOSDDriver = @()
+    $OnlineOSDDriver = foreach ($Link in $DownloadPages) {
         $DriverName = $($Link.innerText)
-        Write-Host "$DriverName"
+        Write-Verbose "$DriverName" -Verbose
 
         $DriverPage = $($Link.href)
-        Write-Host "$DriverPage" -ForegroundColor DarkGray
+        Write-Verbose "$DriverPage" -Verbose
         #===================================================================================================
         #   Intel WebRequest
         #===================================================================================================
@@ -87,7 +82,7 @@ function Get-DriverDisplayIntel {
         $DriverVersion = $DriverMETA | Where-Object {$_.name -eq 'DownloadVersion'} | Select-Object -ExpandProperty Content
         $DriverType = $DriverMETA | Where-Object {$_.name -eq 'DownloadType'} | Select-Object -ExpandProperty Content
         $DriverCompatibility = $DriverMETA | Where-Object {$_.name -eq 'DownloadOSes'} | Select-Object -ExpandProperty Content
-        Write-Host "DriverCompatibility: $DriverCompatibility" -ForegroundColor DarkGray
+        Write-Verbose "DriverCompatibility: $DriverCompatibility" -Verbose
         #===================================================================================================
         #   Driver Filter
         #===================================================================================================
@@ -142,19 +137,12 @@ function Get-DriverDisplayIntel {
             $DriverCab = "$DriverGroup $DriverVersion $OSArch.cab"
             $DriverZipFileName = "$DriverGroup $DriverVersion $OSArch.zip"
             #===================================================================================================
-            #   Driver Status
-            #===================================================================================================
-            $OSDDriverStatus = $null
-            if (Test-Path "$DownloadPath\$DriverZipFileName") {$OSDDriverStatus = 'Downloaded'}
-            if (Test-Path "$DownloadPath\$DriverCab") {$OSDDriverStatus = 'Packaged'}
-            if (Test-Path "$PackagePath\$DriverCab") {$OSDDriverStatus = 'Published'}
-            #===================================================================================================
             #   Create Object
             #===================================================================================================
             $ObjectProperties = @{
+                OSDDriverStatus     = 'Online'
                 DriverGroup         = $DriverGroup
                 DriverClass         = $DriverClass
-                OSDDriverStatus        = $OSDDriverStatus
                 LastUpdated         = $DriverMETA | Where-Object {$_.name -eq 'LastUpdate'} | Select-Object -ExpandProperty Content
                 DriverName          = $DriverName
                 DriverVersion       = $DriverVersion
@@ -171,90 +159,6 @@ function Get-DriverDisplayIntel {
             New-Object -TypeName PSObject -Property $ObjectProperties
         }
     }
-    Write-Host "Exporting $env:Temp\OSDDrivers $DriverGroup.xml" -ForegroundColor Cyan
-    $DriverDownloads | Export-Clixml "$env:Temp\OSDDrivers $DriverGroup.xml" -Force
-    $DriverDownloads = $DriverDownloads | Sort-Object -Property LastUpdated -Descending | Select-Object DriverGroup,DriverClass,OSDDriverStatus,LastUpdated,DriverName,DriverVersion,OSArch,OSVersionMin,OSVersionMax,Description,DriverDownload,DriverClassGUID,DriverPage,DriverZipFileName,DriverCab
-
-    $DriverDownloads | Export-Clixml "$DownloadPath\OSDDrivers $DriverGroup.xml"
-    if ($PackagePath) {
-        $DriverDownloads | Export-Clixml "$PackagePath\OSDDrivers $DriverGroup.xml"
-    }
-
-    $DriverDownloads = $DriverDownloads | Out-GridView -PassThru -Title 'Select Driver Downloads to Package and press OK'
-    #Return $DriverDownloads
-    
-    #===================================================================================================
-    #   Download
-    #===================================================================================================
-    foreach ($SelectedDriverDownload in $DriverDownloads) {
-        $OSDDriverStatus = $($SelectedDriverDownload.OSDDriverStatus)
-        $DriverGroup = $($SelectedDriverDownload.DriverGroup)
-        $DriverClass = $($SelectedDriverDownload.DriverClass)
-        $DriverClassGUID = $($SelectedDriverDownload.DriverClassGUID)
-        $DriverDownload = $($SelectedDriverDownload.DriverDownload)
-        $DriverOSArch = $($SelectedDriverDownload.OSArch)
-        $DriverOSVersionMin = $($SelectedDriverDownload.OSVersionMin)
-        $DriverOSVersionMax = $($SelectedDriverDownload.OSVersionMax)
-
-        $DriverCab = $($SelectedDriverDownload.DriverCab)
-        $DriverZipFileName = $($SelectedDriverDownload.DriverZipFileName)
-        $DriverDirectory = ($DriverCab).replace('.cab','')
-
-        Write-Host "DriverDownload: $DriverDownload" -ForegroundColor Cyan
-        Write-Host "DriverZipFileName: $DownloadPath\$DriverZipFileName" -ForegroundColor Gray
-
-        if (Test-Path "$PackagePath\$DriverCab") {
-            Write-Warning "$PackagePath\$DriverCab ... Exists!"
-        } elseif (Test-Path "$DownloadPath\$DriverZipFileName") {
-            Write-Warning "$DownloadPath\$DriverZipFileName ... Exists!"
-        } else {
-            Start-BitsTransfer -Source "$DriverDownload" -Destination "$DownloadPath\$DriverZipFileName"
-        }
-        if ($PackagePath) {
-            #===================================================================================================
-            #   Expand Zip
-            #   Need to add logic to unzip if necessary
-            #===================================================================================================
-            if (-not(Test-Path "$PackagePath\$DriverCab")) {
-                Write-Host "DriverDirectory: $DownloadPath\$DriverDirectory" -ForegroundColor Gray
-
-                if (Test-Path "$DownloadPath\$DriverDirectory") {
-                    Write-Warning "$DownloadPath\$DriverDirectory ... Removing!"
-                    Remove-Item -Path "$DownloadPath\$DriverDirectory" -Recurse -Force | Out-Null
-                }
-
-                Write-Host "Expanding $DownloadPath\$DriverZipFileName ..." -ForegroundColor Gray
-                Expand-Archive -Path "$DownloadPath\$DriverZipFileName" -DestinationPath "$DownloadPath\$DriverDirectory" -Force
-            }
-
-            #===================================================================================================
-            #   OSDDriverPnp
-            #===================================================================================================
-            if (Test-Path "$DownloadPath\$DriverDirectory") {
-                $OSDDriverPnp = (New-OSDDriverPnp -DriverDirectory "$DownloadPath\$DriverDirectory" -DriverClass $DriverClass)
-            }
-            #===================================================================================================
-            #   Create CAB
-            #===================================================================================================
-            if ( -not (Test-Path "$DownloadPath\$DriverCab")) {
-                Write-Verbose "Creating $DownloadPath\$DriverCab ..." -Verbose
-                New-OSDDriverCAB -SourceDirectory "$DownloadPath\$DriverDirectory" -ShowOutput
-            }
-            #===================================================================================================
-            #   Copy CAB
-            #===================================================================================================
-            if ( -not (Test-Path "$PackagePath\$DriverCab")) {
-                Write-Verbose "Copying $DownloadPath\$DriverCab to $PackagePath\$DriverCab ..." -Verbose
-                Copy-Item -Path "$DownloadPath\$DriverCab" -Destination "$PackagePath" -Force | Out-Null
-            }
-            #===================================================================================================
-            #   OSDDriverTask
-            #===================================================================================================
-            Write-Host "Creating OSDDriverTask $DriverOSArch $DriverOSVersionMin $DriverOSVersionMax ..." -ForegroundColor Gray
-            New-OSDDriverTask -DriverCab "$PackagePath\$DriverCab" -OSArch $DriverOSArch -OSVersionMin $DriverOSVersionMin -OSVersionMax $DriverOSVersionMax -MakeNotLike 'Microsoft'
-            if (Test-Path "$OSDDriverPnp") {
-                Copy-Item "$OSDDriverPnp" "$PackagePath" -Force
-            }
-        }
-    }
+    $OnlineOSDDriver = $OnlineOSDDriver | Sort-Object -Property LastUpdated -Descending | Select-Object OSDDriverStatus,DriverGroup,DriverClass,LastUpdated,DriverName,DriverVersion,OSArch,OSVersionMin,OSVersionMax,Description,DriverDownload,DriverClassGUID,DriverPage,DriverZipFileName,DriverCab
+    Return $OnlineOSDDriver
 }
