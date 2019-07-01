@@ -13,7 +13,7 @@ function Get-OSDDrivers {
         #   Get All Drivers Jsons
         #===================================================================================================
         $OSDDriverJsons = @()
-        $OSDDriverJsons = Get-ChildItem -Path "$PackagePath" *.cab.json -File -Recurse | Select-Object -Property *
+        $OSDDriverJsons = Get-ChildItem -Path "$PackagePath" *.cab.task -File -Recurse | Select-Object -Property *
     }
 
     process {

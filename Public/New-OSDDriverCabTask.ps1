@@ -1,4 +1,4 @@
-function New-OSDDriverTask {
+function New-OSDDriverCabTask {
     [CmdletBinding()]
     Param (
         [Parameter(Mandatory)]
@@ -26,17 +26,21 @@ function New-OSDDriverTask {
     )
 
     begin {
-        Write-Host '========================================================================================' -ForegroundColor DarkGray
-        Write-Host "$($MyInvocation.MyCommand.Name) BEGIN" -ForegroundColor Green
-        $global:OSDDriversVersion = $(Get-Module -Name OSDDrivers | Sort-Object Version | Select-Object Version -Last 1).Version
+        #===================================================================================================
+        #   OSDDriversVersion
+        #===================================================================================================
+        $OSDDriversVersion = $(Get-Module -Name OSDDrivers | Sort-Object Version | Select-Object Version -Last 1).Version
     }
 
     process {
+        #===================================================================================================
+        #   Generate Task
+        #===================================================================================================
         $DriverCabFile = Get-Item "$DriverCabPath" -ErrorAction Stop | Select-Object -Property *
 
         $TaskName = $DriverCabFile.BaseName
-        $TaskFileName = "$TaskName.cab.json"
-        $DriverPnpFile = "$TaskName.pnp.xml"
+        $TaskFileName = "$TaskName.cab.task"
+        $DriverPnpFile = "$TaskName.cab.pnp"
 
         $TaskJsonFullName = Join-Path "$($DriverCabFile.DirectoryName)" "$TaskFileName"
         #===================================================================================================
@@ -47,7 +51,7 @@ function New-OSDDriverTask {
             "TaskVersion"       = [string] $OSDDriversVersion;
             "TaskName"          = [string] $TaskName;
             "TaskGuid"          = [string] $(New-Guid);
-            "DriverCabFile"     = [string] $DriverCabFile;
+            "DriverCabFile"     = [string] $DriverCabFile.Name;
             "DriverPnpFile"     = [string] $DriverPnpFile;
 
             "OSArch"            = [string] $OSArch;
@@ -64,18 +68,13 @@ function New-OSDDriverTask {
 
             
         }
-
         #===================================================================================================
         #   Complete
         #===================================================================================================
-        Write-Host '========================================================================================' -ForegroundColor DarkGray
-        Write-Host "OSDDrivers Task: $TaskName" -ForegroundColor Green
+        Write-Host "Generating $TaskJsonFullName ..." -ForegroundColor DarkGray
         $Task | ConvertTo-Json | Out-File "$TaskJsonFullName"
         $Task
     }
 
-    end {
-        Write-Host '========================================================================================' -ForegroundColor DarkGray
-        Write-Host "$($MyInvocation.MyCommand.Name) END" -ForegroundColor Green
-    }
+    end {}
 }

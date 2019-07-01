@@ -36,10 +36,10 @@ function Get-DownOSDDriver {
         if ($InputObject) {
             $OnlineOSDDriver = $InputObject
         } else {
-            if ($DriverGroup -eq 'Display Intel') {$OnlineOSDDriver = Get-OnlineOSDDriverDisplayIntel}
-            if ($DriverGroup -eq 'Wireless Intel') {$OnlineOSDDriver = Get-OnlineOSDDriverWirelessIntel}
+            if ($DriverGroup -eq 'Display Intel') {$OnlineOSDDriver = Get-DriverGroupDisplayIntel}
+            if ($DriverGroup -eq 'Wireless Intel') {$OnlineOSDDriver = Get-DriverGroupWirelessIntel}
         }
-        $OnlineOSDDriver = $OnlineOSDDriver | Sort-Object -Property LastUpdated -Descending | Select-Object OSDDriverStatus,DriverGroup,DriverClass,LastUpdated,DriverName,DriverVersion,OSArch,OSVersionMin,OSVersionMax,DriverClassGUID,Description,OnlineDriver,DriverPage,DriverZipFile,DriverCabFile
+        $OnlineOSDDriver = $OnlineOSDDriver | Sort-Object -Property LastUpdated -Descending | Select-Object OSDDriverStatus,DriverGroup,DriverClass,LastUpdated,DriverName,DriverVersion,OSArch,OSVersionMin,OSVersionMax,DriverClassGUID,Description,DriverURL,DriverPage,DriverZipFile,DriverCabFile
 
         foreach ($OSDDriverItem in $OnlineOSDDriver) {
             if (Test-Path "$DownloadPath\$($OSDDriverItem.DriverZipFile)") {$OSDDriverItem.OSDDriverStatus = 'Downloaded'}
@@ -64,7 +64,7 @@ function Get-DownOSDDriver {
             $DriverGroup = $($OSDDriverItem.DriverGroup)
             $DriverClass = $($OSDDriverItem.DriverClass)
             $DriverClassGUID = $($OSDDriverItem.DriverClassGUID)
-            $OnlineDriver = $($OSDDriverItem.OnlineDriver)
+            $DriverURL = $($OSDDriverItem.DriverURL)
             $DriverOSArch = $($OSDDriverItem.OSArch)
             $DriverOSVersionMin = $($OSDDriverItem.OSVersionMin)
             $DriverOSVersionMax = $($OSDDriverItem.OSVersionMax)
@@ -73,7 +73,7 @@ function Get-DownOSDDriver {
             $DriverZipFile = $($OSDDriverItem.DriverZipFile)
             $DriverDirectory = ($DriverCabFile).replace('.cab','')
 
-            Write-Host "OnlineDriver: $OnlineDriver" -ForegroundColor Gray
+            Write-Host "DriverURL: $DriverURL" -ForegroundColor Gray
 
             #===================================================================================================
             #   Download
@@ -82,7 +82,7 @@ function Get-DownOSDDriver {
                 Write-Warning "$DownloadPath\$DriverZipFile ... Skip Download"
             } else {
                 Write-Host "DriverZipFile: $DownloadPath\$DriverZipFile" -ForegroundColor Gray
-                Start-BitsTransfer -Source "$OnlineDriver" -Destination "$DownloadPath\$DriverZipFile"
+                Start-BitsTransfer -Source "$DriverURL" -Destination "$DownloadPath\$DriverZipFile"
             }
             #===================================================================================================
             #   Publish
@@ -106,7 +106,7 @@ function Get-DownOSDDriver {
                 #   OSDDriverPnp
                 #===================================================================================================
                 if (Test-Path "$DownloadPath\$DriverDirectory") {
-                    $OSDDriverPnp = (New-OSDDriverPnp -DriverDirectory "$DownloadPath\$DriverDirectory" -DriverClass $DriverClass)
+                    $OSDDriverPnp = (New-OSDDriverCabPnp -DriverDirectory "$DownloadPath\$DriverDirectory" -DriverClass $DriverClass)
                 }
                 #===================================================================================================
                 #   Create CAB
@@ -130,7 +130,7 @@ function Get-DownOSDDriver {
                 #===================================================================================================
                 Write-Host "Creating OSDDriverTask $DriverOSArch $DriverOSVersionMin $DriverOSVersionMax ..." -ForegroundColor Gray
                 Write-Host "DriverCabFile: $PublishPath\$DriverCabFile"
-                New-OSDDriverTask -DriverCabPath "$PublishPath\$DriverCabFile" -OSArch $DriverOSArch -OSVersionMin $DriverOSVersionMin -OSVersionMax $DriverOSVersionMax
+                New-OSDDriverCabTask -DriverCabPath "$PublishPath\$DriverCabFile" -OSArch $DriverOSArch -OSVersionMin $DriverOSVersionMin -OSVersionMax $DriverOSVersionMax
                 if (Test-Path "$OSDDriverPnp") {
                     Copy-Item "$OSDDriverPnp" "$PublishPath" -Force
                 }

@@ -1,4 +1,4 @@
-function Get-OnlineOSDDriverWirelessIntel {
+function Get-DriverGroupWirelessIntel {
     [CmdletBinding()]
     Param ()
     #===================================================================================================
@@ -67,38 +67,38 @@ function Get-OnlineOSDDriverWirelessIntel {
             $OSVersionMin = $null
             $OSVersionMax = $null
             $OSArch = $null
-            $OnlineDriver = $UrlDownload.'data-direct-path'
+            $DriverURL = $UrlDownload.'data-direct-path'
 
             if ($null -eq $OSArch) {
-                if (($OnlineDriver -like "*win64*") -or ($OnlineDriver -like "*Driver64*") -or ($OnlineDriver -like "*64_*") -or ($DriverPage -like "*64-Bit*")) {
+                if (($DriverURL -like "*win64*") -or ($DriverURL -like "*Driver64*") -or ($DriverURL -like "*64_*") -or ($DriverPage -like "*64-Bit*")) {
                     $OSArch = 'x64'
                 } else {
                     $OSArch = 'x86'
                 }
             }
 
-            if ($OnlineDriver -like "*Win7*") {
+            if ($DriverURL -like "*Win7*") {
                 $OSVersionMin = '6.1'
                 $OSVersionMax = '6.1'
                 $DriverName = "$DriverGroup $DriverVersion $OSArch Win7"
             }
-            if ($OnlineDriver -like "*Win8.1*") {
+            if ($DriverURL -like "*Win8.1*") {
                 $OSVersionMin = '6.3'
                 $OSVersionMax = '6.3'
                 $DriverName = "$DriverGroup $DriverVersion $OSArch Win8.1"
             }
-            if ($OnlineDriver -like "*Win10*") {
+            if ($DriverURL -like "*Win10*") {
                 $OSVersionMin = '10.0'
                 $OSVersionMax = '10.0'
                 $DriverName = "$DriverGroup $DriverVersion $OSArch Win10"
             }
-            $DriverCabFile = "$DriverName.cab"
-            $DriverZipFile = "$DriverName.zip"
+            $OSDDriverName = "$DriverName"
             #===================================================================================================
             #   Create Object
             #===================================================================================================
             $ObjectProperties = @{
                 OSDDriverStatus     = 'Online'
+                OSDDriverName       = $OSDDriverName
                 DriverGroup         = $DriverGroup
                 DriverClass         = $DriverClass
                 LastUpdated         = $DriverMETA | Where-Object {$_.name -eq 'LastUpdate'} | Select-Object -ExpandProperty Content
@@ -110,13 +110,13 @@ function Get-OnlineOSDDriverWirelessIntel {
                 Description         = $DriverMETA | Where-Object {$_.name -eq 'Description'} | Select-Object -ExpandProperty Content
                 DriverClassGUID     = $DriverClassGUID
                 DriverPage          = $DriverPage
-                OnlineDriver      = $OnlineDriver
-                DriverZipFile       = $DriverZipFile
-                DriverCabFile       = $DriverCabFile
+                DriverURL           = $DriverURL
+                DriverZipFile       = "$OSDDriverName.zip"
+                DriverCabFile       = "$OSDDriverName.cab"
             }
             New-Object -TypeName PSObject -Property $ObjectProperties
         }
     }
-    $OnlineOSDDriver = $OnlineOSDDriver | Sort-Object -Property LastUpdated -Descending | Select-Object OSDDriverStatus,DriverGroup,DriverClass,LastUpdated,DriverName,DriverVersion,OSArch,OSVersionMin,OSVersionMax,DriverClassGUID,Description,OnlineDriver,DriverPage,DriverZipFile,DriverCabFile
+    $OnlineOSDDriver = $OnlineOSDDriver | Sort-Object -Property LastUpdated -Descending | Select-Object OSDDriverStatus,OSDDriverName,DriverGroup,DriverClass,LastUpdated,DriverName,DriverVersion,OSArch,OSVersionMin,OSVersionMax,DriverClassGUID,Description,DriverURL,DriverPage,DriverZipFile,DriverCabFile
     Return $OnlineOSDDriver
 }

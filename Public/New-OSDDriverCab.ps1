@@ -27,8 +27,8 @@
 
 function New-OSDDriverCab
 {
-	[CmdletBinding()]
-	Param (
+    [CmdletBinding()]
+    Param (
         # Specifies the name and path of Folder that should be compress
         [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
         [ValidateNotNullOrEmpty()]
@@ -65,8 +65,8 @@ function New-OSDDriverCab
             $DestinationDirectory = (Get-Item $SourceDirectory).Parent.FullName
         }
 
-        if (Test-Path "$SourceDirectory\OSDDriver.pnp.xml") {
-            Copy-Item -Path "$SourceDirectory\OSDDriver.pnp.xml" -Destination "$DestinationDirectory\$SourceName.pnp.xml"
+        if (Test-Path "$SourceDirectory\OSDDriver.cab.cab.pnp") {
+            Copy-Item -Path "$SourceDirectory\OSDDriver.cab.cab.pnp" -Destination "$DestinationDirectory\$SourceName.cab.cab.pnp"
         }
         
         $CabFullName = Join-Path -Path $DestinationDirectory -ChildPath $CabName

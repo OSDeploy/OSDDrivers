@@ -40,8 +40,8 @@ function Get-DriverWirelessIntel {
     #   Return Downloads
     #===================================================================================================
     $UrlDownloads = @()
-    $OnlineDrivers = @()
-    $OnlineDrivers = foreach ($Link in $DownloadPages) {
+    $DriverURLs = @()
+    $DriverURLs = foreach ($Link in $DownloadPages) {
         $DriverName = $($Link.innerText)
         Write-Host "Intel PROSet Wireless Software and Drivers for IT Admins $DriverName"
 
@@ -74,27 +74,27 @@ function Get-DriverWirelessIntel {
             $OSVersionMin = $null
             $OSVersionMax = $null
             $OSArch = $null
-            $OnlineDriver = $UrlDownload.'data-direct-path'
+            $DriverURL = $UrlDownload.'data-direct-path'
 
             if ($null -eq $OSArch) {
-                if (($OnlineDriver -like "*win64*") -or ($OnlineDriver -like "*Driver64*") -or ($OnlineDriver -like "*64_*") -or ($DriverPage -like "*64-Bit*")) {
+                if (($DriverURL -like "*win64*") -or ($DriverURL -like "*Driver64*") -or ($DriverURL -like "*64_*") -or ($DriverPage -like "*64-Bit*")) {
                     $OSArch = 'x64'
                 } else {
                     $OSArch = 'x86'
                 }
             }
 
-            if ($OnlineDriver -like "*Win7*") {
+            if ($DriverURL -like "*Win7*") {
                 $OSVersionMin = '6.1'
                 $OSVersionMax = '6.1'
                 $DriverName = "$DriverGroup $DriverVersion $OSArch Win7"
             }
-            if ($OnlineDriver -like "*Win8.1*") {
+            if ($DriverURL -like "*Win8.1*") {
                 $OSVersionMin = '6.3'
                 $OSVersionMax = '6.3'
                 $DriverName = "$DriverGroup $DriverVersion $OSArch Win8.1"
             }
-            if ($OnlineDriver -like "*Win10*") {
+            if ($DriverURL -like "*Win10*") {
                 $OSVersionMin = '10.0'
                 $OSVersionMax = '10.0'
                 $DriverName = "$DriverGroup $DriverVersion $OSArch Win10"
@@ -124,7 +124,7 @@ function Get-DriverWirelessIntel {
                 Description         = $DriverMETA | Where-Object {$_.name -eq 'Description'} | Select-Object -ExpandProperty Content
                 DriverClassGUID     = $DriverClassGUID
                 DriverPage          = $DriverPage
-                OnlineDriver      = $OnlineDriver
+                DriverURL      = $DriverURL
                 DriverZipFile       = $DriverZipFile
                 DriverCabFile       = $DriverCabFile
             }
@@ -132,35 +132,35 @@ function Get-DriverWirelessIntel {
         }
     }
     Write-Host "Exporting $env:Temp\OSDDrivers $DriverGroup.xml" -ForegroundColor Cyan
-    $OnlineDrivers | Export-Clixml "$env:Temp\OSDDrivers $DriverGroup.xml" -Force
-    $OnlineDrivers = $OnlineDrivers | Sort-Object -Property LastUpdated -Descending | Select-Object DriverGroup,DriverClass,OSDDriverStatus,LastUpdated,DriverName,DriverVersion,OSArch,OSVersionMin,OSVersionMax,DriverClassGUID,Description,OnlineDriver,DriverPage,DriverZipFile,DriverCabFile
+    $DriverURLs | Export-Clixml "$env:Temp\OSDDrivers $DriverGroup.xml" -Force
+    $DriverURLs = $DriverURLs | Sort-Object -Property LastUpdated -Descending | Select-Object DriverGroup,DriverClass,OSDDriverStatus,LastUpdated,DriverName,DriverVersion,OSArch,OSVersionMin,OSVersionMax,DriverClassGUID,Description,DriverURL,DriverPage,DriverZipFile,DriverCabFile
 
-    $OnlineDrivers | Export-Clixml "$DownloadPath\OSDDrivers $DriverGroup.xml"
+    $DriverURLs | Export-Clixml "$DownloadPath\OSDDrivers $DriverGroup.xml"
     if ($PackagePath) {
-        $OnlineDrivers | Export-Clixml "$PackagePath\OSDDrivers $DriverGroup.xml"
+        $DriverURLs | Export-Clixml "$PackagePath\OSDDrivers $DriverGroup.xml"
     }
 
-    $OnlineDrivers = $OnlineDrivers | Out-GridView -PassThru -Title 'Select Driver Downloads to Package and press OK'
-    #Return $OnlineDrivers
+    $DriverURLs = $DriverURLs | Out-GridView -PassThru -Title 'Select Driver Downloads to Package and press OK'
+    #Return $DriverURLs
     
     #===================================================================================================
     #   Download
     #===================================================================================================
-    foreach ($SelectedOnlineDriver in $OnlineDrivers) {
-        $OSDDriverStatus = $($SelectedOnlineDriver.OSDDriverStatus)
-        $DriverGroup = $($SelectedOnlineDriver.DriverGroup)
-        $DriverClass = $($SelectedOnlineDriver.DriverClass)
-        $DriverClassGUID = $($SelectedOnlineDriver.DriverClassGUID)
-        $OnlineDriver = $($SelectedOnlineDriver.OnlineDriver)
-        $DriverOSArch = $($SelectedOnlineDriver.OSArch)
-        $DriverOSVersionMin = $($SelectedOnlineDriver.OSVersionMin)
-        $DriverOSVersionMax = $($SelectedOnlineDriver.OSVersionMax)
+    foreach ($SelectedDriverURL in $DriverURLs) {
+        $OSDDriverStatus = $($SelectedDriverURL.OSDDriverStatus)
+        $DriverGroup = $($SelectedDriverURL.DriverGroup)
+        $DriverClass = $($SelectedDriverURL.DriverClass)
+        $DriverClassGUID = $($SelectedDriverURL.DriverClassGUID)
+        $DriverURL = $($SelectedDriverURL.DriverURL)
+        $DriverOSArch = $($SelectedDriverURL.OSArch)
+        $DriverOSVersionMin = $($SelectedDriverURL.OSVersionMin)
+        $DriverOSVersionMax = $($SelectedDriverURL.OSVersionMax)
 
-        $DriverCabFile = $($SelectedOnlineDriver.DriverCabFile)
-        $DriverZipFile = $($SelectedOnlineDriver.DriverZipFile)
+        $DriverCabFile = $($SelectedDriverURL.DriverCabFile)
+        $DriverZipFile = $($SelectedDriverURL.DriverZipFile)
         $DriverDirectory = ($DriverCabFile).replace('.cab','')
 
-        Write-Host "OnlineDriver: $OnlineDriver" -ForegroundColor Cyan
+        Write-Host "DriverURL: $DriverURL" -ForegroundColor Cyan
         Write-Host "DriverZipFile: $DownloadPath\$DriverZipFile" -ForegroundColor Gray
 
         if (Test-Path "$PackagePath\$DriverCabFile") {
@@ -168,7 +168,7 @@ function Get-DriverWirelessIntel {
         } elseif (Test-Path "$DownloadPath\$DriverZipFile") {
             Write-Warning "$DownloadPath\$DriverZipFile ... Exists!"
         } else {
-            Start-BitsTransfer -Source "$OnlineDriver" -Destination "$DownloadPath\$DriverZipFile"
+            Start-BitsTransfer -Source "$DriverURL" -Destination "$DownloadPath\$DriverZipFile"
         }
         if ($PackagePath) {
             #===================================================================================================
@@ -191,7 +191,7 @@ function Get-DriverWirelessIntel {
             #   OSDDriverPnp
             #===================================================================================================
             if (Test-Path "$DownloadPath\$DriverDirectory") {
-                $OSDDriverPnp = (New-OSDDriverPnp -DriverDirectory "$DownloadPath\$DriverDirectory" -DriverClass $DriverClass)
+                $OSDDriverPnp = (New-OSDDriverCabPnp -DriverDirectory "$DownloadPath\$DriverDirectory" -DriverClass $DriverClass)
             }
             #===================================================================================================
             #   Create CAB
@@ -211,7 +211,7 @@ function Get-DriverWirelessIntel {
             #   OSDDriverTask
             #===================================================================================================
             Write-Host "Creating OSDDriverTask $DriverOSArch $DriverOSVersionMin $DriverOSVersionMax ..." -ForegroundColor Gray
-            New-OSDDriverTask -DriverCabFile "$PackagePath\$DriverCabFile" -OSArch $DriverOSArch -OSVersionMin $DriverOSVersionMin -OSVersionMax $DriverOSVersionMax
+            New-OSDDriverCabTask -DriverCabFile "$PackagePath\$DriverCabFile" -OSArch $DriverOSArch -OSVersionMin $DriverOSVersionMin -OSVersionMax $DriverOSVersionMax
             if (Test-Path "$OSDDriverPnp") {
                 Copy-Item "$OSDDriverPnp" "$PackagePath" -Force
             }

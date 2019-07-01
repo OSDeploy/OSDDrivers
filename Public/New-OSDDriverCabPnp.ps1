@@ -1,24 +1,24 @@
-function New-OSDDriverPnp {
+function New-OSDDriverCabPnp {
     [CmdletBinding()]
     PARAM (
         [Parameter(Mandatory)]
-        [string]$DriverDirectory,
+        [string]$DriverDirectoryPath,
         [ValidateSet('Bluetooth','Camera','Display','HDC','HIDClass','Keyboard','Media','Monitor','Mouse','Net','SCSIAdapter','SmartCardReader','System','USBDevice')]
         [string]$DriverClass,
         [switch]$GridView
     )
-    $DriverDirectory = Get-Item $DriverDirectory
-    $DriverParent = (Get-Item "$DriverDirectory").parent.FullName
+    $DriverDirectory = Get-Item $DriverDirectoryPath
+    $DriverDirectoryParent = (Get-Item "$DriverDirectory").parent.FullName
     $DriverDirectoryName = (Get-Item "$DriverDirectory").Name
 
 
-    if (Test-Path "$DriverDirectory") {
-        Get-ChildItem "$DriverDirectory" autorun.inf -Recurse | Remove-Item -Force
-        Get-ChildItem "$DriverDirectory" setup.inf -Recurse | Remove-Item -Force
-        $ExpandInfs = Get-ChildItem -Path "$DriverDirectory" -Recurse -Include *.inf -File | Where-Object {$_.Name -notlike "*autorun.inf*"} | Select-Object -Property FullName
+    if (Test-Path "$DriverDirectoryPath") {
+        Get-ChildItem "$DriverDirectoryPath" autorun.inf -Recurse | ForEach-Object {$_ | Rename-Item -NewName $_.Name.Replace('.inf', '.txt') -Force}
+        Get-ChildItem "$DriverDirectoryPath" setup.inf -Recurse | ForEach-Object {$_ | Rename-Item -NewName $_.Name.Replace('.inf', '.txt') -Force}
+        $ExpandInfs = Get-ChildItem -Path "$DriverDirectoryPath" -Recurse -Include *.inf -File | Where-Object {$_.Name -notlike "*autorun.inf*"} | Select-Object -Property FullName
         $OSDDriverPnp = @()
         foreach ($ExpandInf in $ExpandInfs) {
-            Write-Host "$($ExpandInf.FullName)" -ForegroundColor DarkGray
+            Write-Host "Processing $($ExpandInf.FullName)" -ForegroundColor DarkGray
             $OSDDriverPnp += Get-WindowsDriver -Online -Driver "$($ExpandInf.FullName)" | `
             Select-Object -Property HardwareId,Version,ManufacturerName,HardwareDescription,`
             Architecture,ServiceName,CompatibleIds,ExcludeIds,Driver,Inbox,CatalogFile,`
@@ -36,15 +36,15 @@ function New-OSDDriverPnp {
         #===================================================================================================
         #   GridView
         #===================================================================================================
-        if ($GridView.IsPresent) {$OSDDriverPnp = $OSDDriverPnp | Out-GridView -PassThru -Title 'Select Drivers for PNP Xml'}
+        if ($GridView.IsPresent) {$OSDDriverPnp = $OSDDriverPnp | Out-GridView -PassThru -Title 'Select Drivers to include in the PNP File'}
         #===================================================================================================
         #   Create XML
         #===================================================================================================
-        Write-Host "Generating $DriverDirectory\OSDDriver.pnp.xml ..." -ForegroundColor Gray
-        $OSDDriverPnp | Export-Clixml -Path "$DriverDirectory\OSDDriver.pnp.xml"
-        Write-Host "Generating $DriverParent\$DriverDirectoryName.pnp.xml ..." -ForegroundColor Gray
-        $OSDDriverPnp | Export-Clixml -Path "$DriverParent\$DriverDirectoryName.pnp.xml"
-        $OSDDriverPnp = "$DriverParent\$DriverDirectoryName.pnp.xml"
+        Write-Host "Generating $DriverDirectoryPath\OSDDriver.pnp ..." -ForegroundColor DarkGray
+        $OSDDriverPnp | Export-Clixml -Path "$DriverDirectoryPath\OSDDriver.pnp"
+        Write-Host "Generating $DriverDirectoryParent\$DriverDirectoryName.cab.pnp ..." -ForegroundColor DarkGray
+        $OSDDriverPnp | Export-Clixml -Path "$DriverDirectoryParent\$DriverDirectoryName.cab.pnp"
+        $OSDDriverPnp = "$DriverDirectoryParent\$DriverDirectoryName.cab.pnp"
         Return $OSDDriverPnp
     }
 }

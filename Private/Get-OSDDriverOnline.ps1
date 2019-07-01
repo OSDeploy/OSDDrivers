@@ -8,8 +8,8 @@ function Get-OnlineOSDDriver {
     #===================================================================================================
     #   Get Online OSDDriver
     #===================================================================================================
-    if ($DriverGroup -eq 'Display Intel') {$OnlineOSDDriver = Get-OnlineOSDDriverDisplayIntel}
-    if ($DriverGroup -eq 'Wireless Intel') {$OnlineOSDDriver = Get-OnlineOSDDriverWirelessIntel}
+    if ($DriverGroup -eq 'Display Intel') {$OnlineOSDDriver = Get-DriverGroupDisplayIntel}
+    if ($DriverGroup -eq 'Wireless Intel') {$OnlineOSDDriver = Get-DriverGroupWirelessIntel}
     #===================================================================================================
     #   Return
     #===================================================================================================
