@@ -7,13 +7,13 @@
 RootModule = 'OSDDrivers.psm1'
 
 # Version number of his module.
-ModuleVersion = '19.7.1.0'
+ModuleVersion = '19.7.23.0'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
 
 # ID used to uniquely identify this module
-GUID = '15f8b559-ca5e-4eb8-8d6b-dff4b35f2515'
+GUID = '57d04b85-3049-42ff-9e2e-323695224eb6'
 
 # Author of this module
 Author = 'David Segura'
@@ -25,7 +25,7 @@ CompanyName = 'osdeploy.com'
 Copyright = '(c) 2019 David Segura osdeploy.com. All rights reserved.'
 
 # Description of the functionality provided by this module
-Description = 'OSDDrivers is for Testing only'
+Description = 'OSDDrivers is for Testing only at this time'
 
 # Minimum version of the Windows PowerShell engine required by this module
 PowerShellVersion = '5.0'
@@ -64,11 +64,7 @@ PowerShellVersion = '5.0'
 # NestedModules = @()
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-FunctionsToExport = 'New-OSDDriverCab',
-                    'New-OSDDriverCabPnp',
-                    'New-OSDDriverCabTask',
-                    'New-OSDDriverDownload',
-                    'Update-ModuleOSDDriver'
+FunctionsToExport = 'Get-DownOSDDriver','Update-ModuleOSDDrivers'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = @()
@@ -94,19 +90,19 @@ PrivateData = @{
     PSData = @{
 
         # Tags applied to this module. These help with module discovery in online galleries.
-        Tags = @('OSDeploy','OSD','Drivers')
+        Tags = @('OSDeploy','OSD','Drivers','OSDDriver','OSDDrivers')
 
         # A URL to the license for this module.
         # LicenseUri = ''
 
         # A URL to the main website for this project.
-        ProjectUri = 'https://www.osdeploy.com/osddrivers'
+        ProjectUri = 'https://osddrivers.osdeploy.com/'
 
         # A URL to an icon representing this module.
         # IconUri = ''
 
         # ReleaseNotes of this module
-        ReleaseNotes = 'https://www.osdeploy.com/osddrivers/releases'
+        ReleaseNotes = 'https://osddrivers.osdeploy.com/releases'
 
     } # End of PSData hashtable
 
@@ -117,5 +113,4 @@ PrivateData = @{
 
 # Default prefix for commands exported from this module. Override the default prefix using Import-Module -Prefix.
 # DefaultCommandPrefix = ''
-
 }
