@@ -1,4 +1,4 @@
-function Save-HardwareInventory {
+function Save-MyHardware {
     [CmdletBinding()]
     PARAM (
         [Parameter(Position = 0)]
@@ -9,27 +9,27 @@ function Save-HardwareInventory {
     #===================================================================================================
     if (-not(Test-Path "$ExpandDriverPath")) {New-Item -Path "$ExpandDriverPath" -ItemType Directory -Force | Out-Null}
     #===================================================================================================
-    #   HardwareInventory
+    #   MyHardware
     #===================================================================================================
-    Write-Verbose "Generating HardwareInventory ..." -Verbose
+    Write-Verbose "Generating MyHardware ..." -Verbose
 
-    $HardwareInventory = @()
-    $HardwareInventory = Get-HardwareInventory
-    #$HardwareInventory = $HardwareInventory | Sort-Object -Property DeviceID -Unique
+    $MyHardware = @()
+    $MyHardware = Get-MyHardware
+    #$MyHardware = $MyHardware | Sort-Object -Property DeviceID -Unique
     
-    Write-Verbose "Exporting $ExpandDriverPath\HardwareInventory.csv ..." -Verbose
-    $HardwareInventory | Export-Csv -Path "$ExpandDriverPath\HardwareInventory.csv"
+    Write-Verbose "Exporting $ExpandDriverPath\MyHardware.csv ..." -Verbose
+    $MyHardware | Export-Csv -Path "$ExpandDriverPath\MyHardware.csv"
 
-    Write-Verbose "Exporting $ExpandDriverPath\HardwareInventory.xml ..." -Verbose
-    $HardwareInventory | Export-Clixml -Path "$ExpandDriverPath\HardwareInventory.xml"
+    Write-Verbose "Exporting $ExpandDriverPath\MyHardware.xml ..." -Verbose
+    $MyHardware | Export-Clixml -Path "$ExpandDriverPath\MyHardware.xml"
 
     #Write-Host ""
     #Write-Host "Devices:"
 
-    #foreach ($HardwareDevice in $HardwareInventory) {
+    #foreach ($HardwareDevice in $MyHardware) {
         #Write-Host "$($HardwareDevice.DeviceID) - $($HardwareDevice.Caption)" -ForegroundColor DarkGray
     #}
 
-    $HardwareInventoryExport = "$ExpandDriverPath\HardwareInventory.xml"
-    Return $HardwareInventoryExport
+    $MyHardwareExport = "$ExpandDriverPath\MyHardware.xml"
+    Return $MyHardwareExport
 }

@@ -117,6 +117,10 @@ function Get-DriverIntelDisplay {
             $DriverFamily = $null
             $DriverChild = $null
 
+            $IsDesktop = $true
+            $IsLaptop = $true
+            $IsServer = $true
+
             $MakeLike = @()
             $MakeNotLike = @()
             $MakeMatch = @()
@@ -154,7 +158,7 @@ function Get-DriverIntelDisplay {
             
             $DownloadFile = $null
             $OSDPnpFile = $null
-            $OSDPackageFile = $null
+            $OSDCabFile = $null
             $OSDTaskFile = $null
             $FileType = $null
             $SizeMB = $null
@@ -241,12 +245,10 @@ function Get-DriverIntelDisplay {
             if ($DownloadFile -match 'zip') {$FileType = 'zip'}
             $FileType = $FileType.ToLower()
             #===================================================================================================
-            #   OSDPnpFile
+            #   OSDFiles
             #===================================================================================================
-            $OSDTaskFile = "$($DriverName).drvpnp"
-            #===================================================================================================
-            #   OSDTaskFile
-            #===================================================================================================
+            $OSDPnpFile = "$($DriverName).drvpnp"
+            $OSDCabFile = "$($DriverName).cab"
             $OSDTaskFile = "$($DriverName).drvtask"
             #===================================================================================================
             #   Create Object
@@ -265,6 +267,10 @@ function Get-DriverIntelDisplay {
                 DriverFamilyChild       = [string] $DriverFamilyChild
                 DriverFamily            = [string] $DriverFamily
                 DriverChild             = [string] $DriverChild
+
+                IsDesktop               = [bool]$IsDesktop
+                IsLaptop                = [bool]$IsLaptop
+                IsServer                = [bool]$IsServer
     
                 MakeLike                = [array[]] $MakeLike
                 MakeNotLike             = [array[]] $MakeNotLike
@@ -303,7 +309,7 @@ function Get-DriverIntelDisplay {
     
                 DownloadFile            = [string] $DownloadFile
                 OSDPnpFile              = [string] $OSDPnpFile
-                OSDPackageFile          = [string] $OSDPackageFile
+                OSDCabFile          = [string] $OSDCabFile
                 OSDTaskFile             = [string] $OSDTaskFile
                 FileType                = [string] $FileType
                 SizeMB                  = [int] $SizeMB
@@ -321,23 +327,30 @@ function Get-DriverIntelDisplay {
     #===================================================================================================
     #   Select-Object
     #===================================================================================================
-    $DriverResults = $DriverResults | Select-Object LastUpdate, OSDVersion,`
-    OSDStatus, OSDGroup, OSDType,`
+    $DriverResults = $DriverResults | Select-Object LastUpdate, `
+    OSDVersion,OSDStatus,OSDGroup,OSDType,`
     DriverName, DriverVersion, DriverGrouping,`
-    OSNameMatch, OSVersionMatch, OSArchMatch,`
+    #OSNameMatch,`
+    OSVersionMatch, OSArchMatch,`
     #DriverFamilyChild, DriverFamily, DriverChild,`
+    #IsDesktop,IsLaptop,IsServer,`
     #MakeLike, MakeNotLike,`
     #MakeMatch, MakeNotMatch,`
     #ModelLike, ModelNotLike, ModelMatch, ModelNotMatch, ModelEq, ModelNe,`
     #SystemFamilyMatch, SystemFamilyNotMatch,`
     #SystemSkuMatch, SystemSkuNotMatch,`
     #OSNameNotMatch, OSArchNotMatch, OSVersionNotMatch, OSBuildGE, OSBuildLE,`
-    OSInstallationType,`
-    OSDPnpClass, OSDPnpClassGuid,`
-    DriverBundle, DriverWeight,`
-    DownloadFile, OSDPnpFile, OSDPackageFile, OSDTaskFile,`
-    FileType, SizeMB, IsSuperseded,`
-    DriverUrl, DriverDescription, DriverInfo, DriverCleanup, OSDGuid
+    #OSInstallationType,`
+    OSDPnpClass,OSDPnpClassGuid,`
+    #DriverBundle, DriverWeight,`
+    DownloadFile,`
+    #OSDPnpFile, OSDCabFile, OSDTaskFile,`
+    #FileType,`
+    #SizeMB,`
+    #IsSuperseded,`
+    DriverUrl, DriverDescription, DriverInfo,`
+    #DriverCleanup,`
+    OSDGuid
     #===================================================================================================
     #   Sort-Object
     #===================================================================================================

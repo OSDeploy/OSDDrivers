@@ -50,9 +50,9 @@ Expand-OSDDrivers -PublishPath "$PSScriptRoot"
     if (!(Test-Path "$PublishPath")) {New-Item -Path "$PublishPath" -ItemType Directory -Force | Out-Null}
 
     Write-Verbose "Generating $PublishPath\Deploy-OSDDrivers.psm1" -Verbose
-    Get-Content "$($MyInvocation.MyCommand.Module.ModuleBase)\Private\Deploy\Get-OSDDriverTasks.ps1" | Set-Content "$PublishPath\Deploy-OSDDrivers.psm1"
-    Get-Content "$($MyInvocation.MyCommand.Module.ModuleBase)\Private\Deploy\Get-HardwareInventory.ps1" | Add-Content "$PublishPath\Deploy-OSDDrivers.psm1"
-    Get-Content "$($MyInvocation.MyCommand.Module.ModuleBase)\Private\Deploy\Save-HardwareInventory.ps1" | Add-Content "$PublishPath\Deploy-OSDDrivers.psm1"
+    Get-Content "$($MyInvocation.MyCommand.Module.ModuleBase)\Private\Deploy\Get-OSDDriverPackages.ps1" | Set-Content "$PublishPath\Deploy-OSDDrivers.psm1"
+    Get-Content "$($MyInvocation.MyCommand.Module.ModuleBase)\Private\Deploy\Get-MyHardware.ps1" | Add-Content "$PublishPath\Deploy-OSDDrivers.psm1"
+    Get-Content "$($MyInvocation.MyCommand.Module.ModuleBase)\Private\Deploy\Save-MyHardware.ps1" | Add-Content "$PublishPath\Deploy-OSDDrivers.psm1"
     Get-Content "$($MyInvocation.MyCommand.Module.ModuleBase)\Private\Deploy\Expand-OSDDrivers.ps1" | Add-Content "$PublishPath\Deploy-OSDDrivers.psm1"
 
     Write-Verbose "Generating $PublishPath\Deploy-OSDDrivers.ps1" -Verbose

@@ -3,12 +3,12 @@
 Downloads Drivers
 
 .DESCRIPTION
-Downloads Drivers
+Downloads Intel Drivers
 Requires BITS for downloading the Downloads
 Requires Internet access
 
 .LINK
-https://osddrivers.osdeploy.com/functions/get-osddriverpacks
+https://osddrivers.osdeploy.com/functions/get-downosddriver
 
 .PARAMETER WorkspacePath
 Directory to the OSDDrivers Workspace.  This contains the Download, Expand, and Package subdirectories
@@ -27,6 +27,7 @@ function Get-DownOSDDriver {
     Param (
         #[Parameter(ValueFromPipeline = $true)]
         #[Object[]]$InputObject,
+
         [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
         [string]$WorkspacePath,
 
@@ -36,21 +37,24 @@ function Get-DownOSDDriver {
 
         [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName)]
         [ValidateSet ('x64','x86')]
-        [string]$OSArch,
+        [string]$OSArch = 'x64',
 
         [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName)]
         [ValidateSet ('10.0','6.3','6.1')]
-        [string]$OSVersion
+        [string]$OSVersion ='10.0',
+
+        [switch]$MakeCab,
+        [switch]$SkipGridView
     )
 
     Begin {
         #===================================================================================================
-        #   Get-OSDWorkspace
+        #   Get-OSDWorkspace Home
         #===================================================================================================
         $OSDWorkspace = Get-PathOSDD -Path $WorkspacePath
         Write-Verbose "Workspace Path: $OSDWorkspace" -Verbose
         #===================================================================================================
-        #   Get-OSDWorkspace
+        #   Get-OSDWorkspace Children
         #===================================================================================================
         $WorkspaceDownload = Get-PathOSDD -Path "$OSDWorkspace\Download"
         Write-Verbose "Workspace Download: $WorkspaceDownload" -Verbose
@@ -60,6 +64,7 @@ function Get-DownOSDDriver {
 
         $WorkspacePackage = Get-PathOSDD -Path "$OSDWorkspace\Package"
         Write-Verbose "Workspace Package: $WorkspacePackage" -Verbose
+        #===================================================================================================
     }
 
     Process {
@@ -68,18 +73,14 @@ function Get-DownOSDDriver {
         #===================================================================================================
         $OSDDrivers = @()
         if ($InputObject) {
-            $GridView = $false
+            $SkipGridView = $true
             $OSDDrivers = $InputObject
         } else {
-            $GridView = $true
-            #if ($OSDGroup -eq 'DellFamily') {$OSDDrivers = Get-DriverDellFamily}
-            if ($OSDGroup -eq 'IntelDisplay') {
-                $OSDDrivers = Get-DriverIntelDisplay
-            } elseif ($OSDGroup -eq 'IntelWireless') {
-                $OSDDrivers = Get-DriverIntelWireless
-            } else {
-                $OSDDrivers += Get-DriverIntelWireless
+            if ($OSDGroup -eq 'IntelDisplay') {$OSDDrivers = Get-DriverIntelDisplay}
+            elseif ($OSDGroup -eq 'IntelWireless') {$OSDDrivers = Get-DriverIntelWireless}
+            else {
                 $OSDDrivers += Get-DriverIntelDisplay
+                $OSDDrivers += Get-DriverIntelWireless
             }
         }
         #===================================================================================================
@@ -88,22 +89,21 @@ function Get-DownOSDDriver {
         foreach ($OSDDriver in $OSDDrivers) {
             Write-Verbose "==================================================================================================="
             $DriverName = $OSDDriver.DriverName
-            $OSDDriver.OSDPackageFile = "$($DriverName).cab"
+            $OSDCabFile = "$($DriverName).cab"
             $DownloadFile = $OSDDriver.DownloadFile
             $OSDGroup = $OSDDriver.OSDGroup
             $OSDType = $OSDDriver.OSDType
             $DownloadedDriverPath = (Join-Path $WorkspaceDownload (Join-Path $OSDGroup $DownloadFile))
             $ExpandedDriverPath = (Join-Path $WorkspaceExpand (Join-Path $OSDGroup $DriverName))
-            $PackagedDriverPath = (Join-Path $WorkspacePackage (Join-Path $OSDGroup $OSDDriver.OSDPackageFile))
+            $PackagedDriverPath = (Join-Path $WorkspacePackage (Join-Path $OSDGroup $OSDCabFile))
 
             if (Test-Path "$DownloadedDriverPath") {$OSDDriver.OSDStatus = 'Downloaded'}
             if (Test-Path "$ExpandedDriverPath") {$OSDDriver.OSDStatus = 'Expanded'}
             if (Test-Path "$PackagedDriverPath") {$OSDDriver.OSDStatus = 'Packaged'}
 
-            $OSDPackageFile = $OSDDriver.OSDPackageFile
-            Write-Verbose "OSDPackageFile: $OSDPackageFile"
+            Write-Verbose "OSDCabFile: $OSDCabFile"
 
-            if (Test-Path "$ExpandedDriverPath\OSDDriver.drvpnp") {$OSDDriver.OSDPnpFile = "$($DriverName).drvpnp"}
+            if (Test-Path "$ExpandedDriverPath\OSDDriver.drvpnp") {$OSDPnpFile = "$($DriverName).drvpnp"}
         }
         #===================================================================================================
         #   OSArch
@@ -117,7 +117,11 @@ function Get-DownOSDDriver {
         #   GridView
         #===================================================================================================
         $OSDDrivers = $OSDDrivers | Sort-Object LastUpdate -Descending
-        if ($GridView) {$OSDDrivers = $OSDDrivers | Out-GridView -PassThru -Title "Select Drivers to Download and press OK"}
+        if ($SkipGridView.IsPresent) {
+            Write-Warning "SkipGridView: Skipping Out-GridView"
+        } else {
+            $OSDDrivers = $OSDDrivers | Out-GridView -PassThru -Title "Select Drivers to Download and press OK"
+        }
         #===================================================================================================
         #   Download
         #===================================================================================================
@@ -133,17 +137,14 @@ function Get-DownOSDDriver {
                 $DriverName = $OSDDriver.DriverName
                 Write-Verbose "DriverName: $DriverName"
 
-                $FileType = $OSDDriver.FileType
-                Write-Verbose "FileType: $FileType"
-
                 $DownloadFile = $OSDDriver.DownloadFile
                 Write-Verbose "DownloadFile: $DownloadFile"
 
                 $OSDGroup = $OSDDriver.OSDGroup
                 Write-Verbose "OSDGroup: $OSDGroup"
 
-                $OSDPackageFile = $OSDDriver.OSDPackageFile
-                Write-Verbose "OSDPackageFile: $OSDPackageFile"
+                $OSDCabFile = "$($DriverName).cab"
+                Write-Verbose "OSDCabFile: $OSDCabFile"
 
                 $DownloadedDriverPath = (Join-Path $WorkspaceDownload (Join-Path $OSDGroup $DownloadFile))
                 Write-Verbose "DownloadedDriverPath: $DownloadedDriverPath"
@@ -151,7 +152,7 @@ function Get-DownOSDDriver {
                 $ExpandedDriverPath = (Join-Path $WorkspaceExpand (Join-Path $OSDGroup $DriverName))
                 Write-Verbose "ExpandedDriverPath: $ExpandedDriverPath"
 
-                $PackagedDriverPath = (Join-Path $WorkspacePackage (Join-Path $OSDGroup $OSDDriver.OSDPackageFile))
+                $PackagedDriverPath = (Join-Path $WorkspacePackage (Join-Path $OSDGroup $OSDCabFile))
                 Write-Verbose "PackagedDriverPath: $PackagedDriverPath"
 
                 Write-Host "$DriverName" -ForegroundColor Green
@@ -184,10 +185,10 @@ function Get-DownOSDDriver {
                     Write-Host 'Complete!' -ForegroundColor Cyan
                 } else {
                     Write-Host 'Expanding ...' -ForegroundColor Cyan
-                    if ($FileType -match 'zip') {
+                    if ($DownloadFile -match '.zip') {
                         Expand-Archive -Path "$DownloadedDriverPath" -DestinationPath "$ExpandedDriverPath" -Force -ErrorAction Stop
                     }
-                    if ($FileType -match 'cab') {
+                    if ($DownloadFile -match '.cab') {
                         if (-not (Test-Path "$ExpandedDriverPath")) {
                             New-Item "$ExpandedDriverPath" -ItemType Directory -Force -ErrorAction Stop | Out-Null
                         }
@@ -210,52 +211,53 @@ function Get-DownOSDDriver {
 
                 Write-Host "Save-OSDDriverPnp: Generating OSDDriverPNP (OSDPnpClass: $OSDPnpClass) ..." -ForegroundColor Gray
                 Save-OSDDriverPnp -ExpandedDriverPath "$ExpandedDriverPath" $OSDPnpClass
-
-                if (Test-Path "$ExpandedDriverPath\OSDDriver.drvpnp") {$OSDDriver.OSDPnpFile = "$OSDPnpFile"}
                 #===================================================================================================
                 #   ExpandedDriverPath OSDDriver Objects
                 #===================================================================================================
                 $OSDDriver | Export-Clixml -Path "$ExpandedDriverPath\OSDDriver.clixml" -Force
                 $OSDDriver | ConvertTo-Json | Out-File -FilePath "$ExpandedDriverPath\OSDDriver.drvtask" -Force
-                #===================================================================================================
-                #   Create Package
-                #===================================================================================================
-                $PackagedDriverGroup = Get-PathOSDD -Path (Join-Path $WorkspacePackage $OSDGroup)
-                Write-Verbose "Verify: $PackagedDriverPath"
-                if (Test-Path "$PackagedDriverPath") {
-                    Write-Warning "Compress-OSDDriver: $PackagedDriverPath already exists"
-                } else {
-                    if ($OSDPackageFile -match '.zip') {
-                        Write-Warning "Compress-OSDDriver: Generating $PackagedDriverPath ... This will take a while"
-                        Compress-Archive -Path "$ExpandedDriverPath" -DestinationPath "$PackagedDriverPath" -ErrorAction Stop
-                    }
-                    elseif ($OSDPackageFile -match '.cab') {
-                        Write-Warning "New-OSDDriverCabFile: Generating $PackagedDriverPath ... This will take a while"
+
+                if ($MakeCab.IsPresent) {
+                    #===================================================================================================
+                    #   Create Package
+                    #===================================================================================================
+                    $PackagedDriverGroup = Get-PathOSDD -Path (Join-Path $WorkspacePackage $OSDGroup)
+                    Write-Verbose "Verify: $PackagedDriverPath"
+                    if (Test-Path "$PackagedDriverPath") {
+                        #Write-Warning "Compress-OSDDriver: $PackagedDriverPath already exists"
+                    } else {
                         New-OSDDriverCabFile -ExpandedDriverPath $ExpandedDriverPath -PackagePath $PackagedDriverGroup
                     }
-                    else {
-                        Write-Warning 'Unable to determine the OSDDriver File Type'
+                    #===================================================================================================
+                    #   Verify Driver Package
+                    #===================================================================================================
+                    if (-not (Test-Path "$PackagedDriverPath")) {
+                        Write-Warning "Driver Expand: Could not package Driver to $PackagedDriverPath ... Exiting"
                         Break
                     }
+                    $OSDDriver.OSDStatus = 'Package'
+                    #===================================================================================================
+                    #   Export Results
+                    #===================================================================================================
+                    $OSDDriver | Export-Clixml -Path "$ExpandedDriverPath\OSDDriver.clixml" -Force
+                    $OSDDriver | ConvertTo-Json | Out-File -FilePath "$ExpandedDriverPath\OSDDriver.drvtask" -Force
+                    $OSDDriver | ConvertTo-Json | Out-File -FilePath "$PackagedDriverGroup\$($DriverName).drvtask" -Force
+                    #===================================================================================================
+                    #   Export Files
+                    #===================================================================================================
+                    #Write-Verbose "Verify: $ExpandedDriverPath\OSDDriver.drvpnp"
+                    if (Test-Path "$ExpandedDriverPath\OSDDriver.drvpnp") {
+                        Write-Verbose "Copy-Item: $ExpandedDriverPath\OSDDriver.drvpnp to $PackagedDriverGroup\$OSDPnpFile"
+                        Copy-Item -Path "$ExpandedDriverPath\OSDDriver.drvpnp" -Destination "$PackagedDriverGroup\$OSDPnpFile" -Force | Out-Null
+                    }
+                    $OSDDriver | Export-Clixml -Path "$ExpandedDriverPath\OSDDriver.clixml" -Force
+                    $OSDDriver | ConvertTo-Json | Out-File -FilePath "$ExpandedDriverPath\OSDDriver.drvtask" -Force
+                    $OSDDriver | ConvertTo-Json | Out-File -FilePath "$PackagedDriverGroup\$($DriverName).drvtask" -Force
+                    #===================================================================================================
+                    #   Publish-OSDDriverScripts
+                    #===================================================================================================
+                    Publish-OSDDriverScripts -PublishPath $PackagedDriverGroup
                 }
-                $OSDDriver | Export-Clixml -Path "$ExpandedDriverPath\OSDDriver.clixml" -Force
-                $OSDDriver | ConvertTo-Json | Out-File -FilePath "$ExpandedDriverPath\OSDDriver.drvtask" -Force
-                $OSDDriver | ConvertTo-Json | Out-File -FilePath "$PackagedDriverGroup\$($DriverName).drvtask" -Force
-                #===================================================================================================
-                #   Export Files
-                #===================================================================================================
-                Write-Verbose "Verify: $ExpandedDriverPath\OSDDriver.drvpnp"
-                if (Test-Path "$ExpandedDriverPath\OSDDriver.drvpnp") {
-                    Write-Verbose "Copy-Item: $ExpandedDriverPath\OSDDriver.drvpnp to $PackagedDriverGroup\$OSDPnpFile"
-                    Copy-Item -Path "$ExpandedDriverPath\OSDDriver.drvpnp" -Destination "$PackagedDriverGroup\$OSDPnpFile" -Force | Out-Null
-                }
-                $OSDDriver | Export-Clixml -Path "$ExpandedDriverPath\OSDDriver.clixml" -Force
-                $OSDDriver | ConvertTo-Json | Out-File -FilePath "$ExpandedDriverPath\OSDDriver.drvtask" -Force
-                $OSDDriver | ConvertTo-Json | Out-File -FilePath "$PackagedDriverGroup\$($DriverName).drvtask" -Force
-                #===================================================================================================
-                #   Publish-OSDDriverScripts
-                #===================================================================================================
-                Publish-OSDDriverScripts -PublishPath $PackagedDriverGroup
             }
         } else {
             Return $OSDDrivers
@@ -268,5 +270,6 @@ function Get-DownOSDDriver {
         #===================================================================================================
         Publish-OSDDriverScripts -PublishPath $WorkspacePackage
         Write-Host "Complete!" -ForegroundColor Green
+        #===================================================================================================
     }
 }

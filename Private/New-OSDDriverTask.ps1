@@ -75,6 +75,10 @@ function New-OSDDriverTask {
         #$OSDGroup = $null
         $OSDType = 'Driver'
 
+        $IsDesktop = $null
+        $IsLaptop = $null
+        $IsServer = $null
+
         #$DriverName = $null
         #$DriverVersion = $null
         $DriverGrouping = $null
@@ -92,7 +96,7 @@ function New-OSDDriverTask {
         
         $DownloadFile = $null
         $OSDPnpFile = "$($DriverName).drvpnp"
-        $OSDPackageFile = "$($DriverName).cab"
+        $OSDCabFile = "$($DriverName).cab"
         $OSDTaskFile = "$($DriverName).drvtask"
         $FileType = 'zip'
         $SizeMB = $null
@@ -115,11 +119,15 @@ function New-OSDDriverTask {
 
             DriverName              = [string] $DriverName
             DriverVersion           = [string] $DriverVersion
-            DriverGrouping          = [string] $DriverGrouping
+            #DriverGrouping          = [string] $DriverGrouping
 
-            DriverFamilyChild       = [string] $DriverFamilyChild
-            DriverFamily            = [string] $DriverFamily
-            DriverChild             = [string] $DriverChild
+            #DriverFamilyChild       = [string] $DriverFamilyChild
+            #DriverFamily            = [string] $DriverFamily
+            #DriverChild             = [string] $DriverChild
+
+            #IsDesktop               = [bool]$IsDesktop
+            #IsLaptop                = [bool]$IsLaptop
+            #IsServer                = [bool]$IsServer
 
             MakeLike                = [array[]] $MakeLike
             MakeNotLike             = [array[]] $MakeNotLike
@@ -133,41 +141,40 @@ function New-OSDDriverTask {
             ModelEq                 = [array[]] $ModelEq
             ModelNe                 = [array[]] $ModelNe
 
-            SystemFamilyMatch       = [array[]] $SystemFamilyMatch
-            SystemFamilyNotMatch    = [array[]] $SystemFamilyNotMatch
+            #SystemFamilyMatch       = [array[]] $SystemFamilyMatch
+            #SystemFamilyNotMatch    = [array[]] $SystemFamilyNotMatch
 
-            SystemSkuMatch          = [array[]] $SystemSkuMatch
-            SystemSkuNotMatch       = [array[]] $SystemSkuNotMatch
+            #SystemSkuMatch          = [array[]] $SystemSkuMatch
+            #SystemSkuNotMatch       = [array[]] $SystemSkuNotMatch
 
-            OSNameMatch             = [array[]] $OSNameMatch
-            OSNameNotMatch          = [array[]] $OSNameNotMatch
-            OSArchMatch             = [array[]] $OSArchMatch
-            OSArchNotMatch          = [array[]] $OSArchNotMatch
-
+            #OSNameMatch             = [array[]] $OSNameMatch
+            #OSNameNotMatch          = [array[]] $OSNameNotMatch
             OSVersionMatch          = [array[]] $OSVersionMatch
             OSVersionNotMatch       = [array[]] $OSVersionNotMatch
+            OSArchMatch             = [array[]] $OSArchMatch
+            OSArchNotMatch          = [array[]] $OSArchNotMatch
             OSBuildGE               = [string] $OSBuildGE
             OSBuildLE               = [string] $OSBuildLE
             OSInstallationType		= [string] $OSInstallationType
 
-            OSDPnpClass             = [string] $OSDPnpClass
-            OSDPnpClassGuid         = [string] $OSDPnpClassGuid
+            #OSDPnpClass             = [string] $OSDPnpClass
+            #OSDPnpClassGuid         = [string] $OSDPnpClassGuid
 
-            DriverBundle            = [string] $DriverBundle
-            DriverWeight            = [int] $DriverWeight
+            #DriverBundle            = [string] $DriverBundle
+            #DriverWeight            = [int] $DriverWeight
 
-            DownloadFile            = [string] $DownloadFile
-            OSDPnpFile              = [string] $OSDPnpFile
-            OSDPackageFile          = [string] $OSDPackageFile
-            OSDTaskFile             = [string] $OSDTaskFile
-            FileType                = [string] $FileType
-            SizeMB                  = [int] $SizeMB
-            IsSuperseded            = [bool] $IsSuperseded
+            #DownloadFile            = [string] $DownloadFile
+            #OSDPnpFile              = [string] $OSDPnpFile
+            #OSDCabFile              = [string] $OSDCabFile
+            #OSDTaskFile             = [string] $OSDTaskFile
+            #FileType                = [string] $FileType
+            #SizeMB                  = [int] $SizeMB
+            #IsSuperseded            = [bool] $IsSuperseded
 
-            DriverUrl               = [string] $DriverUrl
-            DriverDescription       = [string] $DriverDescription
-            DriverInfo              = [string] $DriverInfo
-            DriverCleanup           = [array] $DriverCleanup
+            #DriverUrl               = [string] $DriverUrl
+            #DriverDescription       = [string] $DriverDescription
+            #DriverInfo              = [string] $DriverInfo
+            #DriverCleanup           = [array] $DriverCleanup
             OSDGuid                 = [string] $(New-Guid)
         }
         #===================================================================================================

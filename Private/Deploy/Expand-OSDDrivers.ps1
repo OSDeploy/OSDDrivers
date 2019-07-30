@@ -24,12 +24,11 @@ function Expand-OSDDrivers {
         [ValidateSet('6.1','6.2','6.3','10.0')]
         [string]$SetOSVersion
     )
-
     #===================================================================================================
-    #   Get All Drivers Jsons
+    #   Get-OSDDriverPackages
     #===================================================================================================
-    $OSDDriverTasks = @()
-    $OSDDriverTasks = Get-OSDDriverTasks -PublishPath $PublishPath -ErrorAction SilentlyContinue
+    $OSDDriverPackages = @()
+    $OSDDriverPackages = Get-OSDDriverPackages -PublishPath $PublishPath -ErrorAction SilentlyContinue
     #===================================================================================================
     #   Connect to Task Sequence Environment
     #===================================================================================================
@@ -188,314 +187,354 @@ function Expand-OSDDrivers {
     if ($SetSku) {$SystemSKUNumber = $SetSku}
     Write-Verbose "System SKUNumber: $SystemSKUNumber" -Verbose
     #===================================================================================================
-    #   Save-HardwareInventory
+    #   Save-MyHardware
     #===================================================================================================
-    $HardwareInventory = @()
-    Save-HardwareInventory -ExpandDriverPath $ExpandDriverPath | Out-Null
-    $HardwareInventory = Get-HardwareInventory | Select-Object -Property DeviceID, Caption
+    $MyHardware = @()
+    Save-MyHardware -ExpandDriverPath $ExpandDriverPath | Out-Null
+    $MyHardware = Get-MyHardware | Select-Object -Property DeviceID, Caption
     # Alternate Method
-    # $HardwareInventory = (Save-HardwareInventory -ExpandDriverPath $ExpandDriverPath | Import-CliXml | Select-Object -Property DeviceID, Caption)
+    # $MyHardware = (Save-MyHardware -ExpandDriverPath $ExpandDriverPath | Import-CliXml | Select-Object -Property DeviceID, Caption)
     #===================================================================================================
     #   Expand-OSDDrivers
     #===================================================================================================
-    Write-Host "Processing OSDDrivers ..." -ForegroundColor Green
+    Write-Host "Processing OSDDriver Packages ..." -ForegroundColor Green
     $ExpandDrivers = @()
 
-    foreach ($DriverTask in $OSDDriverTasks) {
-        Write-Host "$($DriverTask.OSDPackageFile) ... " -ForegroundColor Gray -NoNewLine
+    foreach ($OSDDriver in $OSDDriverPackages) {
+        $OSDDriverCab = $OSDDriver.Name
+        $OSDDriverBaseName = $OSDDriver.BaseName
+        $OSDDriverFullName = $OSDDriver.FullName
+        $OSDDriverDirectoryName = $OSDDriver.DirectoryName
+
+        $OSDDriverPnp = "$(Join-Path $OSDDriverDirectoryName $OSDDriverBaseName).drvpnp"
+        $OSDDriverTask = "$(Join-Path $OSDDriverDirectoryName $OSDDriverBaseName).drvtask"
+
+        Write-Host "$OSDDriverFullName ... " -ForegroundColor Gray -NoNewLine
         $ExpandDriverCab = $true
         #===================================================================================================
-        #   Verify Driver Pack
+        #   WinPE
         #===================================================================================================
-
-        if (Test-Path "$($DriverTask.OSDPackageFile)") {
-            Write-Verbose "OSDPackageFile: $($DriverTask.OSDPackageFile)"
-        } else {
-            #Write-Verbose "Missing Driver CAB $($DriverTask.OSDPackageFile)" -Foregroundcolor Gray
-            Write-Host "Not Found!" -Foregroundcolor Yellow
+        if ($OSDDriverCab -match 'WinPE') {
+            Write-Host "Driver is intended for WinPE" -ForegroundColor DarkGray
             Continue
         }
         #===================================================================================================
-        #   OSArch
+        #   OSDDriverTask
         #===================================================================================================
-        if ($DriverTask.OSArchMatch) {
-            Write-Verbose "Driver OSArchMatch: $($DriverTask.OSArchMatch)"
+        if (Test-Path $OSDDriverTask) {
+            $DriverTask = @()
+            $DriverTask = Get-Content "$OSDDriverTask" | ConvertFrom-Json
+            #===================================================================================================
+            #   OSArch
+            #===================================================================================================
+            if ($DriverTask.OSArchMatch) {
+                Write-Verbose "Driver OSArchMatch: $($DriverTask.OSArchMatch)"
 
-            if ($DriverTask.OSArchMatch -match 'x64') {
-                if ($ImageOSArchitecture -like "*32*" -or $ImageOSArchitecture -like "*x86*") {
-
-                    Write-Host "Not compatible with Image OSArchitecture $ImageOSArchitecture" -Foregroundcolor Gray
-                    Continue
-                }
-            }
-            if ($DriverTask.OSArchMatch -match 'x86') {
-                if ($ImageOSArchitecture -like "*64*") {
-                    Write-Host "Not compatible with Image OSArchitecture $ImageOSArchitecture" -Foregroundcolor Gray
-                    Continue
-                }
-            }
-        }
-        #===================================================================================================
-        #   OSVersionMatch
-        #===================================================================================================
-        if ($DriverTask.OSVersionMatch) {
-            $OSVersionMatch = $DriverTask.OSVersionMatch
-            if (-not($OSVersionMatch -match $ImageOSVersion)) {
-                Write-Host "Not compatible with Image OSVersion $ImageOSVersion" -Foregroundcolor Gray
-                Continue
-            }
-        }
-        #===================================================================================================
-        #   OSBuildGE
-        #===================================================================================================
-        if ($DriverTask.OSBuildGE) {
-            $OSBuildGE = $DriverTask.OSBuildGE
-            if (-not($ImageOSBuild -ge "$($OSBuildGE)")) {
-                Write-Host "Image OSBuild $ImageOSBuild is not Greater or Equal to required OSBuild $($OSBuildGE)" -Foregroundcolor Gray
-                Continue
-            }
-        }
-        #===================================================================================================
-        #   OSBuildLE
-        #===================================================================================================
-        if ($DriverTask.OSBuildLE) {
-            $OSBuildLE = $DriverTask.OSBuildLE
-            if (-not($ImageOSBuild -le "$($OSBuildLE)")) {
-                Write-Host "Image OSBuild $ImageOSBuild is not Less or Equal to required OSBuild $($OSBuildLE)" -Foregroundcolor Gray
-                Continue
-            }
-        }
-        #===================================================================================================
-        #   MakeLike
-        #===================================================================================================
-        if ($DriverTask.MakeLike) {
-            $ExpandDriverCab = $false
-            foreach ($item in $DriverTask.MakeLike) {
-                Write-Verbose "Driver CAB Compatible Make: $item"
-                if ($SystemMake -like $item) {$ExpandDriverCab = $true}
-            }
-            if ($ExpandDriverCab -eq $false) {
-                Write-Host "Not compatible with System Make $SystemMake" -Foregroundcolor DarkGray
-                Continue
-            }
-        }
-        #===================================================================================================
-        #   MakeNotLike
-        #===================================================================================================
-        if ($DriverTask.MakeNotLike) {
-            foreach ($item in $DriverTask.MakeNotLike) {
-                Write-Verbose "Driver CAB Not Compatible Make: $item"
-                if ($SystemMake -like $item) {$ExpandDriverCab = $false}
-            }
-            if ($ExpandDriverCab -eq $false) {
-                Write-Host "Not compatible with System Make $SystemMake" -Foregroundcolor DarkGray
-                Continue
-            }
-        }
-        #===================================================================================================
-        #   MakeMatch
-        #===================================================================================================
-        if ($DriverTask.MakeMatch) {
-            $ExpandDriverCab = $false
-            foreach ($item in $DriverTask.MakeMatch) {
-                Write-Verbose "Driver CAB Compatible Make: $item"
-                if ($SystemMake -match $item) {$ExpandDriverCab = $true}
-            }
-            if ($ExpandDriverCab -eq $false) {
-                Write-Host "Not compatible with System Make $SystemMake" -Foregroundcolor DarkGray
-                Continue
-            }
-        }
-        #===================================================================================================
-        #   MakeNotMatch
-        #===================================================================================================
-        if ($DriverTask.MakeNotMatch) {
-            foreach ($item in $DriverTask.MakeNotMatch) {
-                Write-Verbose "Driver CAB Not Compatible Make: $item"
-                if ($SystemMake -match $item) {$ExpandDriverCab = $false}
-            }
-            if ($ExpandDriverCab -eq $false) {
-                Write-Host "Not compatible with System Make $SystemMake" -Foregroundcolor DarkGray
-                Continue
-            }
-        }
-        #===================================================================================================
-        #   ModelLike
-        #===================================================================================================
-        if ($DriverTask.ModelLike) {
-            $ExpandDriverCab = $false
-            foreach ($item in $DriverTask.ModelLike) {
-                Write-Verbose "Driver CAB Compatible Model: $item"
-                if ($SystemModel -like $item) {$ExpandDriverCab = $true}
-            }
-            if ($ExpandDriverCab -eq $false) {
-                Write-Host "$SystemModel ModelLike is evaluated false" -Foregroundcolor DarkGray
-                Continue
-            }
-        }
-        #===================================================================================================
-        #   ModelNotLike
-        #===================================================================================================
-        if ($DriverTask.ModelNotLike) {
-            foreach ($item in $DriverTask.ModelNotLike) {
-                Write-Verbose "Driver CAB Not Compatible Model: $item"
-                if ($SystemModel -like $item) {
-                    $MatchValue = $item
-                    $ExpandDriverCab = $false
-                }
-            }
-            if ($ExpandDriverCab -eq $false) {
-                Write-Host "$SystemModel ModelNotLike is evaluated false" -Foregroundcolor DarkGray
-                Continue
-            }
-        }
-        #===================================================================================================
-        #   ModelMatch
-        #===================================================================================================
-        if ($DriverTask.ModelMatch) {
-            $ExpandDriverCab = $false
-            foreach ($item in $DriverTask.ModelMatch) {
-                Write-Verbose "Driver CAB Compatible Model: $item"
-                if ($SystemModel -match $item) {$ExpandDriverCab = $true}
-            }
-            if ($ExpandDriverCab -eq $false) {
-                Write-Host "$SystemModel ModelMatch is evaluated false" -Foregroundcolor DarkGray
-                Continue
-            }
-        }
-        #===================================================================================================
-        #   ModelNotMatch
-        #===================================================================================================
-        if ($DriverTask.ModelNotMatch) {
-            foreach ($item in $DriverTask.ModelNotMatch) {
-                Write-Verbose "Driver CAB Not Compatible Model: $item"
-                if ($SystemModel -match $item) {
-                    $MatchValue = $item
-                    $ExpandDriverCab = $false
-                }
-            }
-            if ($ExpandDriverCab -eq $false) {
-                Write-Host "$SystemModel ModelNotMatch is evaluated false" -Foregroundcolor DarkGray
-                Continue
-            }
-        }
-<#         #===================================================================================================
-        #   FamilyLike
-        #===================================================================================================
-        if ($DriverTask.FamilyLike) {
-            $ExpandDriverCab = $false
-            foreach ($item in $DriverTask.FamilyLike) {
-                Write-Verbose "Driver CAB Compatible Family: $item"
-                if ($SystemFamily -like "*$item*") {$ExpandDriverCab = $true}
-            }
-            if ($ExpandDriverCab -eq $false) {
-                Write-Host "Not compatible with System Family $SystemFamily" -Foregroundcolor DarkGray
-                Continue
-            }
-        }
-        #===================================================================================================
-        #   FamilyNotLike
-        #===================================================================================================
-        if ($DriverTask.FamilyNotLike) {
-            foreach ($item in $DriverTask.FamilyNotLike) {
-                Write-Verbose "Driver CAB Not Compatible Family: $item"
-                if ($SystemFamily -like "*$item*") {$ExpandDriverCab = $false}
-            }
-            if ($ExpandDriverCab -eq $false) {
-                Write-Host "Not compatible with System Family $SystemFamily" -Foregroundcolor DarkGray
-                Continue
-            }
-        }
-        #===================================================================================================
-        #   SkuLike
-        #===================================================================================================
-        if ($DriverTask.SkuLike) {
-            $ExpandDriverCab = $false
-            foreach ($item in $DriverTask.SkuLike) {
-                Write-Verbose "Driver CAB Compatible Sku: $item"
-                if ($SystemSku -like "*$item*") {$ExpandDriverCab = $true}
-            }
-            if ($ExpandDriverCab -eq $false) {
-                Write-Host "Not compatible with System Sku $SystemSku" -Foregroundcolor DarkGray
-                Continue
-            }
-        }
-        #===================================================================================================
-        #   SkuNotLike
-        #===================================================================================================
-        if ($DriverTask.SkuNotLike) {
-            foreach ($item in $DriverTask.SkuNotLike) {
-                Write-Verbose "Driver CAB Not Compatible Sku: $item"
-                if ($SystemSku -like "*$item*") {$ExpandDriverCab = $false}
-            }
-            if ($ExpandDriverCab -eq $false) {
-                Write-Host "Not compatible with System Sku $SystemSku" -Foregroundcolor DarkGray
-                Continue
-            }
-        } #>
-        #===================================================================================================
-        #   OSInstallationType
-        #===================================================================================================
-        #TODO
-<#         if ($DriverTask.OSInstallationType) {
-            Write-Verbose "Driver InstallationType: $($DriverTask.OSInstallationType)"
-            if ($ImageOSInstallationType -notlike "*$($DriverTask.OSInstallationType)*") {
-                Write-Host "Not compatible with Image OS InstallationType $($DriverTask.OSInstallationType)" -Foregroundcolor DarkGray
-                Continue
-            }
-        } #>
-        #===================================================================================================
-        #   Hardware
-        #===================================================================================================
-        if ($DriverTask.OSDPnpFile) {
-            if (Test-Path "$($DriverTask.OSDPnpFile)") {
-                #Write-Verbose "Processing PNP Database: $($DriverTask.OSDPnpFile)" -Verbose
-                $ExpandDriverCab = $false
-                $OSDPnpFile = @()
-                $OSDPnpFile = Import-CliXml -Path "$($DriverTask.OSDPnpFile)"
-            
-                foreach ($PnpDriverId in $OSDPnpFile) {
-                    $HardwareDescription = $($PnpDriverId.HardwareDescription)
-                    $HardwareId = $($PnpDriverId.HardwareId)
-            
-                    if ($HardwareInventory -like "*$HardwareId*") {
-                        #Write-Host "$($DriverTask.OSDPackageFile) is compatbile with $HardwareDescription $HardwareId" -Foregroundcolor Gray
-                        Write-Host "$HardwareDescription $HardwareId " -Foregroundcolor Cyan
-                        $ExpandDriverCab = $true
+                if ($DriverTask.OSArchMatch -match 'x64') {
+                    if ($ImageOSArchitecture -like "*32*" -or $ImageOSArchitecture -like "*x86*") {
+                        Write-Host "Not compatible with Image OSArchitecture $ImageOSArchitecture" -ForegroundColor DarkGray
+                        Continue
                     }
                 }
-
-                if ($ExpandDriverCab -eq $false) {
-                    Write-Host "Required PNP Hardware was not found on this system" -Foregroundcolor Gray
+                if ($DriverTask.OSArchMatch -match 'x86') {
+                    if ($ImageOSArchitecture -like "*64*") {
+                        Write-Host "Not compatible with Image OSArchitecture $ImageOSArchitecture" -ForegroundColor DarkGray
+                        Continue
+                    }
+                }
+            }
+            #===================================================================================================
+            #   OSVersionMatch
+            #===================================================================================================
+            if ($DriverTask.OSVersionMatch) {
+                $OSVersionMatch = $DriverTask.OSVersionMatch
+                if (-not($OSVersionMatch -match $ImageOSVersion)) {
+                    Write-Host "Not compatible with Image OSVersion $ImageOSVersion" -ForegroundColor DarkGray
                     Continue
                 }
+            }
+            #===================================================================================================
+            #   OSBuildGE
+            #===================================================================================================
+            if ($DriverTask.OSBuildGE) {
+                $OSBuildGE = $DriverTask.OSBuildGE
+                if (-not($ImageOSBuild -ge "$($OSBuildGE)")) {
+                    Write-Host "Image OSBuild $ImageOSBuild is not Greater or Equal to required OSBuild $($OSBuildGE)" -ForegroundColor DarkGray
+                    Continue
+                }
+            }
+            #===================================================================================================
+            #   OSBuildLE
+            #===================================================================================================
+            if ($DriverTask.OSBuildLE) {
+                $OSBuildLE = $DriverTask.OSBuildLE
+                if (-not($ImageOSBuild -le "$($OSBuildLE)")) {
+                    Write-Host "Image OSBuild $ImageOSBuild is not Less or Equal to required OSBuild $($OSBuildLE)" -ForegroundColor DarkGray
+                    Continue
+                }
+            }
+            #===================================================================================================
+            #   MakeLike
+            #===================================================================================================
+            if ($DriverTask.MakeLike) {
+                $ExpandDriverCab = $false
+                foreach ($item in $DriverTask.MakeLike) {
+                    Write-Verbose "Driver CAB Compatible Make: $item"
+                    if ($SystemMake -like $item) {$ExpandDriverCab = $true}
+                }
+                if ($ExpandDriverCab -eq $false) {
+                    Write-Host "Not compatible with System Make $SystemMake" -Foregroundcolor DarkGray
+                    Continue
+                }
+            }
+            #===================================================================================================
+            #   MakeNotLike
+            #===================================================================================================
+            if ($DriverTask.MakeNotLike) {
+                foreach ($item in $DriverTask.MakeNotLike) {
+                    Write-Verbose "Driver CAB Not Compatible Make: $item"
+                    if ($SystemMake -like $item) {$ExpandDriverCab = $false}
+                }
+                if ($ExpandDriverCab -eq $false) {
+                    Write-Host "Not compatible with System Make $SystemMake" -Foregroundcolor DarkGray
+                    Continue
+                }
+            }
+            #===================================================================================================
+            #   MakeMatch
+            #===================================================================================================
+            if ($DriverTask.MakeMatch) {
+                $ExpandDriverCab = $false
+                foreach ($item in $DriverTask.MakeMatch) {
+                    Write-Verbose "Driver CAB Compatible Make: $item"
+                    if ($SystemMake -match $item) {$ExpandDriverCab = $true}
+                }
+                if ($ExpandDriverCab -eq $false) {
+                    Write-Host "Not compatible with System Make $SystemMake" -Foregroundcolor DarkGray
+                    Continue
+                }
+            }
+            #===================================================================================================
+            #   MakeNotMatch
+            #===================================================================================================
+            if ($DriverTask.MakeNotMatch) {
+                foreach ($item in $DriverTask.MakeNotMatch) {
+                    Write-Verbose "Driver CAB Not Compatible Make: $item"
+                    if ($SystemMake -match $item) {$ExpandDriverCab = $false}
+                }
+                if ($ExpandDriverCab -eq $false) {
+                    Write-Host "Not compatible with System Make $SystemMake" -Foregroundcolor DarkGray
+                    Continue
+                }
+            }
+            #===================================================================================================
+            #   ModelLike
+            #===================================================================================================
+            if ($DriverTask.ModelLike) {
+                $ExpandDriverCab = $false
+                foreach ($item in $DriverTask.ModelLike) {
+                    Write-Verbose "Driver CAB Compatible Model: $item"
+                    if ($SystemModel -like $item) {$ExpandDriverCab = $true}
+                }
+                if ($ExpandDriverCab -eq $false) {
+                    Write-Host "$SystemModel ModelLike is evaluated false" -Foregroundcolor DarkGray
+                    Continue
+                }
+            }
+            #===================================================================================================
+            #   ModelNotLike
+            #===================================================================================================
+            if ($DriverTask.ModelNotLike) {
+                foreach ($item in $DriverTask.ModelNotLike) {
+                    Write-Verbose "Driver CAB Not Compatible Model: $item"
+                    if ($SystemModel -like $item) {
+                        $ExpandDriverCab = $false
+                    }
+                }
+                if ($ExpandDriverCab -eq $false) {
+                    Write-Host "$SystemModel ModelNotLike is evaluated false" -Foregroundcolor DarkGray
+                    Continue
+                }
+            }
+            #===================================================================================================
+            #   ModelMatch
+            #===================================================================================================
+            if ($DriverTask.ModelMatch) {
+                $ExpandDriverCab = $false
+                foreach ($item in $DriverTask.ModelMatch) {
+                    Write-Verbose "Driver CAB Compatible Model: $item"
+                    if ($SystemModel -match $item) {$ExpandDriverCab = $true}
+                }
+                if ($ExpandDriverCab -eq $false) {
+                    Write-Host "$SystemModel ModelMatch is evaluated false" -Foregroundcolor DarkGray
+                    Continue
+                }
+            }
+            #===================================================================================================
+            #   ModelNotMatch
+            #===================================================================================================
+            if ($DriverTask.ModelNotMatch) {
+                foreach ($item in $DriverTask.ModelNotMatch) {
+                    Write-Verbose "Driver CAB Not Compatible Model: $item"
+                    if ($SystemModel -match $item) {
+                        $ExpandDriverCab = $false
+                    }
+                }
+                if ($ExpandDriverCab -eq $false) {
+                    Write-Host "$SystemModel ModelNotMatch is evaluated false" -Foregroundcolor DarkGray
+                    Continue
+                }
+            }
+            #===================================================================================================
+            #   ModelEq
+            #===================================================================================================
+            if ($DriverTask.ModelEq) {
+                $ExpandDriverCab = $false
+                foreach ($item in $DriverTask.ModelEq) {
+                    Write-Verbose "Driver CAB Compatible Model: $item"
+                    if ($SystemModel -contains $item) {$ExpandDriverCab = $true}
+                }
+                if ($ExpandDriverCab -eq $false) {
+                    Write-Host "$SystemModel ModelEq is evaluated false" -Foregroundcolor DarkGray
+                    Continue
+                }
+            }
+            #===================================================================================================
+            #   ModelNotEq
+            #===================================================================================================
+            if ($DriverTask.ModelNotEq) {
+                foreach ($item in $DriverTask.ModelNotEq) {
+                    Write-Verbose "Driver CAB Not Compatible Model: $item"
+                    if ($SystemModel -contains $item) {
+                        $ExpandDriverCab = $false
+                    }
+                }
+                if ($ExpandDriverCab -eq $false) {
+                    Write-Host "$SystemModel ModelNotEq is evaluated false" -Foregroundcolor DarkGray
+                    Continue
+                }
+            }
+            <#         #===================================================================================================
+            #   FamilyLike
+            #===================================================================================================
+            if ($DriverTask.FamilyLike) {
+                $ExpandDriverCab = $false
+                foreach ($item in $DriverTask.FamilyLike) {
+                    Write-Verbose "Driver CAB Compatible Family: $item"
+                    if ($SystemFamily -like "*$item*") {$ExpandDriverCab = $true}
+                }
+                if ($ExpandDriverCab -eq $false) {
+                    Write-Host "Not compatible with System Family $SystemFamily" -Foregroundcolor DarkGray
+                    Continue
+                }
+            }
+            #===================================================================================================
+            #   FamilyNotLike
+            #===================================================================================================
+            if ($DriverTask.FamilyNotLike) {
+                foreach ($item in $DriverTask.FamilyNotLike) {
+                    Write-Verbose "Driver CAB Not Compatible Family: $item"
+                    if ($SystemFamily -like "*$item*") {$ExpandDriverCab = $false}
+                }
+                if ($ExpandDriverCab -eq $false) {
+                    Write-Host "Not compatible with System Family $SystemFamily" -Foregroundcolor DarkGray
+                    Continue
+                }
+            }
+            #===================================================================================================
+            #   SkuLike
+            #===================================================================================================
+            if ($DriverTask.SkuLike) {
+                $ExpandDriverCab = $false
+                foreach ($item in $DriverTask.SkuLike) {
+                    Write-Verbose "Driver CAB Compatible Sku: $item"
+                    if ($SystemSku -like "*$item*") {$ExpandDriverCab = $true}
+                }
+                if ($ExpandDriverCab -eq $false) {
+                    Write-Host "Not compatible with System Sku $SystemSku" -Foregroundcolor DarkGray
+                    Continue
+                }
+            }
+            #===================================================================================================
+            #   SkuNotLike
+            #===================================================================================================
+            if ($DriverTask.SkuNotLike) {
+                foreach ($item in $DriverTask.SkuNotLike) {
+                    Write-Verbose "Driver CAB Not Compatible Sku: $item"
+                    if ($SystemSku -like "*$item*") {$ExpandDriverCab = $false}
+                }
+                if ($ExpandDriverCab -eq $false) {
+                    Write-Host "Not compatible with System Sku $SystemSku" -Foregroundcolor DarkGray
+                    Continue
+                }
+            } #>
+            #===================================================================================================
+            #   OSInstallationType
+            #===================================================================================================
+            #TODO
+    <#         if ($DriverTask.OSInstallationType) {
+                Write-Verbose "Driver InstallationType: $($DriverTask.OSInstallationType)"
+                if ($ImageOSInstallationType -notlike "*$($DriverTask.OSInstallationType)*") {
+                    Write-Host "Not compatible with Image OS InstallationType $($DriverTask.OSInstallationType)" -Foregroundcolor DarkGray
+                    Continue
+                }
+            } #>
+        }
+        #===================================================================================================
+        #   OSDDriverPnp
+        #===================================================================================================
+        if (Test-Path $OSDDriverPnp) {
+            $ExpandDriverCab = $false
+            $HardwareIdMatches = @()
+            $OSDPnpFile = @()
+            $OSDPnpFile = Import-CliXml -Path "$OSDDriverPnp"
+        
+            foreach ($PnpDriverId in $OSDPnpFile) {
+                $HardwareDescription = $($PnpDriverId.HardwareDescription)
+                $HardwareId = $($PnpDriverId.HardwareId)
+        
+                if ($MyHardware -like "*$HardwareId*") {
+                    #Write-Host "$HardwareDescription $HardwareId " -Foregroundcolor Cyan
+                    $ExpandDriverCab = $true
+                    $HardwareIdMatches += "$HardwareDescription $HardwareId"
+                }
+            }
 
-            } else {
-                #Write-Host "Missing Driver HardwareID Database $($DriverTask.OSDPnpFile)" -Foregroundcolor DarkGray
-                #Continue
+            if ($ExpandDriverCab -eq $false) {
+                Write-Host "Driver does not support the Hardware in this system" -ForegroundColor DarkGray
+                Continue
+            }
+            if ($HardwareIdMatches) {
+                Write-Host "HardwareID Match"
+                foreach ($HardwareIdMatch in $HardwareIdMatches) {
+                    Write-Host "$($HardwareIdMatch)" -ForegroundColor Cyan
+                }
             }
         } else {
-            Write-Host "Compatible!" -Foregroundcolor Cyan
+            Write-Host "Compatible"
         }
-        if ($ExpandDriverCab -eq $false) {Continue}
-
-        $ExpandDrivers += $DriverTask
+        $ExpandDrivers += $OSDDriver
     }
     #===================================================================================================
     #   ExpandDrivers
     #===================================================================================================
     Write-Host "Expanding Drivers ..." -Foregroundcolor Green
     foreach ($ExpandDriver in $ExpandDrivers) {
-        if (!(Test-Path "$ExpandDriverPath\$($ExpandDriver.DriverName)")) {
-            New-Item -Path "$ExpandDriverPath\$($ExpandDriver.DriverName)" -ItemType Directory -Force | Out-Null
+        $OSDDriverCab = $ExpandDriver.Name
+        $OSDDriverBaseName = $ExpandDriver.BaseName
+        $OSDDriverFullName = $ExpandDriver.FullName
+        $OSDDriverDirectoryName = $ExpandDriver.DirectoryName
+
+        if (!(Test-Path "$ExpandDriverPath\$OSDDriverBaseName")) {
+            New-Item -Path "$ExpandDriverPath\$OSDDriverBaseName" -ItemType Directory -Force | Out-Null
         }
-        if ($ExpandDriver.OSDPackageFile -match '.cab') {
-            Write-Host "Expanding CAB $($ExpandDriver.OSDPackageFile) to $ExpandDriverPath\$($ExpandDriver.DriverName)" -ForegroundColor Cyan
-            Expand -R "$($ExpandDriver.OSDPackageFile)" -F:* "$ExpandDriverPath\$($ExpandDriver.DriverName)" | Out-Null
+        if ($OSDDriverCab -match '.cab') {
+            Write-Host "Expanding CAB $OSDDriverFullName to $ExpandDriverPath\$OSDDriverBaseName" -ForegroundColor Cyan
+            Expand -R "$OSDDriverFullName" -F:* "$ExpandDriverPath\$OSDDriverBaseName" | Out-Null
         }
-        if ($ExpandDriver.OSDPackageFile -match '.zip') {
-            Write-Host "Expanding ZIP $($ExpandDriver.OSDPackageFile) to $ExpandDriverPath\$($ExpandDriver.DriverName)" -ForegroundColor Cyan
-            Expand-Archive -Path "$($ExpandDriver.OSDPackageFile)" -DestinationPath "$ExpandDriverPath" -Force
+        if ($OSDDriverCab -match '.zip') {
+            Write-Host "Expanding ZIP $OSDDriverFullName to $ExpandDriverPath\$OSDDriverBaseName" -ForegroundColor Cyan
+            Expand-Archive -Path "$OSDDriverFullName" -DestinationPath "$ExpandDriverPath" -Force
         }
     }
     Stop-Transcript | Out-Null

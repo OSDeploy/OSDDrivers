@@ -71,6 +71,10 @@ function Get-DriverDellFamily {
         $DriverFamily = $null
         $DriverChild = $null
 
+        $IsDesktop = $null
+        $IsLaptop = $null
+        $IsServer = $false
+
         $MakeLike = @()
         $MakeNotLike = @()
         $MakeMatch = @('Dell')
@@ -96,8 +100,8 @@ function Get-DriverDellFamily {
 
         $OSVersionMatch = @()
         $OSVersionNotMatch = @()
-        $OSBuildGE = @()
-        $OSBuildLE = @()
+        $OSBuildGE = $null
+        $OSBuildLE = $null
         $OSInstallationType = 'Client'
 
         $OSDPnpClass = $null
@@ -108,7 +112,7 @@ function Get-DriverDellFamily {
         
         $DownloadFile = $null
         $OSDPnpFile = $null
-        $OSDPackageFile = $null
+        $OSDCabFile = $null
         $OSDTaskFile = $null
         $FileType = $null
         $SizeMB = $null
@@ -169,6 +173,10 @@ function Get-DriverDellFamily {
         #===================================================================================================
         #   Model Latitude
         #===================================================================================================
+        if ($DriverFamilyChild -match 'Latitude') {
+            $IsLaptop = $true
+            $IsDesktop = $false
+        }
         if ($DriverFamilyChild -eq 'Latitude 3X40') {$ModelMatch = 'Latitude 3340','Latitude 3440','Latitude 3540'}
 
         if ($DriverFamilyChild -eq 'Latitude E1') {$ModelMatch = 'Latitude E4200','Latitude E4300','Latitude E5400','Latitude E5500','Latitude E6400','Latitude E6500','Precision M2400','Precision M4400','Precision M6400'}
@@ -201,7 +209,11 @@ function Get-DriverDellFamily {
         if ($DriverFamilyChild -eq 'Latitude E11WHL5x01') {$ModelMatch = 'Latitude 5401','Latitude 5501'}
         #===================================================================================================
         #   Model OptiPlex
-        #===================================================================================================        
+        #===================================================================================================
+        if ($DriverFamilyChild -match 'OptiPlex') {
+            $IsLaptop = $false
+            $IsDesktop = $true
+        }
         if ($DriverFamilyChild -eq 'OptiPlex D1') {$ModelEq = 'OptiPlex 360','OptiPlex 760','OptiPlex 760'} #Win7
         if ($DriverFamilyChild -eq 'OptiPlex D2') {$ModelEq = 'OptiPlex 380','OptiPlex 780','OptiPlex 980','OptiPlex XE'} #Win7
         if ($DriverFamilyChild -eq 'OptiPlex D3') {$ModelEq = 'OptiPlex 390','OptiPlex 790','OptiPlex 990'} #Win7
@@ -220,15 +232,28 @@ function Get-DriverDellFamily {
         if ($DriverFamilyChild -eq 'OptiPlex 5055') {$ModelEq = 'OptiPlex 5055'}
         if ($DriverFamilyChild -eq 'OptiPlex 5055R') {$ModelEq = 'OptiPlex 5055R'}
         #===================================================================================================
-        #   Model Precision
+        #   Model Precision M
         #===================================================================================================
+        if ($DriverFamilyChild -match 'Precision M') {
+            $IsLaptop = $true
+            $IsDesktop = $false
+        }
         if ($DriverFamilyChild -eq 'Precision M3800') {$ModelMatch = 'Precision M3800'}
         if ($DriverFamilyChild -eq 'Precision M5') {$ModelMatch = 'Precision M2800','Precision M4800','Precision M6800'}
-        if ($DriverFamilyChild -eq 'Precision M6') {$ModelMatch = 'Precision 3510','Precision 5510','Precision 7510','Precision 7710','*XPS*9550*'}
+        if ($DriverFamilyChild -eq 'Precision M6') {$ModelMatch = 'Precision 3510','Precision 5510','Precision 7510','Precision 7710','XPS*9550'}
         if ($DriverFamilyChild -eq 'Precision M7') {$ModelMatch = 'Precision 3520','Precision 5520','Precision 7520','Precision 7720'}
         if ($DriverFamilyChild -eq 'Precision M8') {$ModelMatch = 'Precision 3530','Precision 5530','Precision 7530','Precision 7730'}
         if ($DriverFamilyChild -eq 'Precision M8WHL') {$ModelMatch = 'Precision 3540'}
         if ($DriverFamilyChild -eq 'Precision M9') {$ModelMatch = 'Precision 3541'}
+        if ($DriverFamilyChild -eq 'Precision M9CFLR5540') {$ModelMatch = 'Precision 5540'}
+        if ($DriverFamilyChild -eq 'Precision M9MLK') {$ModelMatch = 'Precision 7540','Precision 7740'}
+        #===================================================================================================
+        #   Model Precision M
+        #===================================================================================================
+        if ($DriverFamilyChild -match 'Precision W') {
+            $IsLaptop = $false
+            $IsDesktop = $true
+        }
         if ($DriverFamilyChild -eq 'Precision WS5') {$ModelMatch = 'Precision T1700'}
         if ($DriverFamilyChild -eq 'Precision WS6') {$ModelMatch = 'Precision 5810','Precision T5810','Precision 7810','Precision T7810','Precision 7910','Precision R7910','Precision T7910'}
         if ($DriverFamilyChild -eq 'Precision WS7') {$ModelMatch = 'Precision 3420','Precision 3620'}
@@ -238,17 +263,29 @@ function Get-DriverDellFamily {
         #===================================================================================================
         #   Model Venue Pro
         #===================================================================================================
+        if ($DriverFamilyChild -match 'Venue') {
+            $IsLaptop = $true
+            $IsDesktop = $false
+        }
         if ($DriverFamilyChild -eq 'Venue PRO2') {$ModelMatch = 'Venue 8 Pro 5830','Venue 11 Pro 5130','Venue 11 Pro 7130','Venue 11 Pro 7139'}
         if ($DriverFamilyChild -eq 'Venue PRO3') {$ModelMatch = 'Venue 11 Pro 7140'}
         if ($DriverFamilyChild -eq 'Venue PRO4') {$ModelMatch = 'Venue 5056','Venue 10PRO5056','Venue5855','Venue 8PRO5855'}
         #===================================================================================================
         #   Model Vostro
         #===================================================================================================
+        if ($DriverFamilyChild -match 'Vostro') {
+            $IsLaptop = $true
+            $IsDesktop = $false
+        }
         if ($DriverFamilyChild -eq 'Vostro D8') {$ModelMatch = 'CHENGMING 3967','CHENGMING 3968'}
         if ($DriverFamilyChild -eq 'Vostro D9') {$ModelMatch = 'CHENGMING 3980'}
         #===================================================================================================
         #   Model XPS
         #===================================================================================================
+        if ($DriverFamilyChild -match 'XPS NOTEBOOK') {
+            $IsLaptop = $true
+            $IsDesktop = $false
+        }
         if ($DriverFamilyChild -eq 'XPS NOTEBOOK1') {$ModelMatch = 'XPS 9530'}
         if ($DriverFamilyChild -eq 'XPS NOTEBOOK3') {$ModelMatch = 'XPS 9343'}
         if ($DriverFamilyChild -eq 'XPS NOTEBOOK4') {$ModelMatch = 'XPS 9250','XPS 9350'}
@@ -264,7 +301,7 @@ function Get-DriverDellFamily {
         #===================================================================================================
         #   DriverName
         #===================================================================================================
-        $DriverName = "OSD $OSDGroup $DriverFamily $DriverChild $OSNameMatch $DriverVersion"
+        $DriverName = "$OSDGroup $DriverFamily $DriverChild $OSNameMatch $DriverVersion"
         #if ($OSArch) {$DriverName = "$OSDGroup $DriverFamily $DriverChild $OSNameMatch $OSArch $DriverVersion"}
         #===================================================================================================
         #   DriverGrouping
@@ -296,13 +333,11 @@ function Get-DriverDellFamily {
         #===================================================================================================
         $DriverInfo = 'https://www.dell.com/support/article/us/en/04/how13322/dell-family-driver-packs?lang=en'
         #===================================================================================================
-        #   OSDPnpFile
+        #   OSDFiles
         #===================================================================================================
-        $OSDTaskFile = "$($DriverName).cabpnp"
-        #===================================================================================================
-        #   OSDTaskFile
-        #===================================================================================================
-        $OSDTaskFile = "$($DriverName).cabtask"
+        $OSDPnpFile = "$($DriverName).drvpnp"
+        $OSDCabFile = "$($DriverName).cab"
+        $OSDTaskFile = "$($DriverName).drvtask"
         #===================================================================================================
         #   Create Object 
         #===================================================================================================
@@ -320,6 +355,10 @@ function Get-DriverDellFamily {
             DriverFamilyChild       = [string] $DriverFamilyChild
             DriverFamily            = [string] $DriverFamily
             DriverChild             = [string] $DriverChild
+
+            IsDesktop               = [bool]$IsDesktop
+            IsLaptop                = [bool]$IsLaptop
+            IsServer                = [bool]$IsServer
 
             MakeLike                = [array[]] $MakeLike
             MakeNotLike             = [array[]] $MakeNotLike
@@ -346,8 +385,8 @@ function Get-DriverDellFamily {
 
             OSVersionMatch          = [array[]] $OSVersionMatch
             OSVersionNotMatch       = [array[]] $OSVersionNotMatch
-            OSBuildGE               = [array[]] $OSBuildGE
-            OSBuildLE               = [array[]] $OSBuildLE
+            OSBuildGE               = [string] $OSBuildGE
+            OSBuildLE               = [string] $OSBuildLE
             OSInstallationType      = [string]$OSInstallationType
 
             OSDPnpClass             = [string] $OSDPnpClass
@@ -358,7 +397,7 @@ function Get-DriverDellFamily {
 
             DownloadFile            = [string] $DownloadFile
             OSDPnpFile              = [string] $OSDPnpFile
-            OSDPackageFile          = [string] $OSDPackageFile
+            OSDCabFile          = [string] $OSDCabFile
             OSDTaskFile             = [string] $OSDTaskFile
             FileType                = [string] $FileType
             SizeMB                  = [int] $SizeMB
@@ -375,21 +414,36 @@ function Get-DriverDellFamily {
     #===================================================================================================
     #   Select-Object
     #===================================================================================================
-    $DriverResults = $DriverResults | Select-Object LastUpdate, OSDVersion,`
-    OSDStatus, OSDGroup, OSDType,`
+    $DriverResults = $DriverResults | Select-Object LastUpdate, `
+    OSDVersion,OSDStatus,OSDGroup,OSDType,`
     DriverName, DriverVersion, DriverGrouping,`
+    #OSNameMatch,OSNameNotMatch,`
+    OSVersionMatch, OSArchMatch,`
     DriverFamilyChild, DriverFamily, DriverChild,`
-    MakeLike, MakeNotLike, MakeMatch, MakeNotMatch,`
-    ModelLike, ModelNotLike, ModelMatch, ModelNotMatch, ModelEq, ModelNe,`
-    SystemFamilyMatch, SystemFamilyNotMatch,`
-    SystemSkuMatch, SystemSkuNotMatch,`
-    OSNameMatch, OSNameNotMatch, OSArchMatch, OSArchNotMatch,`
-    OSVersionMatch, OSVersionNotMatch, OSBuildGE, OSBuildLE, OSInstallationType,`
-    OSDPnpClass, OSDPnpClassGuid,`
-    DriverBundle, DriverWeight,`
-    DownloadFile, OSDPnpFile, OSDPackageFile, OSDTaskFile,`
-    FileType, SizeMB, IsSuperseded,`
-    DriverUrl, DriverDescription, DriverInfo, DriverCleanup, OSDGuid
+    IsDesktop,IsLaptop,`
+    #IsServer,`
+    #MakeLike, MakeNotLike,`
+    MakeMatch,`
+    #MakeNotMatch,`
+    #ModelLike, ModelNotLike,`
+    ModelMatch, ModelNotMatch, ModelEq,`
+    #ModelNe,`
+    #SystemFamilyMatch, SystemFamilyNotMatch,`
+    #SystemSkuMatch, SystemSkuNotMatch,`
+    #OSNameNotMatch, OSArchNotMatch, OSVersionNotMatch, OSBuildGE, OSBuildLE,`
+    OSInstallationType,`
+    #OSDPnpClass,OSDPnpClassGuid,`
+    #DriverBundle, DriverWeight,`
+    DownloadFile,`
+    #OSDPnpFile, OSDCabFile, OSDTaskFile,`
+    #FileType,`
+    SizeMB,`
+    IsSuperseded,`
+    DriverUrl,`
+    #DriverDescription,`
+    DriverInfo,`
+    #DriverCleanup,`
+    OSDGuid
     #===================================================================================================
     #   Supersedence
     #===================================================================================================
@@ -403,6 +457,7 @@ function Get-DriverDellFamily {
         }
     }
     $DriverResults = $DriverResults | Where-Object {$_.IsSuperseded -eq $false}
+    #$DriverResults = $DriverResults | Where-Object {$_.OSVersionMatch -match '10.0'}
     #===================================================================================================
     #   Sort Object
     #===================================================================================================

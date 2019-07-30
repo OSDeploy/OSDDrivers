@@ -63,12 +63,27 @@ function Get-OSDDriverPnp {
             Write-Host "Process: $($ExpandInf.FullName)" -ForegroundColor DarkGray
 
             $OSDDriverPnp += Get-WindowsDriver -Online -Driver "$($ExpandInf.FullName)" | `
-            Select-Object -Property HardwareId,Version,ManufacturerName,HardwareDescription,`
+            Select-Object -Property HardwareId,HardwareDescription,Version,ManufacturerName,`
             Architecture,ServiceName,CompatibleIds,ExcludeIds,Driver,Inbox,CatalogFile,ClassName,`
             ClassGuid,ClassDescription,BootCritical,DriverSignature,ProviderName,Date,MajorVersion,`
             MinorVersion,Build,Revision | Sort-Object HardwareId
         }
     }
+    #===================================================================================================
+    #   Filter
+    #===================================================================================================
+    $OSDDriverPnp = $OSDDriverPnp | Where-Object {$_.HardwareId -notlike "SWC*"}
+    foreach ($Pnp in $OSDDriverPnp) {
+        $Pnp.HardwareId = ($Pnp.HardwareId -split '\&CC')[0]
+        $Pnp.HardwareId = ($Pnp.HardwareId -split '\&REV')[0]
+        $Pnp.HardwareId = ($Pnp.HardwareId -split '\&SUBSYS')[0]
+        #if ($Pnp.HardwareId -match 'PCI\\') {
+            #$HardwareId = $Pnp.HardwareId -split '&'
+            #$Pnp.HardwareId = "$($HardwareId[0])&$($HardwareId[1])"
+        #}
+    }
+    $OSDDriverPnp = $OSDDriverPnp | Where-Object {$_.HardwareId -ne 'PCI\VEN_8086'}
+    $OSDDriverPnp = $OSDDriverPnp | Sort-Object HardwareId -Unique
     #===================================================================================================
     #   Return
     #===================================================================================================

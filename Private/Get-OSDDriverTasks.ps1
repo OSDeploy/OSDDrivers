@@ -30,21 +30,24 @@ function Get-OSDDriverTasks {
             $OSDDriver = @()
             $OSDDriver = Get-Content "$OSDDriverFullName" | ConvertFrom-Json
 
-            $OSDDriver.OSDTaskFile = $OSDDriverFullName
-
+            $OSDDriver.OSDTaskFile = "$($OSDDriverTask.Directory)\$($OSDDriver.DriverName).drvtask"
+            $OSDDriver.OSDPnpFile = "$($OSDDriverTask.Directory)\$($OSDDriver.DriverName).drvpnp"
+            $OSDDriver.OSDCabFile = "$($OSDDriverTask.Directory)\$($OSDDriver.DriverName).cab"
+<# 
             $OSDPnpFile = $OSDDriver.OSDPnpFile
+
             if ($OSDPnpFile) {
                 if (Test-Path "$($OSDDriverTask.Directory)\$OSDPnpFile") {
                     $OSDDriver.OSDPnpFile = "$($OSDDriverTask.Directory)\$OSDPnpFile"
                 }
             }
 
-            $OSDPackageFile = $OSDDriver.OSDPackageFile
-            if ($OSDPackageFile) {
-                if (Test-Path "$($OSDDriverTask.Directory)\$OSDPackageFile") {
-                    $OSDDriver.OSDPackageFile = "$($OSDDriverTask.Directory)\$OSDPackageFile"
+            $OSDCabFile = $OSDDriver.OSDCabFile
+            if ($OSDCabFile) {
+                if (Test-Path "$($OSDDriverTask.Directory)\$OSDCabFile") {
+                    $OSDDriver.OSDCabFile = "$($OSDDriverTask.Directory)\$OSDCabFile"
                 }
-            }
+            } #>
 
             $OSDDriverTasks += $OSDDriver
         }

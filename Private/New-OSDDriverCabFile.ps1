@@ -35,9 +35,6 @@ function New-OSDDriverCabFile
         
         #Path and Name of the Cab to create
         [string]$PackagePath,
-
-        [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName)]
-        [array]$DriverCleanup,
         
         # Specifies if High Compression should be used.
         #[switch]$HighCompression,
@@ -47,7 +44,7 @@ function New-OSDDriverCabFile
         #[switch]$KeepDDF,
         
         # Specifies if the source files should be deleted after the archive has been created.
-        [switch]$RemoveSource,
+        #[switch]$RemoveSource,
         
         # Specifies if the output of the Makecab command should be redirected to the console.
         # Should be used for troubleshooting only.
@@ -90,7 +87,7 @@ function New-OSDDriverCabFile
 
         Get-ChildItem $ExpandedDriverPath -Recurse | Unblock-File
 
-        $DirectivePath = Join-Path -Path $PackagePath -ChildPath "$SourceName.cabddf"
+        $DirectivePath = Join-Path -Path $PackagePath -ChildPath "$SourceName.ddf"
 
         $SourceContent = Get-ChildItem -Recurse $ExpandedDriverPath | Where-Object { -Not($_.PsIsContainer)}
 
