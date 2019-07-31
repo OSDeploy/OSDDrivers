@@ -102,7 +102,7 @@ PrivateData = @{
         # IconUri = ''
 
         # ReleaseNotes of this module
-        ReleaseNotes = 'https://osddrivers.osdeploy.com/releases'
+        ReleaseNotes = 'https://osddrivers.osdeploy.com/module/releases'
 
     } # End of PSData hashtable
 

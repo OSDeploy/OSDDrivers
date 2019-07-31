@@ -1,26 +1,23 @@
 <#
 .SYNOPSIS
-Downloads Driver Packs
+Downloads DellFamily Driver Packs
 
 .DESCRIPTION
-Downloads Dell Driver Packs
+Downloads DellFamily Driver Packs
 Requires BITS for downloading the Downloads
 Requires Internet access
 
 .LINK
-https://osddrivers.osdeploy.com/functions/get-downosddriver
+https://osddrivers.osdeploy.com/module/functions/get-downosddriverpack
 
 .PARAMETER WorkspacePath
 Directory to the OSDDrivers Workspace.  This contains the Download, Expand, and Package subdirectories
 
-.PARAMETER OSDGroup
-Driver Group.  This will be expanded in the future to contain more groups
+.PARAMETER DriverFamily
+Filters compatibility to Latitude, OptiPlex, or Precision.  Venue, Vostro, and XPS are not included
 
-.PARAMETER OSArch
-Supported Architecture of the Driver
-
-.PARAMETER OSVersion
-Supported Operating Systems Version of the Driver.  This includes both Client and Server Operating Systems
+.PARAMETER MakeCab
+Creates a CAB file from the DellFamily DriverPack.  Default removes Audio and Video.  Core removes Default and additional Drivers
 #>
 function Get-DownOSDDriverPack {
     [CmdletBinding()]

@@ -1,14 +1,14 @@
 <#
 .SYNOPSIS
-Downloads Drivers
+Downloads IntelDisplay and IntelWireless Drivers
 
 .DESCRIPTION
-Downloads Intel Drivers
+Downloads IntelDisplay and IntelWireless Drivers
 Requires BITS for downloading the Downloads
 Requires Internet access
 
 .LINK
-https://osddrivers.osdeploy.com/functions/get-downosddriver
+https://osddrivers.osdeploy.com/module/functions/get-downosddriver
 
 .PARAMETER WorkspacePath
 Directory to the OSDDrivers Workspace.  This contains the Download, Expand, and Package subdirectories
@@ -17,10 +17,16 @@ Directory to the OSDDrivers Workspace.  This contains the Download, Expand, and 
 Driver Group.  This will be expanded in the future to contain more groups
 
 .PARAMETER OSArch
-Supported Architecture of the Driver
+Supported Architecture of the Driver.  Default is x64
 
 .PARAMETER OSVersion
-Supported Operating Systems Version of the Driver.  This includes both Client and Server Operating Systems
+Supported Operating Systems Version of the Driver.  This includes both Client and Server Operating Systems.  Default is 10.0
+
+.PARAMETER MakeCab
+Creates a CAB file from the Driver
+
+.PARAMETER SkipGridView
+Skips GridView for Automation
 #>
 function Get-DownOSDDriver {
     [CmdletBinding()]

@@ -6,7 +6,7 @@ Updates the OSDDrivers PowerShell Module to the latest version
 Updates the OSDDrivers PowerShell Module to the latest version from the PowerShell Gallery
 
 .LINK
-https://osddrivers.osdeploy.com/functions/update-moduleosddrivers
+https://osddrivers.osdeploy.com/module/functions/update-moduleosddrivers
 
 .Example
 Update-ModuleOSDDrivers
