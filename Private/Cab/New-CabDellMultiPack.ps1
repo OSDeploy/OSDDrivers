@@ -1,17 +1,19 @@
-function New-OSDDriverCab {
+function New-CabDellMultiPack {
     [CmdletBinding()]
     Param (
         [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
         [string]$ExpandedDriverPath,
 
         [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
-        [string]$PackagePath,
-
-        [switch]$PnpMatch,
+        [string]$PublishPath,
 
         [ValidateSet('Bluetooth','Camera','Display','HDC','HIDClass','Keyboard','Media','Monitor','Mouse','Net','SCSIAdapter','SmartCardReader','System','USBDevice')]
-        [string]$DriverClass
+        [string]$DriverClass,
+
+        [switch]$MakePnp,
+        [switch]$SelectPnp
     )
+
     #======================================================================================
     #   Validate Admin Rights
     #======================================================================================
@@ -53,9 +55,9 @@ function New-OSDDriverCab {
     #===================================================================================================
     Test-ExpandedDriverPath $ExpandedDriverPath
     #===================================================================================================
-    #   Test-PackagePath
+    #   Test-PublishPath
     #===================================================================================================
-    #Test-PackagePath $PackagePath
+    #Test-PublishPath $PublishPath
     #===================================================================================================
     #   Get-DirectoryName
     #===================================================================================================
@@ -63,51 +65,36 @@ function New-OSDDriverCab {
     #===================================================================================================
     #   Get-ParentDirectoryFullName
     #===================================================================================================
-    $ParentDirectoryFullName = Get-ParentDirectoryFullName $ExpandedDriverPath
-    #===================================================================================================
-    #   PnpMatch
-    #===================================================================================================
-    if ($PnpMatch.IsPresent) {
-        if ($DriverClass) {
-            Write-Verbose "ExpandedDriverPath: $ExpandedDriverPath $DriverClass" -Verbose
-            Save-OSDDriverPnp -ExpandedExpandedDriverPath $ExpandedDriverPath -OSDPnpClass $DriverClass
-        } else {
-            Write-Verbose "ExpandedDriverPath: $ExpandedDriverPath" -Verbose
-            Save-OSDDriverPnp -ExpandedExpandedDriverPath $ExpandedDriverPath
-        }
-        #===================================================================================================
-        #   Publish OSDDriverPnp
-        #===================================================================================================
-        #Write-Verbose "Publish: $PackagePath\$DirectoryName.drvpnp ..." -Verbose
-        #Copy-Item -Path "$ExpandedDriverPath.drvpnp" -Destination "$PackagePath" -Force -ErrorAction Stop | Out-Null
-        #Break
-    }
+    #$ParentDirectoryFullName = Get-ParentDirectoryFullName $ExpandedDriverPath
     #===================================================================================================
     #   New-OSDDriverCabFile
     #===================================================================================================
-    $OSDDriverCabFile = "$ExpandedDriverPath.cab"
+    $OSDDriverCabFile = "$PublishPath\$DirectoryName.cab"
     if (Test-Path "$OSDDriverCabFile") {
-        Write-Verbose "Build: $OSDDriverCabFile ... exists!" -Verbose
+        #Write-Verbose "Build: $OSDDriverCabFile ... exists!" -Verbose
     } else {
-        Write-Warning "Build: $OSDDriverCabFile ... This may take a while"
-        New-OSDDriverCabFile -ExpandedDriverPath "$ExpandedDriverPath" -PackagePath $PackagePath
+        #===================================================================================================
+        #   MakePnp
+        #===================================================================================================
+        if ($MakePnp.IsPresent) {
+            if ($DriverClass) {
+                Write-Verbose "ExpandedDriverPath: $ExpandedDriverPath $DriverClass" -Verbose
+                if ($SelectPnp.IsPresent) {
+                    Save-OSDDriverPnp -ExpandedDriverPath $ExpandedDriverPath -OSDPnpClass $DriverClass -GridView
+                } else {
+                    Save-OSDDriverPnp -ExpandedDriverPath $ExpandedDriverPath -OSDPnpClass $DriverClass
+                }
+                
+            } else {
+                Write-Verbose "ExpandedDriverPath: $ExpandedDriverPath" -Verbose
+                if ($SelectPnp.IsPresent) {
+                    Save-OSDDriverPnp -ExpandedDriverPath $ExpandedDriverPath -GridView
+                } else {
+                    Save-OSDDriverPnp -ExpandedDriverPath $ExpandedDriverPath
+                }
+            }
+        }
+        #Write-Warning "Build: $OSDDriverCabFile ... This may take a while"
+        New-CabFileDellMultiPack -ExpandedDriverPath "$ExpandedDriverPath" -PublishPath $PublishPath
     }
-<#     #===================================================================================================
-    #   Publish-DriverCab
-    #===================================================================================================
-    if (Test-Path "$PackagePath\$DirectoryName.cab") {
-        Write-Verbose "Publish: $PackagePath\$DirectoryName.cab ... exists!" -Verbose
-    } else {
-        Write-Verbose "Publish: $PackagePath\$DirectoryName.cab ..." -Verbose
-        Copy-Item -Path "$ExpandedDriverPath.cab" -Destination "$PackagePath" -Force -ErrorAction Stop | Out-Null
-    }
-    #===================================================================================================
-    #   New-AutoDriverTask
-    #===================================================================================================
-    if (-not (Test-Path "$PackagePath\$DirectoryName.drvtask")) {
-        Write-Warning "Use New-AutoDriverTask to create a Task for $PackagePath\$DirectoryName.cab"
-        Write-Warning "e.g.: New-AutoDriverTask -DriverCabPath '$PackagePath\$DirectoryName.cab'"
-    } else {
-        Write-Verbose "Publish: $PackagePath\$DirectoryName.drvtask ... exists!" -Verbose
-    } #>
 }

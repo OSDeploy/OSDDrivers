@@ -15,7 +15,7 @@ function Get-OSDDriverTasks {
         #   Get All Drivers Jsons
         #===================================================================================================
         $AllOSDDriverTasks = @()
-        $AllOSDDriverTasks = Get-ChildItem -Path "$PublishPath" *.drvtask -File -Recurse | Select-Object -Property *
+        $AllOSDDriverTasks = Get-ChildItem -Path "$PublishPath" *.drvpack -File -Recurse | Select-Object -Property *
     }
 
     process {
@@ -30,7 +30,7 @@ function Get-OSDDriverTasks {
             $OSDDriver = @()
             $OSDDriver = Get-Content "$OSDDriverFullName" | ConvertFrom-Json
 
-            $OSDDriver.OSDTaskFile = "$($OSDDriverTask.Directory)\$($OSDDriver.DriverName).drvtask"
+            $OSDDriver.OSDTaskFile = "$($OSDDriverTask.Directory)\$($OSDDriver.DriverName).drvpack"
             $OSDDriver.OSDPnpFile = "$($OSDDriverTask.Directory)\$($OSDDriver.DriverName).drvpnp"
             $OSDDriver.OSDCabFile = "$($OSDDriverTask.Directory)\$($OSDDriver.DriverName).cab"
 <# 

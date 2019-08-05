@@ -38,10 +38,10 @@ function Save-OSDDriverPnp {
     #===================================================================================================
     $OSDDriverPnp = $OSDDriverPnp | Sort-Object HardwareId
 
-    Write-Host "Save-OSDDriverPnp: Saving $ExpandedDriverPath\OSDDriver.drvpnp" -ForegroundColor Gray
+    #Write-Host "Save-OSDDriverPnp: Saving $ExpandedDriverPath\OSDDriver.drvpnp" -ForegroundColor Gray
     $OSDDriverPnp | Export-Clixml -Path "$ExpandedDriverPath\OSDDriver.drvpnp"
 
-    Write-Host "Save-OSDDriverPnp: Saving $ExpandedDriverPath\OSDDriver-Devices.txt" -ForegroundColor Gray
+    #Write-Host "Save-OSDDriverPnp: Saving $ExpandedDriverPath\OSDDriver-Devices.txt" -ForegroundColor Gray
     New-Item "$ExpandedDriverPath\OSDDriver-Devices.txt" -Force | Out-Null
     foreach ($DriverPnp in $OSDDriverPnp) {
         Add-Content -Path "$ExpandedDriverPath\OSDDriver-Devices.txt" -Value "$($DriverPnp.HardwareId),$($DriverPnp.HardwareDescription)"

@@ -19,7 +19,7 @@ Filters compatibility to Latitude, OptiPlex, or Precision.  Venue, Vostro, and X
 .PARAMETER MakeCab
 Creates a CAB file from the DellFamily DriverPack.  Default removes Audio and Video.  Core removes Default and additional Drivers
 #>
-function Get-DownOSDDriverPack {
+function Get-DownOSDDellModel {
     [CmdletBinding()]
     Param (
         #[Parameter(ValueFromPipeline = $true)]
@@ -28,8 +28,15 @@ function Get-DownOSDDriverPack {
         [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
         [string]$WorkspacePath,
 
+        #[Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName)]
+        #[ValidateSet('DellModel','DellFamily')]
+        #[string]$OSDGroup,
+
         [ValidateSet ('Latitude','OptiPlex','Precision')]
         [string]$DriverFamily,
+
+        [ValidateSet ('X10','X9','X8','X7','X6','X5','X4','X3')]
+        [string]$DellGeneration,
 
         #[Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName)]
         #[ValidateSet('DellFamily')]
@@ -43,8 +50,11 @@ function Get-DownOSDDriverPack {
         #[ValidateSet ('10.0','6.3','6.1')]
         #[string]$OSVersion,
 
-        [ValidateSet ('Default','Core')]
-        [string]$MakeCab
+        [ValidateSet ('L1','L2','L3','Decon')]
+        [string]$MakeCabLevel = 'L1',
+        [switch]$MakeCab,
+        [switch]$NoVideoAMD,
+        [switch]$NoVideoNvidia
         #[switch]$SkipGridView
     )
 
@@ -74,6 +84,7 @@ function Get-DownOSDDriverPack {
         #===================================================================================================
         $OSArch = 'x64'
         $OSVersion = '10.0'
+        $OSDGroup = 'DellModel'
         #===================================================================================================
         #   Get-OSDDrivers
         #===================================================================================================
@@ -82,25 +93,40 @@ function Get-DownOSDDriverPack {
             $SkipGridView = $true
             $OSDDrivers = $InputObject
         } else {
-            $OSDDrivers = Get-DriverDellFamily
+            if ($OSDGroup -eq 'DellFamily') {$OSDDrivers = Get-DriverDellFamily}
+            elseif ($OSDGroup -eq 'DellModel') {$OSDDrivers = Get-DriverDellModel}
+            else {
+                $OSDDrivers += Get-DriverDellFamily
+                $OSDDrivers += Get-DriverDellModel
+            }
         }
         #===================================================================================================
         #   Set-OSDStatus
         #===================================================================================================
         foreach ($OSDDriver in $OSDDrivers) {
             Write-Verbose "==================================================================================================="
+            $Generation = $OSDDriver.DriverName
             $DriverName = $OSDDriver.DriverName
             $OSDCabFile = "$($DriverName).cab"
+            $OSDCabFileL1 = "$($DriverName)-L1.cab"
+            $OSDCabFileL2 = "$($DriverName)-L2.cab"
+            $OSDCabFileL3 = "$($DriverName)-L3.cab"
             $DownloadFile = $OSDDriver.DownloadFile
             $OSDGroup = $OSDDriver.OSDGroup
             $OSDType = $OSDDriver.OSDType
             $DownloadedDriverPath = (Join-Path $WorkspaceDownload (Join-Path $OSDGroup $DownloadFile))
             $ExpandedDriverPath = (Join-Path $WorkspaceExpand (Join-Path $OSDGroup $DriverName))
             $PackagedDriverPath = (Join-Path $WorkspacePackage (Join-Path $OSDGroup $OSDCabFile))
+            $PackagedDriverPathL1 = (Join-Path $WorkspacePackage (Join-Path $OSDGroup $OSDCabFileL1))
+            $PackagedDriverPathL2 = (Join-Path $WorkspacePackage (Join-Path $OSDGroup $OSDCabFileL2))
+            $PackagedDriverPathL3 = (Join-Path $WorkspacePackage (Join-Path $OSDGroup $OSDCabFileL3))
 
             if (Test-Path "$DownloadedDriverPath") {$OSDDriver.OSDStatus = 'Downloaded'}
             if (Test-Path "$ExpandedDriverPath") {$OSDDriver.OSDStatus = 'Expanded'}
             if (Test-Path "$PackagedDriverPath") {$OSDDriver.OSDStatus = 'Packaged'}
+            if (Test-Path "$PackagedDriverPathL1") {$OSDDriver.OSDStatus = 'PackagedL1'}
+            if (Test-Path "$PackagedDriverPathL2") {$OSDDriver.OSDStatus = 'PackagedL2'}
+            if (Test-Path "$PackagedDriverPathL3") {$OSDDriver.OSDStatus = 'PackagedL3'}
 
             Write-Verbose "OSDCabFile: $OSDCabFile"
 
@@ -156,6 +182,9 @@ function Get-DownOSDDriverPack {
 
                 $OSDCabFile = "$($DriverName).cab"
                 Write-Verbose "OSDCabFile: $OSDCabFile"
+                $OSDCabFileL1 = "$($DriverName)-L1.cab"
+                $OSDCabFileL2 = "$($DriverName)-L2.cab"
+                $OSDCabFileL3 = "$($DriverName)-L3.cab"
 
                 $DownloadedDriverPath = (Join-Path $WorkspaceDownload (Join-Path $OSDGroup $DownloadFile))
                 Write-Verbose "DownloadedDriverPath: $DownloadedDriverPath"
@@ -164,6 +193,9 @@ function Get-DownOSDDriverPack {
                 Write-Verbose "ExpandedDriverPath: $ExpandedDriverPath"
 
                 $PackagedDriverPath = (Join-Path $WorkspacePackage (Join-Path $OSDGroup $OSDCabFile))
+                $PackagedDriverPathL1 = (Join-Path $WorkspacePackage (Join-Path $OSDGroup $OSDCabFileL1))
+                $PackagedDriverPathL2 = (Join-Path $WorkspacePackage (Join-Path $OSDGroup $OSDCabFileL2))
+                $PackagedDriverPathL3 = (Join-Path $WorkspacePackage (Join-Path $OSDGroup $OSDCabFileL3))
                 Write-Verbose "PackagedDriverPath: $PackagedDriverPath"
 
                 Write-Host "$DriverName" -ForegroundColor Green
@@ -218,46 +250,40 @@ function Get-DownOSDDriverPack {
                 #   ExpandedDriverPath OSDDriver Objects
                 #===================================================================================================
                 $OSDDriver | Export-Clixml -Path "$ExpandedDriverPath\OSDDriver.clixml" -Force
-                $OSDDriver | ConvertTo-Json | Out-File -FilePath "$ExpandedDriverPath\OSDDriver.drvtask" -Force
+                $OSDDriver | ConvertTo-Json | Out-File -FilePath "$ExpandedDriverPath\OSDDriver.drvpack" -Force
 
                 if ($MakeCab) {
                     #===================================================================================================
                     #   Create Package
                     #===================================================================================================
                     $PackagedDriverGroup = Get-PathOSDD -Path (Join-Path $WorkspacePackage $OSDGroup)
+                    if ($MakeCabLevel -eq 'L1') {$PackagedDriverPath = $PackagedDriverPathL1}
+                    if ($MakeCabLevel -eq 'L2') {$PackagedDriverPath = $PackagedDriverPathL2}
+                    if ($MakeCabLevel -eq 'L3') {$PackagedDriverPath = $PackagedDriverPathL3}
+
                     Write-Verbose "Verify: $PackagedDriverPath"
                     if (Test-Path "$PackagedDriverPath") {
-                        #Write-Warning "Compress-OSDDriver: $PackagedDriverPath already exists"
+                        Write-Warning "New-OSDDriverCabDellPack: $PackagedDriverPath already exists and will not be created"
                     } else {
-                        Write-Warning "New-CabDellFamily: Generating $PackagedDriverPath ... This will take a while"
-                        if ($MakeCab -eq 'Default') {New-CabDellFamily -ExpandedDriverPath $ExpandedDriverPath -PackagePath $PackagedDriverGroup}
-                        if ($MakeCab -eq 'Core') {New-CabDellFamily -ExpandedDriverPath $ExpandedDriverPath -PackagePath $PackagedDriverGroup -Core}
+                        Write-Warning "New-OSDDriverCabDellPack: Generating $PackagedDriverPath ... This will take a while"
+                        if ($MakeCabLevel -eq 'L1') {New-OSDDriverCabDellPack -ExpandedDriverPath $ExpandedDriverPath -PackagePath $PackagedDriverGroup -MakeCabLevel 'L1'}
+                        if ($MakeCabLevel -eq 'L2') {New-OSDDriverCabDellPack -ExpandedDriverPath $ExpandedDriverPath -PackagePath $PackagedDriverGroup -MakeCabLevel 'L2'}
+                        if ($MakeCabLevel -eq 'L3') {New-OSDDriverCabDellPack -ExpandedDriverPath $ExpandedDriverPath -PackagePath $PackagedDriverGroup -MakeCabLevel 'L3'}
                     }
                     #===================================================================================================
                     #   Verify Driver Package
                     #===================================================================================================
                     if (-not (Test-Path "$PackagedDriverPath")) {
-                        Write-Warning "Driver Expand: Could not package Driver to $PackagedDriverPath ... Exiting"
-                        Break
+                        Write-Warning "Driver Package: Could not package Driver to $PackagedDriverPath ..."
+                        Continue
                     }
-                    $OSDDriver.OSDStatus = 'Package'
+                    $OSDDriver.OSDStatus = "Package$MakeCabLevel"
                     #===================================================================================================
                     #   Export Results
                     #===================================================================================================
                     $OSDDriver | Export-Clixml -Path "$ExpandedDriverPath\OSDDriver.clixml" -Force
-                    $OSDDriver | ConvertTo-Json | Out-File -FilePath "$ExpandedDriverPath\OSDDriver.drvtask" -Force
-                    $OSDDriver | ConvertTo-Json | Out-File -FilePath "$PackagedDriverGroup\$($DriverName).drvtask" -Force
-                    #===================================================================================================
-                    #   Export Files
-                    #===================================================================================================
-                    #Write-Verbose "Verify: $ExpandedDriverPath\OSDDriver.drvpnp"
-                    if (Test-Path "$ExpandedDriverPath\OSDDriver.drvpnp") {
-                        Write-Verbose "Copy-Item: $ExpandedDriverPath\OSDDriver.drvpnp to $PackagedDriverGroup\$OSDPnpFile"
-                        Copy-Item -Path "$ExpandedDriverPath\OSDDriver.drvpnp" -Destination "$PackagedDriverGroup\$OSDPnpFile" -Force | Out-Null
-                    }
-                    $OSDDriver | Export-Clixml -Path "$ExpandedDriverPath\OSDDriver.clixml" -Force
-                    $OSDDriver | ConvertTo-Json | Out-File -FilePath "$ExpandedDriverPath\OSDDriver.drvtask" -Force
-                    $OSDDriver | ConvertTo-Json | Out-File -FilePath "$PackagedDriverGroup\$($DriverName).drvtask" -Force
+                    $OSDDriver | ConvertTo-Json | Out-File -FilePath "$ExpandedDriverPath\OSDDriver.drvpack" -Force
+                    $OSDDriver | ConvertTo-Json | Out-File -FilePath "$PackagedDriverGroup\$($DriverName)-$($MakeCabLevel).drvpack" -Force
                     #===================================================================================================
                     #   Publish-OSDDriverScripts
                     #===================================================================================================

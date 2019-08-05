@@ -83,6 +83,7 @@ function Get-OSDDriverPnp {
         #}
     }
     $OSDDriverPnp = $OSDDriverPnp | Where-Object {$_.HardwareId -ne 'PCI\VEN_8086'}
+    $OSDDriverPnp = $OSDDriverPnp | Where-Object {$_.HardwareId -notlike "{*"}
     $OSDDriverPnp = $OSDDriverPnp | Sort-Object HardwareId -Unique
     #===================================================================================================
     #   Return

@@ -3,12 +3,14 @@ function New-OSDDriverTask {
     Param (
         [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
         [string]$OSDDriverFile,
-
+        
         [string]$OSDGroup = 'Custom',
+        
         [string]$DriverVersion = '1.0',
 
-        [ValidateSet('Client','Server')]
-        [string]$OSInstallationType,
+        #[Parameter(ValueFromPipelineByPropertyName)]
+        #[ValidateSet('Any','Client','Server')]
+        [string]$OSInstallationType = 'Any',
 
         [string[]]$MakeLike,
         [string[]]$MakeNotLike,
@@ -27,22 +29,28 @@ function New-OSDDriverTask {
 
         [string[]]$SystemSkuMatch,
         [string[]]$SystemSkuNotMatch,
-        [ValidateSet('Win7','Win8.1','Win10')]
-        [string[]]$OSNameMatch,
-        [string[]]$OSNameNotMatch,
+
         [ValidateSet('x64','x86')]
         [string[]]$OSArchMatch,
+
         [ValidateSet('x64','x86')]
         [string[]]$OSArchNotMatch,
 
         [ValidateSet('6.1','6.2','6.3','10.0')]
         [string[]]$OSVersionMatch,
+        
         [ValidateSet('6.1','6.2','6.3','10.0')]
         [string[]]$OSVersionNotMatch,
+
         [string]$OSBuildGE,
         [string]$OSBuildLE,
+        
         [ValidateSet('Bluetooth','Camera','Display','HDC','HIDClass','Keyboard','Media','Monitor','Mouse','Net','SCSIAdapter','SmartCardReader','System','USBDevice')]
-        [string]$OSDPnpClass
+        [string]$OSDPnpClass,
+        
+        [string]$DriverInfo,
+        
+        [string]$DriverUrl
     )
 
     Begin {}
@@ -60,11 +68,11 @@ function New-OSDDriverTask {
         }
 
         $DriverName = $OSDDriver.BaseName
-        $DrvTaskFile = "$DriverName.drvtask"
+        $drvpackFile = "$DriverName.drvpack"
         $PnpFile = "$DriverName.drvpnp"
         
         $DriverPnpFullName = Join-Path "$($OSDDriver.DirectoryName)" "$PnpFile"
-        $DriverTaskFullName = Join-Path "$($OSDDriver.DirectoryName)" "$DrvTaskFile"
+        $DriverTaskFullName = Join-Path "$($OSDDriver.DirectoryName)" "$drvpackFile"
 
         #===================================================================================================
         #   Defaults
@@ -97,14 +105,12 @@ function New-OSDDriverTask {
         $DownloadFile = $null
         $OSDPnpFile = "$($DriverName).drvpnp"
         $OSDCabFile = "$($DriverName).cab"
-        $OSDTaskFile = "$($DriverName).drvtask"
+        $OSDTaskFile = "$($DriverName).drvpack"
         $FileType = 'zip'
         $SizeMB = $null
         $IsSuperseded = $false
 
-        $DriverUrl = $null
         $DriverDescription = $null
-        $DriverInfo = $DriverLink.href
         $DriverCleanup = @()
         $OSDGuid = $(New-Guid)
         #===================================================================================================
@@ -171,9 +177,9 @@ function New-OSDDriverTask {
             #SizeMB                  = [int] $SizeMB
             #IsSuperseded            = [bool] $IsSuperseded
 
-            #DriverUrl               = [string] $DriverUrl
+            DriverUrl               = [string] $DriverUrl
             #DriverDescription       = [string] $DriverDescription
-            #DriverInfo              = [string] $DriverInfo
+            DriverInfo              = [string] $DriverInfo
             #DriverCleanup           = [array] $DriverCleanup
             OSDGuid                 = [string] $(New-Guid)
         }
