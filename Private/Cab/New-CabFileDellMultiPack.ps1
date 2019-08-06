@@ -29,6 +29,7 @@ function New-CabFileDellMultiPack
         $RemoveDirective = $false
         $SourceName = (Get-Item $ExpandedDriverPath).Name
         $CabName = "$SourceName.cab"
+        if (Test-Path (Join-Path $PublishPath $CabName)) {Continue}
         #===================================================================================================
         #   PublishPath
         #===================================================================================================
