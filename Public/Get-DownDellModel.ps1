@@ -37,6 +37,9 @@ Removes drivers in the Audio Directory from being added to the CAB or MultiPack
 .PARAMETER RemoveVideoAMD
 Removes AMD Video Drivers from being added to the CAB or MultiPack
 
+.PARAMETER RemoveVideoIntel
+Removes Intel Video Drivers from being added to a MultiPack
+
 .PARAMETER RemoveVideoNvidia
 Removes Nvidia Video Drivers from being added to the CAB or MultiPack
 #>

@@ -289,12 +289,7 @@ function Get-DownDellFamily {
                 #   Verify Driver Expand
                 #===================================================================================================
                 if (Test-Path "$ExpandedDriverPath") {
-                    $NormalizeContent = Get-ChildItem "$ExpandedDriverPath\*\*\*\*\*" -Directory | Where-Object {($_.Name -match '_A') -and ($_.Name -notmatch '_A00-00')}
-                    foreach ($FunkyNameDriver in $NormalizeContent) {
-                        $NewBaseName = ($FunkyNameDriver.Name -split '_')[0]
-                        Write-Verbose "Renaming '$($FunkyNameDriver.FullName)' to '$($NewBaseName)_A00-00'" -Verbose
-                        Rename-Item "$($FunkyNameDriver.FullName)" -NewName "$($NewBaseName)_A00-00" -Force | Out-Null
-                    }
+                    $OSDDriver | Export-Clixml -Path "$ExpandedDriverPath\OSDDriver.clixml" -Force
                 } else {
                     Write-Warning "Driver Expand: Could not expand Driver to $ExpandedDriverPath ... Exiting"
                     Continue

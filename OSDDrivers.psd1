@@ -25,7 +25,16 @@ CompanyName = 'osdeploy.com'
 Copyright = '(c) 2019 David Segura osdeploy.com. All rights reserved.'
 
 # Description of the functionality provided by this module
-Description = 'BETA: OSDDrivers should be used for Testing Only!'
+Description = @'
+BETA: OSDDrivers should be used for Testing Only!
+
+New Function:
+Get-DownDellFamily to Download and Expand Dell Family Packs.  No other functionality included
+
+Updates:
+Get-DownDellModel does not remove Intel Video Drivers by default.  New parameter -RemoveVideoIntel has been added.
+Intel Video Drivers are still removed when using -Pack as there would be too many files to compress without removing it
+'@
 
 # Minimum version of the Windows PowerShell engine required by this module
 PowerShellVersion = '5.0'
