@@ -9,7 +9,10 @@ function New-CabFileDellMultiPack
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [string]$PublishPath,
-        
+
+        [Parameter(Position = 2)]
+        [switch]$RemoveVideoIntel = $false,
+
         [switch]$HighCompression = $false,
         [switch]$RemoveDirective = $false,
         [switch]$RemoveSource = $false,
@@ -24,10 +27,8 @@ function New-CabFileDellMultiPack
         #===================================================================================================
         $HighCompression = $true
         $RemoveDirective = $false
-        #===================================================================================================
-        #   SourceName
-        #===================================================================================================
         $SourceName = (Get-Item $ExpandedDriverPath).Name
+        $CabName = "$SourceName.cab"
         #===================================================================================================
         #   PublishPath
         #===================================================================================================
@@ -36,14 +37,6 @@ function New-CabFileDellMultiPack
         } else {
             $PublishPath = (Get-Item $ExpandedDriverPath).Parent.FullName
         }
-        #===================================================================================================
-        #   CabName
-        #===================================================================================================
-        $CabName = "$SourceName.cab"
-        #===================================================================================================
-        #   OSDDriver.drvpnp
-        #===================================================================================================
-        if (Test-Path "$ExpandedDriverPath\OSDDriver.drvpnp") {Copy-Item -Path "$ExpandedDriverPath\OSDDriver.drvpnp" -Destination "$PublishPath\$SourceName.drvpnp"}
         #===================================================================================================
         #   Directive
         #===================================================================================================
@@ -74,24 +67,16 @@ function New-CabFileDellMultiPack
         $SourceContent = @()
         $SourceContent = Get-ChildItem -Recurse $ExpandedDriverPath | Where-Object { -Not($_.PsIsContainer)}
         #===================================================================================================
-        #   OSDDriver-DDF0.clixml
-        #===================================================================================================
-        #Write-Host "Generating Content Directive: $ExpandedDriverPath\OSDDriver-DDF0.clixml" -ForegroundColor Gray
-        $SourceContent | Select-Object -ExpandProperty Fullname | Export-Clixml "$ExpandedDriverPath\OSDDriver-DDF0.clixml" -Force
-        #===================================================================================================
         #   Remove Directory - Intel Video
         #===================================================================================================
-        $ExcludeDriverDirs = @()
-        $ExcludeDriverDirs = Get-ChildItem "$ExpandedDriverPath" 'igfxEM.exe' -File -Recurse | Select-Object -Property Directory -Unique
-        foreach ($ExcludeDir in $ExcludeDriverDirs) {
-            Write-Host "$($ExcludeDir.Directory)" -ForegroundColor Gray
-            $SourceContent = $SourceContent | Where-Object {$_.FullName -notlike [string]"$($ExcludeDir.Directory)*"}
+        if ($RemoveVideoIntel.IsPresent) {
+            $ExcludeDriverDirs = @()
+            $ExcludeDriverDirs = Get-ChildItem "$ExpandedDriverPath" 'igfxEM.exe' -File -Recurse | Select-Object -Property Directory -Unique
+            foreach ($ExcludeDir in $ExcludeDriverDirs) {
+                Write-Host "$($ExcludeDir.Directory)" -ForegroundColor Gray
+                $SourceContent = $SourceContent | Where-Object {$_.FullName -notlike [string]"$($ExcludeDir.Directory)*"}
+            }
         }
-        #===================================================================================================
-        #   OSDDriver-DDF1.clixml
-        #===================================================================================================
-        #Write-Host "Generating Content Directive: $ExpandedDriverPath\OSDDriver-DDF1.clixml" -ForegroundColor Gray
-        $SourceContent | Select-Object -ExpandProperty Fullname | Export-Clixml "$ExpandedDriverPath\OSDDriver-DDF1.clixml" -Force
         #===================================================================================================
         #   Complete Directive
         #===================================================================================================
@@ -112,15 +97,8 @@ function New-CabFileDellMultiPack
         #===================================================================================================
         #   Cleanup
         #===================================================================================================
-        #if (Test-Path 'setup.inf') {Remove-Item 'setup.inf' -Force}
-        #if (Test-Path 'setup.rpt') {Remove-Item 'setup.rpt' -Force}
-        if (Test-Path "$ExpandedDriverPath\OSDDriver-Devices.txt") {
-            Copy-Item "$ExpandedDriverPath\OSDDriver-Devices.txt" -Destination "$PublishPath\$SourceName.drvtxt" -Force | Out-Null
-            Remove-Item "$ExpandedDriverPath\OSDDriver-Devices.txt" -Force | Out-Null
-        }
-        if (Test-Path "$ExpandedDriverPath\OSDDriver.drvpnp") {Remove-Item "$ExpandedDriverPath\OSDDriver.drvpnp" -Force | Out-Null}
-        if (Test-Path "$ExpandedDriverPath\OSDDriver-DDF0.clixml") {Remove-Item "$ExpandedDriverPath\OSDDriver-DDF0.clixml" -Force | Out-Null}
-        if (Test-Path "$ExpandedDriverPath\OSDDriver-DDF1.clixml") {Remove-Item "$ExpandedDriverPath\OSDDriver-DDF1.clixml" -Force | Out-Null}
+        if (Test-Path 'setup.inf') {Remove-Item 'setup.inf' -Force}
+        if (Test-Path 'setup.rpt') {Remove-Item 'setup.rpt' -Force}
         if ($RemoveDirective.IsPresent) {Remove-Item $DirectivePath -Force | Out-Null}
         if ($RemoveSource.IsPresent) {Remove-Item -Path $ExpandedDriverPath -Recurse -Force | Out-Null}
     }

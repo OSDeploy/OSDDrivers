@@ -17,6 +17,9 @@ function New-CabFileDell
         [switch]$RemoveVideoAMD = $false,
 
         [Parameter(Position = 4)]
+        [switch]$RemoveVideoIntel = $false,
+
+        [Parameter(Position = 5)]
         [switch]$RemoveVideoNvidia = $false,
 
         [switch]$HighCompression = $false,
@@ -33,10 +36,8 @@ function New-CabFileDell
         #===================================================================================================
         $HighCompression = $true
         $RemoveDirective = $false
-        #===================================================================================================
-        #   SourceName
-        #===================================================================================================
         $SourceName = (Get-Item $ExpandedDriverPath).Name
+        $CabName = "$SourceName.cab"
         #===================================================================================================
         #   PublishPath
         #===================================================================================================
@@ -45,14 +46,6 @@ function New-CabFileDell
         } else {
             $PublishPath = (Get-Item $ExpandedDriverPath).Parent.FullName
         }
-        #===================================================================================================
-        #   CabName
-        #===================================================================================================
-        $CabName = "$SourceName.cab"
-        #===================================================================================================
-        #   OSDDriver.drvpnp
-        #===================================================================================================
-        if (Test-Path "$ExpandedDriverPath\OSDDriver.drvpnp") {Copy-Item -Path "$ExpandedDriverPath\OSDDriver.drvpnp" -Destination "$PublishPath\$SourceName.drvpnp"}
         #===================================================================================================
         #   Directive
         #===================================================================================================
@@ -83,11 +76,6 @@ function New-CabFileDell
         $SourceContent = @()
         $SourceContent = Get-ChildItem -Recurse $ExpandedDriverPath | Where-Object { -Not($_.PsIsContainer)}
         #===================================================================================================
-        #   OSDDriver-DDF0.clixml
-        #===================================================================================================
-        #Write-Host "Generating Content Directive: $ExpandedDriverPath\OSDDriver-DDF0.clixml" -ForegroundColor Gray
-        $SourceContent | Select-Object -ExpandProperty Fullname | Export-Clixml "$ExpandedDriverPath\OSDDriver-DDF0.clixml" -Force
-        #===================================================================================================
         #   SupportedSystems
         #===================================================================================================
         $SupportedSystems = ($SourceContent | Where-Object {$_.FullName -match 'SupportedSystems.txt'}).Directory.FullName
@@ -97,6 +85,14 @@ function New-CabFileDell
         }
         Write-Verbose "SupportedSystems: $($SupportedSystems)" -Verbose
         #===================================================================================================
+        #   Default Remove
+        #===================================================================================================
+        #$SourceContent = $SourceContent | Where-Object {$_.FullName -notmatch 'release.dat'}
+        #$SourceContent = $SourceContent | Where-Object {$_.FullName -notlike "*\win10\*\*\*\Windows7*"}
+        #$SourceContent = $SourceContent | Where-Object {$_.FullName -notlike "*\win10\*\*\*\Windows8*"}
+        #$SourceContent = $SourceContent | Where-Object {$_.FullName -notlike "*\win10\*\*\*\Windows9*"}
+        #$SourceContent = $SourceContent | Where-Object {$_.FullName -notlike "*\win10\*\*\*\Windows10-x86*"}
+        #===================================================================================================
         #   RemoveAudio
         #===================================================================================================
         if ($RemoveAudio.IsPresent) {
@@ -104,43 +100,39 @@ function New-CabFileDell
             $SourceContent = $SourceContent | Where-Object {$_.FullName -notmatch '\\Audio\\'}
         }
         #===================================================================================================
-        #   Default Remove
-        #===================================================================================================
-        #$SourceContent = $SourceContent | Where-Object {$_.FullName -notmatch 'release.dat'}
-        $SourceContent = $SourceContent | Where-Object {$_.FullName -notlike "*\win10\*\*\*\Windows7*"}
-        $SourceContent = $SourceContent | Where-Object {$_.FullName -notlike "*\win10\*\*\*\Windows8*"}
-        $SourceContent = $SourceContent | Where-Object {$_.FullName -notlike "*\win10\*\*\*\Windows9*"}
-        $SourceContent = $SourceContent | Where-Object {$_.FullName -notlike "*\win10\*\*\*\Windows10-x86*"}
-        #===================================================================================================
         #   Remove Drivers - Intel Video
         #===================================================================================================
-        Write-Warning "Remove Driver: Intel Video"
-        $ExcludeDir = @()
-        foreach ($item in $SupportedSystems) {
-            $DriverBundles = @()
-            $DriverBundles = Get-ChildItem "$item\Video\*" -Directory | Select-Object -Property FullName
-        
-            foreach ($DriverDir in $DriverBundles) {
-                #Write-Host "$($DriverDir.FullName)" -ForegroundColor DarkGray
-                $ExcludeFiles = @()
-                $ExcludeFiles += Get-ChildItem "$($DriverDir.FullName)" -Recurse 'IntcDAud*.*' -File    #Intel Wireless
-                if ($ExcludeFiles) {
-                    Write-Host "$($DriverDir.FullName)" -ForegroundColor Gray
-                    $ExcludeDir += $DriverDir.FullName
+        if ($RemoveVideoIntel.IsPresent) {
+            Write-Warning "Remove Driver: Intel Video"
+            $ExcludeDir = @()
+            foreach ($item in $SupportedSystems) {
+                $DriverBundles = @()
+                $DriverBundles = Get-ChildItem "$item\Video\*" -Directory | Select-Object -Property FullName
+            
+                foreach ($DriverDir in $DriverBundles) {
+                    #Write-Host "$($DriverDir.FullName)" -ForegroundColor DarkGray
+                    $ExcludeFiles = @()
+                    $ExcludeFiles += Get-ChildItem "$($DriverDir.FullName)" -Recurse 'IntcDAud*.*' -File    #Intel Wireless
+                    if ($ExcludeFiles) {
+                        Write-Host "$($DriverDir.FullName)" -ForegroundColor Gray
+                        $ExcludeDir += $DriverDir.FullName
+                    }
                 }
             }
-        }
-        foreach ($item in $ExcludeDir) {
-            $SourceContent = $SourceContent | Where-Object {$_.FullName -notlike "*$($item)*"}
+            foreach ($item in $ExcludeDir) {
+                $SourceContent = $SourceContent | Where-Object {$_.FullName -notlike "*$($item)*"}
+            }
         }
         #===================================================================================================
         #   Remove Directory - Intel Video
         #===================================================================================================
-        $ExcludeDriverDirs = @()
-        $ExcludeDriverDirs = Get-ChildItem "$ExpandedDriverPath" 'igfxEM.exe' -File -Recurse | Select-Object -Property Directory -Unique
-        foreach ($item in $ExcludeDriverDirs) {
-            Write-Host "$($item.Directory)" -ForegroundColor Gray
-            $SourceContent = $SourceContent | Where-Object {$_.FullName -notlike [string]"$($item.Directory)*"}
+        if ($RemoveVideoIntel.IsPresent) {
+            $ExcludeDriverDirs = @()
+            $ExcludeDriverDirs = Get-ChildItem "$ExpandedDriverPath" 'igfxEM.exe' -File -Recurse | Select-Object -Property Directory -Unique
+            foreach ($item in $ExcludeDriverDirs) {
+                Write-Host "$($item.Directory)" -ForegroundColor Gray
+                $SourceContent = $SourceContent | Where-Object {$_.FullName -notlike [string]"$($item.Directory)*"}
+            }
         }
         #===================================================================================================
         #   Remove Drivers - AMD Video

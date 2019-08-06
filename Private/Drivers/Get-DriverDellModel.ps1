@@ -244,7 +244,7 @@ function Get-DriverDellModel
     SystemSku,` #SystemSkuNe
     DriverGrouping,`
     DownloadFile, SizeMB, DriverUrl, DriverInfo,` #DriverDescription
-    Hash,  OSDGuid
+    Hash, OSDGuid
     #===================================================================================================
     #   Sort Object
     #===================================================================================================
