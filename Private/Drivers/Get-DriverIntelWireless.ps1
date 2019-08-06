@@ -64,71 +64,52 @@ function Get-DriverIntelWireless {
             #===================================================================================================
             #   Defaults
             #===================================================================================================
-            $LastUpdate = [datetime] $(Get-Date)
             $OSDVersion = $(Get-Module -Name OSDDrivers | Sort-Object Version | Select-Object Version -Last 1).Version
+            $LastUpdate = [datetime] $(Get-Date)
             $OSDStatus = $null
             $OSDGroup = 'IntelWireless'
             $OSDType = 'Driver'
 
             $DriverName = $null
             $DriverVersion = $null
+            $DriverReleaseId = $null
             $DriverGrouping = $null
 
-            $DriverFamilyChild = $null
-            $DriverFamily = $null
-            $DriverChild = $null
-
-            $IsDesktop = $true
-            $IsLaptop = $true
-            $IsServer = $true
-
+            $OperatingSystem = @()
+            $OsVersion = @()
+            $OsArch = @()
+            $OsBuildMax = @()
+            $OsBuildMin = @()
+    
+            $Make = @()
+            $MakeNe = @()
             $MakeLike = @()
             $MakeNotLike = @()
             $MakeMatch = @()
             $MakeNotMatch = @()
-
+    
+            $Generation = $null
+            $SystemFamily = $null
+    
+            $Model = @()
+            $ModelNe = @()
             $ModelLike = @()
             $ModelNotLike = @()
             $ModelMatch = @()
             $ModelNotMatch = @()
-            $ModelEq = @()
-            $ModelNe = @()
-
-            $SystemFamilyMatch = @()
-            $SystemFamilyNotMatch = @()
-
-            $SystemSkuMatch = @()
-            $SystemSkuNotMatch = @()
-
-            $OSNameMatch = @()
-            $OSNameNotMatch = @()
-            $OSArchMatch = @()
-            $OSArchNotMatch = @()
-
-            $OSVersionMatch = @()
-            $OSVersionNotMatch = @()
-            $OSBuildGE = $null
-            $OSBuildLE = $null
-            $OSInstallationType = $null
-
-            $OSDPnpClass = 'Net'
-            $OSDPnpClassGuid = '{4D36E972-E325-11CE-BFC1-08002BE10318}'
-
+    
+            $SystemSku = @()
+            $SystemSkuNe = @()
+    
             $DriverBundle = $null
             $DriverWeight = 100
-            
+    
             $DownloadFile = $null
-            $OSDPnpFile = $null
-            $OSDCabFile = $null
-            $OSDTaskFile = $null
-            $FileType = $null
             $SizeMB = $null
-            $IsSuperseded = $false
-
             $DriverUrl = $null
+            $DriverInfo = $null
             $DriverDescription = $null
-            $DriverInfo = $DriverLink.href
-            #$DriverCleanup = @()
+            $Hash = $null
             $OSDGuid = $(New-Guid)
             #===================================================================================================
             #   LastUpdate
@@ -144,12 +125,12 @@ function Get-DriverIntelWireless {
             #===================================================================================================
             $DriverUrl = $UrlDownload.'data-direct-path'
             #===================================================================================================
-            #   OSArchMatch
+            #   OsArch
             #===================================================================================================
             if (($DriverUrl -match 'Win64') -or ($DriverUrl -match 'Driver64') -or ($DriverUrl -match '64_') -or ($DriverInfo -match '64-Bit')) {
-                $OSArchMatch = 'x64'
+                $OsArch = 'x64'
             } else {
-                $OSArchMatch = 'x86'
+                $OsArch = 'x86'
             }
             #===================================================================================================
             #   DriverDescription
@@ -160,73 +141,68 @@ function Get-DriverIntelWireless {
             #===================================================================================================
             $DownloadFile = Split-Path $DriverUrl -Leaf
             #===================================================================================================
-            #   FileType
-            #===================================================================================================
-            if ($DownloadFile -match 'cab') {$FileType = 'cab'}
-            if ($DownloadFile -match 'zip') {$FileType = 'zip'}
-            $FileType = $FileType.ToLower()
-            #===================================================================================================
             #   OS
             #===================================================================================================
             if ($DownloadFile -match 'Win10') {
-                $OSNameMatch = @('Win10')
-                $OSVersionMatch = @('10.0')
+                $OsNameMatch = @('Win10')
+                $OsVersion = @('10.0')
             } 
             if ($DownloadFile -match 'Win8.1') {
-                $OSNameMatch = @('Win8.1')
-                $OSVersionMatch = @('6.3')
+                $OsNameMatch = @('Win8.1')
+                $OsVersion = @('6.3')
             }
             if ($DownloadFile -match 'Win7') {
-                $OSNameMatch = @('Win7')
-                $OSVersionMatch = @('6.1')
+                $OsNameMatch = @('Win7')
+                $OsVersion = @('6.1')
             }
             #===================================================================================================
-            #   DriverName
+            #   Values
             #===================================================================================================
-            $DriverName = "$OSDGroup $DriverVersion $OSNameMatch $OSArchMatch"
-            #===================================================================================================
-            #   DriverGrouping
-            #===================================================================================================
-            $DriverGrouping = "Intel Wireless $OSNameMatch $OSArchMatch"
-            #===================================================================================================
-            #   OSDFiles
-            #===================================================================================================
-            $OSDPnpFile = "$($DriverName).drvpnp"
-            $OSDCabFile = "$($DriverName).cab"
-            $OSDTaskFile = "$($DriverName).drvpack"
+            $DriverName = "$OSDGroup $DriverVersion $OsNameMatch $OsArch"
+            $DriverGrouping = "Intel Wireless $OsNameMatch $OsArch"
+            $DriverInfo = $DriverLink.href
+
+            $OSDPnpClass = 'Net'
+            $OSDPnpClassGuid = '{4D36E972-E325-11CE-BFC1-08002BE10318}'
             #===================================================================================================
             #   Create Object
             #===================================================================================================
             $ObjectProperties = @{
-                LastUpdate              = [datetime] $LastUpdate
                 OSDVersion              = [string] $OSDVersion
+                LastUpdate              = [datetime] $LastUpdate
                 OSDStatus               = [string] $OSDStatus
-                OSDGroup                = [string] $OSDGroup
                 OSDType                 = [string] $OSDType
+                OSDGroup                = [string] $OSDGroup
     
                 DriverName              = [string] $DriverName
                 DriverVersion           = [string] $DriverVersion
-                DriverGrouping          = [string] $DriverGrouping
+                DriverReleaseId         = [string] $DriverReleaseID
     
-                DriverFamilyChild       = [string] $DriverFamilyChild
-                DriverFamily            = [string] $DriverFamily
-                DriverChild             = [string] $DriverChild
-
-                IsDesktop               = [bool]$IsDesktop
-                IsLaptop                = [bool]$IsLaptop
-                IsServer                = [bool]$IsServer
+                OperatingSystem         = [array] $OperatingSystem
+                OsVersion               = [string[]] $OsVersion
+                OsArch                  = [array[]] $OsArch
+                OsBuildMax              = [string] $OsBuildMax
+                OsBuildMin              = [string] $OsBuildMin
     
+                Make                    = [array[]] $Make
+                MakeNe                  = [array[]] $MakeNe
                 MakeLike                = [array[]] $MakeLike
                 MakeNotLike             = [array[]] $MakeNotLike
                 MakeMatch               = [array[]] $MakeMatch
                 MakeNotMatch            = [array[]] $MakeNotMatch
     
+                Generation              = [string] $Generation
+                SystemFamily            = [string] $SystemFamily
+    
+                Model                   = [array[]] $Model
+                ModelNe                 = [array[]] $ModelNe
                 ModelLike               = [array[]] $ModelLike
                 ModelNotLike            = [array[]] $ModelNotLike
                 ModelMatch              = [array[]] $ModelMatch
                 ModelNotMatch           = [array[]] $ModelNotMatch
-                ModelEq                 = [array[]] $ModelEq
-                ModelNe                 = [array[]] $ModelNe
+    
+                SystemSku               = [array[]] $SystemSku
+                SystemSkuNe             = [array[]] $SystemSkuNe
     
                 SystemFamilyMatch       = [array[]] $SystemFamilyMatch
                 SystemFamilyNotMatch    = [array[]] $SystemFamilyNotMatch
@@ -234,36 +210,20 @@ function Get-DriverIntelWireless {
                 SystemSkuMatch          = [array[]] $SystemSkuMatch
                 SystemSkuNotMatch       = [array[]] $SystemSkuNotMatch
     
-                OSNameMatch             = [array[]] $OSNameMatch
-                OSNameNotMatch          = [array[]] $OSNameNotMatch
-                OSArchMatch             = [array[]] $OSArchMatch
-                OSArchNotMatch          = [array[]] $OSArchNotMatch
-    
-                OSVersionMatch          = [array[]] $OSVersionMatch
-                OSVersionNotMatch       = [array[]] $OSVersionNotMatch
-                OSBuildGE               = [string] $OSBuildGE
-                OSBuildLE               = [string] $OSBuildLE
-                OSInstallationType      = [string]$OSInstallationType
-    
-                OSDPnpClass             = [string] $OSDPnpClass
-                OSDPnpClassGuid         = [string] $OSDPnpClassGuid
-    
+                DriverGrouping          = [string] $DriverGrouping
                 DriverBundle            = [string] $DriverBundle
                 DriverWeight            = [int] $DriverWeight
     
                 DownloadFile            = [string] $DownloadFile
-                OSDPnpFile              = [string] $OSDPnpFile
-                OSDCabFile          = [string] $OSDCabFile
-                OSDTaskFile             = [string] $OSDTaskFile
-                FileType                = [string] $FileType
                 SizeMB                  = [int] $SizeMB
-                IsSuperseded            = [bool] $IsSuperseded
-    
                 DriverUrl               = [string] $DriverUrl
-                DriverDescription       = [string] $DriverDescription
                 DriverInfo              = [string] $DriverInfo
-                DriverCleanup           = [array] $DriverCleanup
-                OSDGuid                 = [string] $(New-Guid)
+                DriverDescription       = [string] $DriverDescription
+                Hash                    = [string] $Hash
+                OSDGuid                 = [string] $OSDGuid
+    
+                OSDPnpClass             = [string] $OSDPnpClass
+                OSDPnpClassGuid         = [string] $OSDPnpClassGuid
             }
             New-Object -TypeName PSObject -Property $ObjectProperties
         }
@@ -271,30 +231,13 @@ function Get-DriverIntelWireless {
     #===================================================================================================
     #   Select-Object
     #===================================================================================================
-    $DriverResults = $DriverResults | Select-Object LastUpdate, `
-    OSDVersion,OSDStatus,OSDGroup,OSDType,`
-    DriverName, DriverVersion, DriverGrouping,`
-    #OSNameMatch,`
-    OSVersionMatch, OSArchMatch,`
-    #DriverFamilyChild, DriverFamily, DriverChild,`
-    #IsDesktop,IsLaptop,IsServer,`
-    #MakeLike, MakeNotLike,`
-    #MakeMatch, MakeNotMatch,`
-    #ModelLike, ModelNotLike, ModelMatch, ModelNotMatch, ModelEq, ModelNe,`
-    #SystemFamilyMatch, SystemFamilyNotMatch,`
-    #SystemSkuMatch, SystemSkuNotMatch,`
-    #OSNameNotMatch, OSArchNotMatch, OSVersionNotMatch, OSBuildGE, OSBuildLE,`
-    #OSInstallationType,`
-    OSDPnpClass,OSDPnpClassGuid,`
-    #DriverBundle, DriverWeight,`
-    DownloadFile,`
-    #OSDPnpFile, OSDCabFile, OSDTaskFile,`
-    #FileType,`
-    #SizeMB,`
-    #IsSuperseded,`
-    DriverUrl, DriverDescription, DriverInfo,`
-    #DriverCleanup,`
-    OSDGuid
+    $DriverResults = $DriverResults | Select-Object OSDVersion, LastUpdate, OSDStatus, OSDType, OSDGroup,`
+    DriverName, DriverVersion,`
+    OsVersion, OsArch,`
+    DriverGrouping,`
+    DownloadFile, DriverUrl, DriverInfo, DriverDescription,`
+    OSDGuid,`
+    OSDPnpClass, OSDPnpClassGuid
     #===================================================================================================
     #   Sort-Object
     #===================================================================================================

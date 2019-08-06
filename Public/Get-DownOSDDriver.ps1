@@ -16,13 +16,13 @@ Directory to the OSDDrivers Workspace.  This contains the Download, Expand, and 
 .PARAMETER OSDGroup
 Driver Group.  This will be expanded in the future to contain more groups
 
-.PARAMETER OSArch
+.PARAMETER OsArch
 Supported Architecture of the Driver.  Default is x64
 
-.PARAMETER OSVersion
+.PARAMETER OsVersion
 Supported Operating Systems Version of the Driver.  This includes both Client and Server Operating Systems.  Default is 10.0
 
-.PARAMETER MakeCab
+.PARAMETER Pack
 Creates a CAB file from the Driver
 
 .PARAMETER SkipGridView
@@ -43,11 +43,11 @@ function Get-DownOSDDriver {
 
         [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName)]
         [ValidateSet ('x64','x86')]
-        [string]$OSArch,
+        [string]$OsArch,
 
         [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName)]
         [ValidateSet ('10.0','6.3','6.1')]
-        [string]$OSVersion,
+        [string]$OsVersion,
 
         [switch]$Pack,
         [switch]$SkipGridView
@@ -114,13 +114,13 @@ function Get-DownOSDDriver {
             if (Test-Path "$ExpandedDriverPath\OSDDriver.drvpnp") {$OSDPnpFile = "$($DriverName).drvpnp"}
         }
         #===================================================================================================
-        #   OSArch
+        #   OsArch
         #===================================================================================================
-        if ($OSArch) {$OSDDrivers = $OSDDrivers | Where-Object {$_.OSArchMatch -match "$OSArch"}}
+        if ($OsArch) {$OSDDrivers = $OSDDrivers | Where-Object {$_.OsArch -match "$OsArch"}}
         #===================================================================================================
-        #   OSVersion
+        #   OsVersion
         #===================================================================================================
-        if ($OSVersion) {$OSDDrivers = $OSDDrivers | Where-Object {$_.OSVersionMatch -match "$OSVersion"}}
+        if ($OsVersion) {$OSDDrivers = $OSDDrivers | Where-Object {$_.OsVersion -match "$OsVersion"}}
         #===================================================================================================
         #   GridView
         #===================================================================================================

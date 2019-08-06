@@ -1,58 +1,57 @@
 function Get-DriverDellModel
 {
     [CmdletBinding()]
-    Param ()
+    Param (
+        [Parameter(Mandatory)]
+        [string]$DownloadPath
+    )
     #===================================================================================================
     #   Dell Variables
     #===================================================================================================
     # Define Dell Download Sources
-    $DellDownloadList = "http://downloads.dell.com/published/Pages/index.html"
-    $DellDownloadBase = "http://downloads.dell.com"
-    $DellDriverListURL = "http://en.community.dell.com/techcenter/enterprise-client/w/wiki/2065.dell-command-deploy-driver-packs-for-enterprise-client-os-deployment"
-    $DellBaseURL = "http://en.community.dell.com"
-    $Dell64BIOSUtil = "http://en.community.dell.com/techcenter/enterprise-client/w/wiki/12237.64-bit-bios-installation-utility"
+    $DellDownloadsListUrl = "http://downloads.dell.com/published/Pages/index.html"
+    $DellDownloadsBaseUrl = "http://downloads.dell.com"
+    $DellDriverListUrl = "http://en.community.dell.com/techcenter/enterprise-client/w/wiki/2065.dell-command-deploy-driver-packs-for-enterprise-client-os-deployment"
+    $DellCommunityUrl = "http://en.community.dell.com"
+    $Dell64BiosUtilityUtl = "http://en.community.dell.com/techcenter/enterprise-client/w/wiki/12237.64-bit-bios-installation-utility"
     
     # Define Dell Download Sources
-    $DellXMLCabinetSource = "http://downloads.dell.com/catalog/DriverPackCatalog.cab"
-    $DellCatalogSource = "http://downloads.dell.com/catalog/CatalogPC.cab"
+    $DellDriverPackCatalogUrl = "http://downloads.dell.com/catalog/DriverPackCatalog.cab"
+    $DellCatalogPcUrl = "http://downloads.dell.com/catalog/CatalogPC.cab"
     
     # Define Dell Cabinet/XL Names and Paths
-    $DellCabFile = [string]($DellXMLCabinetSource | Split-Path -Leaf)
-    $DellCatalogFile = [string]($DellCatalogSource | Split-Path -Leaf)
-    $DellXMLFile = $DellCabFile.Trim(".cab")
-    $DellXMLFile = $DellXMLFile + ".xml"
-    $DellCatalogXMLFile = $DellCatalogFile.Trim(".cab") + ".xml"
+    $DellCabFile = [string]($DellDriverPackCatalogUrl | Split-Path -Leaf)
+    $DellCatalogFile = [string]($DellCatalogPcUrl | Split-Path -Leaf)
+    #$DellXMLFile = $DellCabFile.Trim(".cab")
+    #$DellXMLFile = $DellXMLFile + ".xml"
+    #$DellCatalogXMLFile = $DellCatalogFile.Trim(".cab") + ".xml"
     
     # Define Dell Global Variables
-    $global:DellCatalogXML = $null
-    $global:DellModelXML = $null
-    $global:DellModelCabFiles = $null
+    #$global:DellCatalogXML = $null
+    #$global:DellModelXML = $null
+    #$global:DellModelCabFiles = $null
     #===================================================================================================
     #   Driver
     #===================================================================================================
-<#     (New-Object System.Net.WebClient).DownloadFile($DellCatalogSource, "$env:TEMP\CatalogPC.cab")
+<#     (New-Object System.Net.WebClient).DownloadFile($DellCatalogPcUrl, "$env:TEMP\CatalogPC.cab")
     Expand "$env:TEMP\CatalogPC.cab" "$env:TEMP\CatalogPC.xml"
     Remove-Item -Path "$env:TEMP\CatalogPC.cab" -Force
     [xml]$DellDriverCatalog = Get-Content "$env:TEMP\CatalogPC.xml" -ErrorAction Stop
     $DellDriverList = $DellDriverCatalog.DriverPackManifest.DriverPackage #>
     #===================================================================================================
-    #   DriverPack
+    #   DriverPackCatalog
     #===================================================================================================
-    (New-Object System.Net.WebClient).DownloadFile($DellXMLCabinetSource, "$env:TEMP\DriverPackCatalog.cab")
-    Expand "$env:TEMP\DriverPackCatalog.cab" "$env:TEMP\DriverPackCatalog.xml" | Out-Null
-    Remove-Item -Path "$env:TEMP\DriverPackCatalog.cab" -Force | Out-Null
-    [xml]$DriverPackageCatalog = Get-Content "$env:TEMP\DriverPackCatalog.xml" -ErrorAction Stop
-    $DellDriverPackCatalog = $DriverPackageCatalog.DriverPackManifest.DriverPackage
-    #Write-Verbose "$env:TEMP\DriverPackCatalog.xml" -Verbose
+    if (-not(Test-Path "$DownloadPath")) {New-Item "$DownloadPath" -ItemType Directory -Force | Out-Null}
+    (New-Object System.Net.WebClient).DownloadFile($DellDriverPackCatalogUrl, "$DownloadPath\DriverPackCatalog.cab")
 
-<# 	$FilteredDellDriverPackCatalog = @($DellDriverPackCatalog | select-object -Property @{Label="Name";Expression={($_.Name.Display.'#cdata-section'.Trim())}},
-        @{Label="Model";Expression={($_.SupportedSystems.Brand.Model.Name.Trim() | Select-Object -unique )}},
-        @{Label="OperatingSystem";Expression={ ($_.SupportedOperatingSystems.OperatingSystem | %{ $_.Display.'#cdata-section'.Trim() } | Select-Object -Unique ) }},
-        ReleaseID, Size, DateTime, Hash, DellVersion, Path, Delta, Type,
-        @{Label="SupportedOperatingSystems";Expression={ ($_.SupportedOperatingSystems) }} | Out-GridView -OutputMode Multiple -Title "Select CABS to Dowload" )
-        
-    Break
-    Return #>
+    Expand "$DownloadPath\DriverPackCatalog.cab" "$DownloadPath\DriverPackCatalog.xml" | Out-Null
+
+    if (Test-Path "$DownloadPath\DriverPackCatalog.cab") {
+        Remove-Item -Path "$DownloadPath\DriverPackCatalog.cab" -Force | Out-Null
+    }
+
+    [xml]$DriverPackageCatalog = Get-Content "$DownloadPath\DriverPackCatalog.xml" -ErrorAction Stop
+    $DellDriverPackCatalog = $DriverPackageCatalog.DriverPackManifest.DriverPackage
     #===================================================================================================
     #   ForEach
     #===================================================================================================
@@ -62,8 +61,8 @@ function Get-DriverDellModel
         #===================================================================================================
         #   Defaults
         #===================================================================================================
-        $LastUpdate = [datetime] $(Get-Date)
         $OSDVersion = $(Get-Module -Name OSDDrivers | Sort-Object Version | Select-Object Version -Last 1).Version
+        $LastUpdate = [datetime] $(Get-Date)
         $OSDStatus = $null
         $OSDType = 'ModelPack'
         $OSDGroup = 'DellModel'
@@ -80,11 +79,11 @@ function Get-DriverDellModel
         $OsBuildMin = @()
 
         $Make = @('Dell')
-        $MakeNot = @()
-        $ModelLike = @()
-        $ModelNotLike = @()
-        $ModelMatch = @()
-        $ModelNotMatch = @()
+        $MakeNe = @()
+        $MakeLike = @()
+        $MakeNotLike = @()
+        $MakeMatch = @()
+        $MakeNotMatch = @()
 
         $Generation = $null
         $SystemFamily = $null
@@ -170,10 +169,13 @@ function Get-DriverDellModel
         if ($OsCode -eq 'Windows8') {Continue}
         if ($OsCode -eq 'Windows8.1') {Continue}
         if ($OsCode -match 'WinPE') {Continue}
-        $DriverUrl = "$DellDownloadBase/$($DriverPackage.path)"
+        $DriverUrl = "$DellDownloadsBaseUrl/$($DriverPackage.path)"
         $OsVersion = "$($OsMajor).$($OsMinor)"
         $DriverName = "$OSDGroup $Generation $Model $OsVersion $DriverVersion"
         $DriverGrouping = "$Generation $Model $OsVersion"
+        if (Test-Path "$DownloadPath\$DownloadFile") {
+            $OSDStatus = 'Downloaded'
+        }
         #===================================================================================================
         #   Create Object 
         #===================================================================================================
@@ -195,7 +197,7 @@ function Get-DriverDellModel
             OsBuildMin              = [string] $OsBuildMin
 
             Make                    = [array[]] $Make
-            MakeNot                 = [array[]] $MakeNot
+            MakeNe                  = [array[]] $MakeNe
             MakeLike                = [array[]] $MakeLike
             MakeNotLike             = [array[]] $MakeNotLike
             MakeMatch               = [array[]] $MakeMatch
@@ -231,11 +233,12 @@ function Get-DriverDellModel
     #===================================================================================================
     #   Select-Object
     #===================================================================================================
-    $DriverResults = $DriverResults | Select-Object OSDVersion, LastUpdate, OSDStatus, OSDType, OSDGroup,`
+    $DriverResults = $DriverResults | Select-Object OSDVersion, LastUpdate,`
+    OSDStatus, OSDType, OSDGroup,`
     DriverName, DriverVersion, DriverReleaseId,`
     OsVersion, OsArch,` #OperatingSystem
     Generation,`
-    Make,` #MakeNot, MakeLike, MakeNotLike
+    Make,` #MakeNe, MakeLike, MakeNotLike
     SystemFamily,`
     Model,` #ModelNe, ModelLike, ModelNotLike, ModelMatch, ModelNotMatch
     SystemSku,` #SystemSkuNe

@@ -7,7 +7,7 @@
 RootModule = 'OSDDrivers.psm1'
 
 # Version number of his module.
-ModuleVersion = '19.8.5.0'
+ModuleVersion = '19.8.6.0'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -25,7 +25,7 @@ CompanyName = 'osdeploy.com'
 Copyright = '(c) 2019 David Segura osdeploy.com. All rights reserved.'
 
 # Description of the functionality provided by this module
-Description = 'BETA:  OSDDrivers is for Testing Only'
+Description = 'BETA: OSDDrivers should be used for Testing Only!'
 
 # Minimum version of the Windows PowerShell engine required by this module
 PowerShellVersion = '5.0'
@@ -64,7 +64,7 @@ PowerShellVersion = '5.0'
 # NestedModules = @()
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-FunctionsToExport = 'Get-DownDellModel','Get-DownOSDDriver','Update-ModuleOSDDrivers','Get-DriverDellModel','Publish-OSDDriverScripts'
+FunctionsToExport = 'Get-DownDellModel','Get-DownOSDDriver','Update-ModuleOSDDrivers'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = @()

@@ -13,15 +13,39 @@ https://osddrivers.osdeploy.com/module/functions/get-downdellmodel
 .PARAMETER WorkspacePath
 Directory to the OSDDrivers Workspace.  This contains the Download, Expand, and Package subdirectories
 
-.PARAMETER DriverFamily
+.PARAMETER Generation
+Generation of the Dell Model
+
+.PARAMETER OsVersion
+OsVersion of the Driver
+
+.PARAMETER SystemFamily
 Filters compatibility to Latitude, Optiplex, or Precision.  Venue, Vostro, and XPS are not included
 
+.PARAMETER Expand
+Expands the downloaded Dell Model Packs
+
 .PARAMETER Pack
-Creates a CAB file from the DellFamily DriverPack.  Default removes Audio and Video.  Core removes Default and additional Drivers
+Creates a CAB file from the DellFamily DriverPack.  Default removes Intel Video
+
+.PARAMETER MultiPackName
+Name of the MultiPack that will be created in Workspace\Packages
+
+.PARAMETER RemoveAudio
+Removes drivers in the Audio Directory from being added to the CAB or MultiPack
+
+.PARAMETER RemoveVideoAMD
+Removes AMD Video Drivers from being added to the CAB or MultiPack
+
+.PARAMETER RemoveVideoNvidia
+Removes Nvidia Video Drivers from being added to the CAB or MultiPack
 #>
 function Get-DownDellModel {
     [CmdletBinding(DefaultParameterSetName='Download')]
     Param (
+        #[Parameter(ValueFromPipeline = $true)]
+        #[Object[]]$InputObject,
+
         [Parameter(Mandatory)]
         [string]$WorkspacePath,
 
@@ -149,7 +173,7 @@ function Get-DownDellModel {
             $OSDDrivers = $InputObject
         } else {
             if ($MyInvocation.MyCommand.Name -eq 'Get-DownDellFamily') {$OSDDrivers = Get-DriverDellFamily}
-            if ($MyInvocation.MyCommand.Name -eq 'Get-DownDellModel') {$OSDDrivers = Get-DriverDellModel}
+            if ($MyInvocation.MyCommand.Name -eq 'Get-DownDellModel') {$OSDDrivers = Get-DriverDellModel -DownloadPath (Join-Path $WorkspaceDownload 'DellModel')}
         }
         #===================================================================================================
         #   Set-OSDStatus
@@ -298,7 +322,14 @@ function Get-DownDellModel {
                 #===================================================================================================
                 #   Verify Driver Expand
                 #===================================================================================================
-                if (-not (Test-Path "$ExpandedDriverPath")) {
+                if (Test-Path "$ExpandedDriverPath") {
+                    $NormalizeContent = Get-ChildItem "$ExpandedDriverPath\*\*\*\*\*" -Directory | Where-Object {($_.Name -match '_A') -and ($_.Name -notmatch '_A00-00')}
+                    foreach ($FunkyNameDriver in $NormalizeContent) {
+                        $NewBaseName = ($FunkyNameDriver.Name -split '_')[0]
+                        Write-Verbose "Renaming '$($FunkyNameDriver.FullName)' to '$($NewBaseName)_A00-00'" -Verbose
+                        Rename-Item "$($FunkyNameDriver.FullName)" -NewName "$($NewBaseName)_A00-00" -Force | Out-Null
+                    }
+                } else {
                     Write-Warning "Driver Expand: Could not expand Driver to $ExpandedDriverPath ... Exiting"
                     Continue
                 }
@@ -395,9 +426,7 @@ function Get-DownDellModel {
                         $MultiPackFile.Name = "$(($MultiPackFile.Parent).Parent)\$($MultiPackFile.Parent)\$($MultiPackFile.Name).cab"
                     }
                     $MultiPackFiles = $MultiPackFiles | Select-Object -ExpandProperty Name
-                    if (!(Test-Path "$PackagedDriverGroup\$($DriverName).multipack")) {
-                        $MultiPackFiles | ConvertTo-Json | Out-File -FilePath "$PackagedDriverGroup\$($DriverName).multipack" -Force
-                    }
+                    $MultiPackFiles | ConvertTo-Json | Out-File -FilePath "$PackagedDriverGroup\$($DriverName).multipack" -Force
                     #===================================================================================================
                     #   Publish-OSDDriverScripts
                     #===================================================================================================

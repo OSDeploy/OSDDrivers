@@ -199,7 +199,6 @@ function Expand-OSDDrivers {
     $MyHardware = Get-MyHardware | Select-Object -Property DeviceID, Caption
     # Alternate Method
     # $MyHardware = (Save-MyHardware -ExpandDriverPath $ExpandDriverPath | Import-CliXml | Select-Object -Property DeviceID, Caption)
-
     #===================================================================================================
     #   Process MultiPacks
     #===================================================================================================
@@ -475,19 +474,24 @@ function Expand-OSDDrivers {
                     }
                 }
             }
-<#             #===================================================================================================
-            #   MakeNot
             #===================================================================================================
-            if ($DriverTask.MakeNot) {
-                foreach ($item in $DriverTask.MakeNot) {
-                    Write-Verbose "Driver CAB Not Compatible Make: $item"
+            #   MakeNotMatch
+            #===================================================================================================
+            if ($DriverTask.MakeNotMatch) {
+                foreach ($item in $DriverTask.MakeNotMatch) {
                     if ($SystemMake -match $item) {$ExpandDriverPackage = $false}
                 }
-                if ($ExpandDriverPackage -eq $false) {
-                    Write-Host "Not compatible with SystemMake $SystemMake" -Foregroundcolor DarkGray
-                    Continue
+                if ($ExpandDriverPackage -eq $false) {Continue}
+            }
+            #===================================================================================================
+            #   ModelNotMatch
+            #===================================================================================================
+            if ($DriverTask.ModelNotMatch) {
+                foreach ($item in $DriverTask.ModelNotMatch) {
+                    if ($SystemModel -match $item) {$ExpandDriverPackage = $false}
                 }
-            } #>
+                if ($ExpandDriverPackage -eq $false) {Continue}
+            }
             #===================================================================================================
             #   OsBuildMin
             #===================================================================================================
