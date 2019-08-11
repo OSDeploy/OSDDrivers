@@ -1,3 +1,20 @@
+<#
+.SYNOPSIS
+Compresses an Nvidia Driver to CAB and generates a Task
+
+.DESCRIPTION
+Compresses an Nvidia Driver to CAB and generates a Task
+
+.LINK
+https://osddrivers.osdeploy.com/module/functions/save-dellfamilypack
+
+.PARAMETER WorkspacePath
+Directory to the OSDDrivers Workspace.  This contains the Download, Expand, and Package subdirectories
+Downloaded Dell Family PAcks will be saved to $WorkspacePath\Download\DellFamily
+
+.PARAMETER Expand
+Expands the Dell Family Pack after Download
+#>
 function New-NvidiaPack {
     [CmdletBinding()]
     PARAM (
