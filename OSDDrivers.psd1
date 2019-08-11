@@ -29,7 +29,12 @@ Description = @'
 BETA: OSDDrivers should be used for Testing Only!
 
 New Function:
-Save-DellFamilyPack to Download and Expand Dell Family Packs.  No other functionality included
+Get-DellModelPack - Returns the Dell Model Packs
+New-NvidiaPack - Creates an Nvidia Driver CAB and Task
+Save-DellFamilyPack - Downloads and Expands Dell Family Packs
+Save-DellModelPack - Downloads and Expands Dell Model Packs
+Save-DellMultiPack - Saves a Dell Model Pack as a MultiPack
+Save-OSDDriver - Downloads Intel Display and Wireless Drivers
 
 Updates:
 Save-DellModelPack does not remove Intel Video Drivers by default.  New parameter -RemoveIntelVideo has been added.
