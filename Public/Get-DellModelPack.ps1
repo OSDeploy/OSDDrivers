@@ -1,10 +1,26 @@
-function Get-DriverDellModel
-{
+<#
+.SYNOPSIS
+Returns a PowerShell Object of the Dell Model Packs
+
+.DESCRIPTION
+Returns a PowerShell Object of the Dell Model Packs by parsing the Dell Driver Pack Catalog from http://downloads.dell.com/catalog/DriverPackCatalog.cab"
+
+.PARAMETER DownloadPath
+Directory containing the downloaded Dell Model Packs.  This allows the function to validate if the Driver Pack was downloaded by updating OSDStatus
+
+.LINK
+https://osddrivers.osdeploy.com/functions/get-dellmodelpack
+#>
+function Get-DellModelPack {
     [CmdletBinding()]
     Param (
-        [Parameter(Mandatory)]
         [string]$DownloadPath
     )
+    #===================================================================================================
+    #   DownloadPath
+    #===================================================================================================
+    if (-not($DownloadPath)) {$DownloadPath = $env:TEMP}
+    Write-Verbose "DownloadPath: $DownloadPath"
     #===================================================================================================
     #   Dell Variables
     #===================================================================================================
@@ -78,7 +94,7 @@ function Get-DriverDellModel
         $OsBuildMax = @()
         $OsBuildMin = @()
 
-        $Make = @('Dell')
+        $Make = 'Dell'
         $MakeNe = @()
         $MakeLike = @()
         $MakeNotLike = @()
@@ -88,7 +104,7 @@ function Get-DriverDellModel
         $Generation = $null
         $SystemFamily = $null
 
-        $Model = @()
+        $Model = $null
         $ModelNe = @()
         $ModelLike = @()
         $ModelNotLike = @()
@@ -166,8 +182,8 @@ function Get-DriverDellModel
         #===================================================================================================
         if ($OsCode -eq 'XP') {Continue}
         if ($OsCode -eq 'Vista') {Continue}
-        if ($OsCode -eq 'Windows8') {Continue}
-        if ($OsCode -eq 'Windows8.1') {Continue}
+        #if ($OsCode -eq 'Windows8') {Continue}
+        #if ($OsCode -eq 'Windows8.1') {Continue}
         if ($OsCode -match 'WinPE') {Continue}
         $DriverUrl = "$DellDownloadsBaseUrl/$($DriverPackage.path)"
         $OsVersion = "$($OsMajor).$($OsMinor)"
@@ -180,53 +196,53 @@ function Get-DriverDellModel
         #   Create Object 
         #===================================================================================================
         $ObjectProperties = @{
-            OSDVersion              = [string] $OSDVersion
+            OSDVersion              = $OSDVersion
             LastUpdate              = [datetime] $LastUpdate
-            OSDStatus               = [string] $OSDStatus
-            OSDType                 = [string] $OSDType
-            OSDGroup                = [string] $OSDGroup
+            OSDStatus               = $OSDStatus
+            OSDType                 = $OSDType
+            OSDGroup                = $OSDGroup
 
-            DriverName              = [string] $DriverName
-            DriverVersion           = [string] $DriverVersion
-            DriverReleaseId         = [string] $DriverReleaseID
+            DriverName              = $DriverName
+            DriverVersion           = $DriverVersion
+            DriverReleaseId         = $DriverReleaseID
 
-            OperatingSystem         = [array] $OperatingSystem
-            OsVersion               = [string] $OsVersion
-            OsArch                  = [array[]] $OsArch
-            OsBuildMax              = [string] $OsBuildMax
-            OsBuildMin              = [string] $OsBuildMin
+            OperatingSystem         = $OperatingSystem
+            OsVersion               = $OsVersion
+            OsArch                  = $OsArch
+            OsBuildMax              = $OsBuildMax
+            OsBuildMin              = $OsBuildMin
 
-            Make                    = [array[]] $Make
-            MakeNe                  = [array[]] $MakeNe
-            MakeLike                = [array[]] $MakeLike
-            MakeNotLike             = [array[]] $MakeNotLike
-            MakeMatch               = [array[]] $MakeMatch
-            MakeNotMatch            = [array[]] $MakeNotMatch
+            Make                    = $Make
+            MakeNe                  = $MakeNe
+            MakeLike                = $MakeLike
+            MakeNotLike             = $MakeNotLike
+            MakeMatch               = $MakeMatch
+            MakeNotMatch            = $MakeNotMatch
 
-            Generation              = [string] $Generation
-            SystemFamily            = [string] $SystemFamily
+            Generation              = $Generation
+            SystemFamily            = $SystemFamily
 
-            Model                   = [array[]] $Model
-            ModelNe                 = [array[]] $ModelNe
-            ModelLike               = [array[]] $ModelLike
-            ModelNotLike            = [array[]] $ModelNotLike
-            ModelMatch              = [array[]] $ModelMatch
-            ModelNotMatch           = [array[]] $ModelNotMatch
+            Model                   = $Model
+            ModelNe                 = $ModelNe
+            ModelLike               = $ModelLike
+            ModelNotLike            = $ModelNotLike
+            ModelMatch              = $ModelMatch
+            ModelNotMatch           = $ModelNotMatch
 
-            SystemSku               = [array[]] $SystemSku
-            SystemSkuNe             = [array[]] $SystemSkuNe
+            SystemSku               = $SystemSku
+            SystemSkuNe             = $SystemSkuNe
 
-            DriverGrouping          = [string] $DriverGrouping
-            DriverBundle            = [string] $DriverBundle
+            DriverGrouping          = $DriverGrouping
+            DriverBundle            = $DriverBundle
             DriverWeight            = [int] $DriverWeight
 
-            DownloadFile            = [string] $DownloadFile
+            DownloadFile            = $DownloadFile
             SizeMB                  = [int] $SizeMB
-            DriverUrl               = [string] $DriverUrl
-            DriverInfo              = [string] $DriverInfo
-            DriverDescription       = [string] $DriverDescription
-            Hash                    = [string] $Hash
-            OSDGuid                 = [string] $OSDGuid
+            DriverUrl               = $DriverUrl
+            DriverInfo              = $DriverInfo
+            DriverDescription       = $DriverDescription
+            Hash                    = $Hash
+            OSDGuid                 = $OSDGuid
         }
         New-Object -TypeName PSObject -Property $ObjectProperties
     }

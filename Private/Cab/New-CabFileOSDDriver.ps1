@@ -126,11 +126,11 @@ function New-CabFileOSDDriver
         #===================================================================================================
         #if (Test-Path 'setup.inf') {Remove-Item 'setup.inf' -Force}
         #if (Test-Path 'setup.rpt') {Remove-Item 'setup.rpt' -Force}
-        if (Test-Path "$ExpandedDriverPath\OSDDriver-Devices.txt") {
-            Copy-Item "$ExpandedDriverPath\OSDDriver-Devices.txt" -Destination "$PublishPath\$SourceName.drvtxt" -Force | Out-Null
-            Remove-Item "$ExpandedDriverPath\OSDDriver-Devices.txt" -Force | Out-Null
+        if (Test-Path "$ExpandedDriverPath\OSDDriver-Devices.csv") {
+            Copy-Item "$ExpandedDriverPath\OSDDriver-Devices.csv" -Destination "$PublishPath\$SourceName.csv" -Force | Out-Null
+            #Remove-Item "$ExpandedDriverPath\OSDDriver-Devices.csv" -Force | Out-Null
         }
-        if (Test-Path "$ExpandedDriverPath\OSDDriver.drvpnp") {Remove-Item "$ExpandedDriverPath\OSDDriver.drvpnp" -Force | Out-Null}
+        #if (Test-Path "$ExpandedDriverPath\OSDDriver.drvpnp") {Remove-Item "$ExpandedDriverPath\OSDDriver.drvpnp" -Force | Out-Null}
         if (Test-Path "$ExpandedDriverPath\OSDDriver-DDF0.clixml") {Remove-Item "$ExpandedDriverPath\OSDDriver-DDF0.clixml" -Force | Out-Null}
         if (Test-Path "$ExpandedDriverPath\OSDDriver-DDF1.clixml") {Remove-Item "$ExpandedDriverPath\OSDDriver-DDF1.clixml" -Force | Out-Null}
         if ($RemoveDirective.IsPresent) {Remove-Item $DirectivePath -Force | Out-Null}

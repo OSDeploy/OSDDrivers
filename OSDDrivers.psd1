@@ -7,7 +7,7 @@
 RootModule = 'OSDDrivers.psm1'
 
 # Version number of his module.
-ModuleVersion = '19.8.6.1'
+ModuleVersion = '19.8.11.0'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -29,10 +29,10 @@ Description = @'
 BETA: OSDDrivers should be used for Testing Only!
 
 New Function:
-Get-DownDellFamily to Download and Expand Dell Family Packs.  No other functionality included
+Save-DellFamilyPack to Download and Expand Dell Family Packs.  No other functionality included
 
 Updates:
-Get-DownDellModel does not remove Intel Video Drivers by default.  New parameter -RemoveVideoIntel has been added.
+Save-DellModelPack does not remove Intel Video Drivers by default.  New parameter -RemoveIntelVideo has been added.
 Intel Video Drivers are still removed when using -Pack as there would be too many files to compress without removing it
 '@
 
@@ -73,7 +73,12 @@ PowerShellVersion = '5.0'
 # NestedModules = @()
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-FunctionsToExport = 'Get-DownDellFamily','Get-DownDellModel','Get-DownOSDDriver','Update-ModuleOSDDrivers'
+FunctionsToExport = 'Get-DellFamilyPack','Save-DellFamilyPack',
+                    'Get-DellModelPack','Save-DellModelPack',
+                    'Save-DellMultiPack',
+                    'Save-OSDDriver',
+                    'New-NvidiaPack',
+                    'Update-ModuleOSDDrivers'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = @()

@@ -2,7 +2,10 @@ function Get-OSDDriverPnp {
     [CmdletBinding()]
     PARAM (
         [Parameter(Mandatory = $true,ValueFromPipelineByPropertyName = $true)]
-        [string]$ExpandedDriverPath
+        [string]$ExpandedDriverPath,
+        [switch]$GeForce,
+        [switch]$NoHardwareIdRev,
+        [switch]$NoHardwareIdSubsys
     )
     #======================================================================================
     #   Validate Admin Rights
@@ -72,18 +75,19 @@ function Get-OSDDriverPnp {
     #===================================================================================================
     #   Filter
     #===================================================================================================
-    $OSDDriverPnp = $OSDDriverPnp | Where-Object {$_.HardwareId -notlike "SWC*"}
+    #$OSDDriverPnp = $OSDDriverPnp | Where-Object {$_.HardwareId -notlike "SWC*"}
+    $OSDDriverPnp = $OSDDriverPnp | Where-Object {$_.HardwareId -ne 'PCI\VEN_8086'}
+    $OSDDriverPnp = $OSDDriverPnp | Where-Object {$_.HardwareId -notlike "{*"}
+    if ($GeForce.IsPresent) {$OSDDriverPnp = $OSDDriverPnp | Where-Object {$_.HardwareDescription -match "GeForce"}}
     foreach ($Pnp in $OSDDriverPnp) {
         $Pnp.HardwareId = ($Pnp.HardwareId -split '\&CC')[0]
-        $Pnp.HardwareId = ($Pnp.HardwareId -split '\&REV')[0]
-        $Pnp.HardwareId = ($Pnp.HardwareId -split '\&SUBSYS')[0]
+        if ($NoHardwareIdRev.IsPresent) {$Pnp.HardwareId = ($Pnp.HardwareId -split '\&REV')[0]}
+        if ($NoHardwareIdSubsys.IsPresent) {$Pnp.HardwareId = ($Pnp.HardwareId -split '\&SUBSYS')[0]}
         #if ($Pnp.HardwareId -match 'PCI\\') {
             #$HardwareId = $Pnp.HardwareId -split '&'
             #$Pnp.HardwareId = "$($HardwareId[0])&$($HardwareId[1])"
         #}
     }
-    $OSDDriverPnp = $OSDDriverPnp | Where-Object {$_.HardwareId -ne 'PCI\VEN_8086'}
-    $OSDDriverPnp = $OSDDriverPnp | Where-Object {$_.HardwareId -notlike "{*"}
     $OSDDriverPnp = $OSDDriverPnp | Sort-Object HardwareId -Unique
     #===================================================================================================
     #   Return

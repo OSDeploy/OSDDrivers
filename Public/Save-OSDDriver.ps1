@@ -8,7 +8,7 @@ Requires BITS for downloading the Downloads
 Requires Internet access
 
 .LINK
-https://osddrivers.osdeploy.com/module/functions/get-downosddriver
+https://osddrivers.osdeploy.com/module/functions/Save-OSDDriver
 
 .PARAMETER WorkspacePath
 Directory to the OSDDrivers Workspace.  This contains the Download, Expand, and Package subdirectories
@@ -28,7 +28,7 @@ Creates a CAB file from the Driver
 .PARAMETER SkipGridView
 Skips GridView for Automation
 #>
-function Get-DownOSDDriver {
+function Save-OSDDriver {
     [CmdletBinding()]
     Param (
         #[Parameter(ValueFromPipeline = $true)]

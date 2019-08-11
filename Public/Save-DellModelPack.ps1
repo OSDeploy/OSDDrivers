@@ -1,14 +1,14 @@
 <#
 .SYNOPSIS
-Downloads DellFamily Driver Packs
+Downloads Dell Model Packs
 
 .DESCRIPTION
-Downloads DellFamily Driver Packs
+Downloads Dell Model Packs to $WorkspacePath\Download\DellModel
 Requires BITS for downloading the Downloads
 Requires Internet access
 
 .LINK
-https://osddrivers.osdeploy.com/module/functions/get-downdellmodel
+https://osddrivers.osdeploy.com/module/functions/save-dellmodelpack
 
 .PARAMETER WorkspacePath
 Directory to the OSDDrivers Workspace.  This contains the Download, Expand, and Package subdirectories
@@ -34,32 +34,37 @@ Name of the MultiPack that will be created in Workspace\Packages
 .PARAMETER RemoveAudio
 Removes drivers in the Audio Directory from being added to the CAB or MultiPack
 
-.PARAMETER RemoveVideoAMD
+.PARAMETER RemoveAmdVideo
 Removes AMD Video Drivers from being added to the CAB or MultiPack
 
-.PARAMETER RemoveVideoIntel
+.PARAMETER RemoveIntelVideo
 Removes Intel Video Drivers from being added to a MultiPack
 
-.PARAMETER RemoveVideoNvidia
+.PARAMETER RemoveNvidiaVideo
 Removes Nvidia Video Drivers from being added to the CAB or MultiPack
 #>
-function Get-DownDellModel {
+function Save-DellModelPack {
     [CmdletBinding(DefaultParameterSetName='Download')]
     Param (
-        #[Parameter(ValueFromPipeline = $true)]
-        #[Object[]]$InputObject,
+        [Parameter(ValueFromPipeline = $true)]
+        [Object[]]$InputObject,
 
         [Parameter(Mandatory)]
         [string]$WorkspacePath,
-
+        #===================================================================================================
+        #   Filters
+        #===================================================================================================
         [ValidateSet ('X10','X9','X8','X7','X6','X5','X4','X3','X2','X1')]
         [string]$Generation,
 
-        [ValidateSet ('10.0','6.3','6.1')]
-        [string]$OsVersion,
+        [ValidateSet ('10.0','6.1')]
+        [string]$OsVersion = '10.0',
 
         [ValidateSet ('Latitude','Optiplex','Precision')]
         [string]$SystemFamily,
+
+        [ValidateSet ('Latitude A','Latitude N','Precision M','Precision N','Precision W')]
+        [string]$CustomGroup,
         #===================================================================================================
         #   Download
         #===================================================================================================
@@ -71,27 +76,16 @@ function Get-DownDellModel {
         [Parameter(ParameterSetName = 'Pack', Mandatory = $true)]
         [switch]$Pack,
         #===================================================================================================
-        #   MultiPack
-        #===================================================================================================
-        [Parameter(ParameterSetName = 'MultiPack', Mandatory = $true)]
-        [string]$MultiPackName,
-        #===================================================================================================
-        #   Pack and MultiPack
+        #   Remove
         #===================================================================================================
         [Parameter(ParameterSetName = 'Pack')]
-        [Parameter(ParameterSetName = 'MultiPack')]
         [switch]$RemoveAudio = $false,
         
         [Parameter(ParameterSetName = 'Pack')]
-        [Parameter(ParameterSetName = 'MultiPack')]
-        [switch]$RemoveVideoAMD = $false,
-
-        [Parameter(ParameterSetName = 'MultiPack')]
-        [switch]$RemoveVideoIntel = $false,
+        [switch]$RemoveAmdVideo = $false,
 
         [Parameter(ParameterSetName = 'Pack')]
-        [Parameter(ParameterSetName = 'MultiPack')]
-        [switch]$RemoveVideoNvidia = $false
+        [switch]$RemoveNvidiaVideo = $false
         #===================================================================================================
         #   Scraps
         #===================================================================================================
@@ -117,14 +111,14 @@ function Get-DownDellModel {
         #===================================================================================================
         $WorkspaceDownload = Get-PathOSDD -Path (Join-Path $OSDWorkspace 'Download')
         Write-Verbose "Workspace Download: $WorkspaceDownload" -Verbose
-        #Publish-OSDDriverScripts -PublishPath $WorkspaceDownload
+        Publish-OSDDriverScripts -PublishPath $WorkspaceDownload
 
         $WorkspaceExpand = Get-PathOSDD -Path (Join-Path $OSDWorkspace 'Expand')
         Write-Verbose "Workspace Expand: $WorkspaceExpand" -Verbose
 
         $WorkspacePackage = Get-PathOSDD -Path (Join-Path $OSDWorkspace 'Package')
         Write-Verbose "Workspace Package: $WorkspacePackage" -Verbose
-        #Publish-OSDDriverScripts -PublishPath $WorkspacePackage
+        Publish-OSDDriverScripts -PublishPath $WorkspacePackage
         #===================================================================================================
     }
 
@@ -132,46 +126,18 @@ function Get-DownDellModel {
         #===================================================================================================
         #   Defaults
         #===================================================================================================
-        if ($MyInvocation.MyCommand.Name -eq 'Get-DownDellFamily') {
-            $OSDGroup = 'DellFamily'
-            $OsVersion = '10.0'
-            $OsArch = 'x64'
-            $RemoveAudio = $true
-            $RemoveVideoAMD = $true
-            $RemoveVideoNvidia = $true
-        }
-        if ($MyInvocation.MyCommand.Name -eq 'Get-DownDellModel') {
-            $OSDGroup = 'DellModel'
-            #$OsVersion = '10.0'
-            #$OsArch = 'x64'
-            #$RemoveAudio = $true
-            #$RemoveVideoAMD = $true
-            #$RemoveVideoNvidia = $true
-            Publish-OSDDriverScripts -PublishPath (Join-Path $WorkspaceDownload 'DellModel')
-        }
-        if ($PSCmdlet.ParameterSetName -eq 'MultiPack') {
-            $Expand = $true
-            $OSDGroup = 'DellModel'
-            #$OsVersion = '10.0'
-            #$OsArch = 'x64'
-            #$RemoveAudio = $true
-            #$RemoveVideoAMD = $true
-            #$RemoveVideoNvidia = $true
-            if ($RemoveAudio -eq $true) {Write-Warning "Audio Drivers will be removed from resulting packages"}
-            if ($RemoveVideoAMD -eq $true) {Write-Warning "AMD Video Drivers will be removed from resulting packages"}
-            if ($RemoveVideoIntel -eq $true) {Write-Warning "Intel Video Drivers will be removed from resulting packages"}
-            if ($RemoveVideoNvidia -eq $true) {Write-Warning "Nvidia Video Drivers will be removed from resulting packages"}
-        } else {
-            $RemoveVideoIntel = $true
-        }
+        $OSDGroup = 'DellModel'
 
         if ($PSCmdlet.ParameterSetName -eq 'Pack') {
             $Expand = $true
-            if ($RemoveAudio -eq $true) {Write-Warning "Audio Drivers will be removed from resulting packages"}
-            Write-Warning "Intel Video Drivers will be removed from resulting packages by default"
-            if ($RemoveVideoAMD -eq $true) {Write-Warning "AMD Video Drivers will be removed from resulting packages"}
-            if ($RemoveVideoNvidia -eq $true) {Write-Warning "Nvidia Video Drivers will be removed from resulting packages"}
+            $RemoveIntelVideo = $true
         }
+
+        if ($RemoveAudio -eq $true) {Write-Warning "Audio Drivers will be removed from resulting packages"}
+        if ($RemoveAmdVideo -eq $true) {Write-Warning "AMD Video Drivers will be removed from resulting packages"}
+        if ($RemoveIntelVideo -eq $true) {Write-Warning "Intel Video Drivers will be removed from resulting packages"}
+        if ($RemoveNvidiaVideo -eq $true) {Write-Warning "Nvidia Video Drivers will be removed from resulting packages"}
+        Publish-OSDDriverScripts -PublishPath (Join-Path $WorkspaceDownload 'DellModel')
         #===================================================================================================
         #   Get-OSDDrivers
         #===================================================================================================
@@ -180,8 +146,7 @@ function Get-DownDellModel {
             $SkipGridView = $true
             $OSDDrivers = $InputObject
         } else {
-            if ($MyInvocation.MyCommand.Name -eq 'Get-DownDellFamily') {$OSDDrivers = Get-DriverDellFamily}
-            if ($MyInvocation.MyCommand.Name -eq 'Get-DownDellModel') {$OSDDrivers = Get-DriverDellModel -DownloadPath (Join-Path $WorkspaceDownload 'DellModel')}
+            $OSDDrivers = Get-DellModelPack -DownloadPath (Join-Path $WorkspaceDownload 'DellModel')
         }
         #===================================================================================================
         #   Set-OSDStatus
@@ -205,11 +170,39 @@ function Get-DownDellModel {
 
             if (Test-Path "$DownloadedDriverPath") {$OSDDriver.OSDStatus = 'Downloaded'}
             if (Test-Path "$ExpandedDriverPath") {$OSDDriver.OSDStatus = 'Expanded'}
-
-            if ($PSCmdlet.ParameterSetName -ne 'MultiPack') {
-                if (Test-Path "$PackagedDriverPath") {$OSDDriver.OSDStatus = 'Packaged'}
-                Write-Verbose "OSDCabFile: $OSDCabFile"
-                if (Test-Path "$ExpandedDriverPath\OSDDriver.drvpnp") {$OSDPnpFile = "$($DriverName).drvpnp"}
+            if (Test-Path "$PackagedDriverPath") {$OSDDriver.OSDStatus = 'Packaged'}
+        }
+        #===================================================================================================
+        #   CustomGroup
+        #[ValidateSet ('Latitude','Latitude X',Precision M','Precision N','Precision W')]
+        #===================================================================================================
+        if ($CustomGroup) {
+            if ($CustomGroup -eq 'Latitude A') {
+                $OSDDrivers = $OSDDrivers | Where-Object {$_.SystemFamily -match 'Latitude'}
+                $OSDDrivers = $OSDDrivers | Where-Object {($_.Model -match 'Latitude D') -or ($_.Model -match 'Latitude E') -or ($_.Model -match 'Latitude X') -or ($_.Model -like "Latitude*U")}
+            }
+            if ($CustomGroup -eq 'Latitude N') {
+                $OSDDrivers = $OSDDrivers | Where-Object {$_.SystemFamily -match 'Latitude'}
+                $OSDDrivers = $OSDDrivers | Where-Object {$_.Model -notmatch 'Latitude D'}
+                $OSDDrivers = $OSDDrivers | Where-Object {$_.Model -notmatch 'Latitude E'}
+                $OSDDrivers = $OSDDrivers | Where-Object {$_.Model -notmatch 'Latitude X'}
+                $OSDDrivers = $OSDDrivers | Where-Object {$_.Model -notlike "Latitude*U"}
+            }
+            if ($CustomGroup -eq 'Precision M') {
+                $OSDDrivers = $OSDDrivers | Where-Object {$_.Model -match 'Precision M'}
+            }
+            if ($CustomGroup -eq 'Precision N') {
+                $OSDDrivers = $OSDDrivers | Where-Object {$_.SystemFamily -match 'Precision'}
+                $OSDDrivers = $OSDDrivers | Where-Object {$_.Model -notmatch 'Rack'}
+                $OSDDrivers = $OSDDrivers | Where-Object {$_.Model -notmatch 'Tower'}
+                $OSDDrivers = $OSDDrivers | Where-Object {$_.Model -notmatch 'Precision M'}
+                $OSDDrivers = $OSDDrivers | Where-Object {$_.Model -notmatch 'Precision R'}
+                $OSDDrivers = $OSDDrivers | Where-Object {$_.Model -notmatch 'Precision T'}
+                $OSDDrivers = $OSDDrivers | Where-Object {$_.Model -notmatch 'Workstation'}
+            }
+            if ($CustomGroup -eq 'Precision W') {
+                $OSDDrivers = $OSDDrivers | Where-Object {$_.SystemFamily -match 'Precision'}
+                $OSDDrivers = $OSDDrivers | Where-Object {($_.Model -match 'Rack') -or ($_.Model -match 'Tower') -or ($_.Model -match 'Precision R') -or ($_.Model -match 'Precision T') -or ($_.Model -match 'Workstation')}
             }
         }
         #===================================================================================================
@@ -229,21 +222,13 @@ function Get-DownDellModel {
         #===================================================================================================
         if ($SystemFamily) {$OSDDrivers = $OSDDrivers | Where-Object {$_.SystemFamily -match "$SystemFamily"}}
         #===================================================================================================
-        #   Filter
-        #===================================================================================================
-        #if ($MyInvocation.MyCommand.Name -eq 'New-DellMultiPack') {$OSDDrivers = $OSDDrivers | Where-Object {$_.OSDStatus -ne ''}}
-        #$OSDDrivers = $OSDDrivers | Where-Object {$_.DriverFamily -ne 'Venue'}
-        #$OSDDrivers = $OSDDrivers | Where-Object {$_.DriverFamily -ne 'Vostro'}
-        #$OSDDrivers = $OSDDrivers | Where-Object {$_.DriverFamily -ne 'XPS'}
-        #===================================================================================================
         #   GridView
         #===================================================================================================
         $OSDDrivers = $OSDDrivers | Sort-Object LastUpdate -Descending
-        if ($SkipGridView.IsPresent) {
-            Write-Warning "SkipGridView: Skipping Out-GridView"
+        if ($SkipGridView) {
+            #Write-Warning "SkipGridView: Skipping Out-GridView"
         } else {
-            if ($PSCmdlet.ParameterSetName -eq 'MultiPack') {$OSDDrivers = $OSDDrivers | Out-GridView -PassThru -Title "Select Drivers to MultiPack and press OK"}
-            else {$OSDDrivers = $OSDDrivers | Out-GridView -PassThru -Title "Select Drivers to Download and press OK"}
+            $OSDDrivers = $OSDDrivers | Out-GridView -PassThru -Title "Select Drivers to Download and press OK"
         }
         #===================================================================================================
         #   Execute
@@ -258,7 +243,7 @@ function Get-DownDellModel {
                 Write-Verbose "DriverUrl: $DriverUrl"
 
                 $DriverName = $OSDDriver.DriverName
-                Write-Verbose "DriverName: $DriverName"
+                Write-Verbose "DriverName: $DriverName" -Verbose
 
                 $DownloadFile = $OSDDriver.DownloadFile
                 Write-Verbose "DownloadFile: $DownloadFile"
@@ -308,7 +293,7 @@ function Get-DownDellModel {
                 #===================================================================================================
                 #   Driver Expand
                 #===================================================================================================
-                if ($Expand.IsPresent) {
+                if ($Expand) {
                     Write-Host "Driver Expand: $ExpandedDriverPath " -ForegroundColor Gray -NoNewline
                     if (Test-Path "$ExpandedDriverPath") {
                         Write-Host 'Complete!' -ForegroundColor Cyan
@@ -345,11 +330,10 @@ function Get-DownDellModel {
                 #===================================================================================================
                 #   OSDDriver Objects
                 #===================================================================================================
-                if ($PSCmdlet.ParameterSetName -eq 'MultiPack') {
+                if ($MyInvocation.MyCommand.Name -eq 'Save-DellMultiPack') {
                     $PackagedDriverGroup = Get-PathOSDD -Path (Join-Path $WorkspacePackage (Join-Path 'DellMultiPack' $MultiPackName))
                     $OSDDriver | ConvertTo-Json | Out-File -FilePath "$PackagedDriverGroup\$($OSDDriver.DriverName).drvpack" -Force
-                }
-                else {
+                } else {
                     $PackagedDriverGroup = Get-PathOSDD -Path (Join-Path $WorkspacePackage $OSDGroup)
                     $OSDDriver | Export-Clixml -Path "$ExpandedDriverPath\OSDDriver.clixml" -Force
                     $OSDDriver | ConvertTo-Json | Out-File -FilePath "$ExpandedDriverPath\OSDDriver.drvpack" -Force
@@ -366,7 +350,7 @@ function Get-DownDellModel {
                         Write-Warning "Driver Pack: $PackagedDriverPath already exists and will not be created"
                     } else {
                         Write-Warning "Driver Pack: Generating $PackagedDriverPath ... This will take a while"
-                        New-CabFileDell $ExpandedDriverPath $PackagedDriverGroup $RemoveAudio $RemoveVideoAMD $RemoveVideoIntel $RemoveVideoNvidia
+                        New-CabFileDell $ExpandedDriverPath $PackagedDriverGroup $RemoveAudio $RemoveAmdVideo $RemoveIntelVideo $RemoveNvidiaVideo
                     }
                     #===================================================================================================
                     #   Verify Driver Package
@@ -385,58 +369,6 @@ function Get-DownDellModel {
                     $OSDDriver | Export-Clixml -Path "$ExpandedDriverPath\OSDDriver.clixml" -Force
                     $OSDDriver | ConvertTo-Json | Out-File -FilePath "$ExpandedDriverPath\OSDDriver.drvpack" -Force
                     $OSDDriver | ConvertTo-Json | Out-File -FilePath "$PackagedDriverGroup\$($DriverName).drvpack" -Force
-                    #===================================================================================================
-                    #   Publish-OSDDriverScripts
-                    #===================================================================================================
-                    Publish-OSDDriverScripts -PublishPath $PackagedDriverGroup
-                }
-                #===================================================================================================
-                #   MultiPack
-                #===================================================================================================
-                if ($PSCmdlet.ParameterSetName -eq 'MultiPack') {
-                    $MultiPackFiles = @()
-                    #===================================================================================================
-                    #   Get SourceContent
-                    #===================================================================================================
-                    $SourceContent = @()
-                    $SourceContent = Get-ChildItem "$ExpandedDriverPath\*\*\*\*\*" -Directory | Select-Object -Property *
-                    #===================================================================================================
-                    #   Filter SourceContent
-                    #===================================================================================================
-                    if ($RemoveAudio.IsPresent) {$SourceContent = $SourceContent | Where-Object {$_.FullName -notmatch '\\Audio\\'}}
-                    if ($RemoveVideo.IsPresent) {$SourceContent = $SourceContent | Where-Object {$_.FullName -notmatch '\\Video\\'}}
-                    foreach ($DriverDir in $SourceContent) {
-                        if ($RemoveVideoIntel.IsPresent) {
-                            if (($DriverDir.FullName -match '\\Video\\') -and (Get-ChildItem "$($DriverDir.FullName)" igfxEM.exe -File -Recurse)) {
-                                Write-Host "IntelDisplay: $($DriverDir.FullName)" -ForegroundColor Gray
-                                Continue
-                            }
-                        }
-                        if ($RemoveVideoAMD.IsPresent) {
-                            if (($DriverDir.FullName -match '\\Video\\') -and (Get-ChildItem "$($DriverDir.FullName)" ati*.dl* -File -Recurse)) {
-                                Write-Host "AMDDisplay: $($DriverDir.FullName)" -ForegroundColor Gray
-                                Continue
-                            }
-                        }
-                        if ($RemoveVideoNvidia.IsPresent) {
-                            if (($DriverDir.FullName -match '\\Video\\') -and (Get-ChildItem "$($DriverDir.FullName)" nv*.dl* -File -Recurse)) {
-                                Write-Host "NvidiaDisplay: $($DriverDir.FullName)" -ForegroundColor Gray
-                                Continue
-                            }
-                        }
-<#                         if ($DriverDir.FullName -match '\\Video\\') {
-                            New-CabDellMultiPack -ExpandedDriverPath "$($DriverDir.FullName)" -PublishPath "$PackagedDriverGroup\$($DriverDir.Parent)" -MakePnp -DriverClass Display
-                        } else {
-                            New-CabDellMultiPack -ExpandedDriverPath "$($DriverDir.FullName)" -PublishPath "$PackagedDriverGroup\$($DriverDir.Parent)" -MakePnp
-                        } #>
-                        $MultiPackFiles += $DriverDir
-                        New-CabFileDellMultiPack "$($DriverDir.FullName)" "$PackagedDriverGroup\$(($DriverDir.Parent).parent)\$($DriverDir.Parent)" $RemoveVideoIntel
-                    }
-                    foreach ($MultiPackFile in $MultiPackFiles) {
-                        $MultiPackFile.Name = "$(($MultiPackFile.Parent).Parent)\$($MultiPackFile.Parent)\$($MultiPackFile.Name).cab"
-                    }
-                    $MultiPackFiles = $MultiPackFiles | Select-Object -ExpandProperty Name
-                    $MultiPackFiles | ConvertTo-Json | Out-File -FilePath "$PackagedDriverGroup\$($DriverName).multipack" -Force
                     #===================================================================================================
                     #   Publish-OSDDriverScripts
                     #===================================================================================================

@@ -1,17 +1,32 @@
-function Save-OSDDriverPnp {
+function New-NvidiaPack {
     [CmdletBinding()]
     PARAM (
-        [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
+        [Parameter(Mandatory)]
         [string]$ExpandedDriverPath,
 
+        [Parameter(Mandatory)]
+        [string]$WorkspacePath,
+
+        [Parameter(Mandatory)]
+        [string]$DriverVersion,
+
+        [Parameter(Mandatory)]
+        [ValidateSet ('x64','x86')]
+        [string]$OsArch,
+
+        [Parameter(Mandatory)]
+        [ValidateSet ('10.0','6.3','6.1')]
+        [string]$OsVersion,
+
+        [switch]$GeForce,
+
         #[string]$PublishPath,
-
-        [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName)]
-        [ValidateSet('Bluetooth','Camera','Display','HDC','HIDClass','Keyboard','Media','Monitor','Mouse','Net','SCSIAdapter','SmartCardReader','System','USBDevice')]
-        [string]$OSDPnpClass,
-
         [switch]$GridView
     )
+    #===================================================================================================
+    #   Defaults
+    #===================================================================================================
+    $OSDPnpClass = 'Display'
     #===================================================================================================
     #   Test-ExpandedDriverPath
     #===================================================================================================
@@ -20,7 +35,11 @@ function Save-OSDDriverPnp {
     #   OSDDriverPnp
     #===================================================================================================
     $OSDDriverPnp = @()
-    $OSDDriverPnp = Get-OSDDriverPnp -ExpandedDriverPath $ExpandedDriverPath -NoHardwareIdRev -NoHardwareIdSubsys
+    if ($GeForce.IsPresent) {
+        $OSDDriverPnp = Get-OSDDriverPnp -ExpandedDriverPath $ExpandedDriverPath -NoHardwareIdRev -GeForce
+    } else {
+        $OSDDriverPnp = Get-OSDDriverPnp -ExpandedDriverPath $ExpandedDriverPath -NoHardwareIdRev
+    }
     #===================================================================================================
     #   OSDPnpClass
     #===================================================================================================
@@ -49,20 +68,29 @@ function Save-OSDDriverPnp {
         Add-Content -Path "$ExpandedDriverPath\OSDDriver-Devices.csv" -Value "$($DriverPnp.HardwareId),$($DriverPnp.HardwareDescription)"
         Add-Content -Path "$ExpandedDriverPath\OSDDriver-Devices.txt" -Value "$($DriverPnp.HardwareId),$($DriverPnp.HardwareDescription)"
     }
-
-<#     if ($PublishPath) {
-        #===================================================================================================
-        #   Test-PublishPath
-        #===================================================================================================
-        Test-PublishPath $PublishPath
-        #===================================================================================================
-        #   Get-DirectoryName
-        #===================================================================================================
-        $DirectoryName = Get-DirectoryName $ExpandedDriverPath
-        #===================================================================================================
-        #   Publish-OSDDriverPnp
-        #===================================================================================================
-        Write-Host "OSDDriverPnp: Saving $PublishPath\$($DirectoryName).drvpnp ..." -ForegroundColor Gray
-        $OSDDriverPnp | Export-Clixml -Path "$PublishPath\$($DirectoryName).drvpnp"
-    } #>
+    #===================================================================================================
+    #   Create Package
+    #===================================================================================================
+    $PackagedDriverGroup = Get-PathOSDD -Path (Join-Path $WorkspacePath (Join-Path 'Package' 'NvidiaPack'))
+    $SourceName = (Get-Item $ExpandedDriverPath).Name
+    $CabName = "$SourceName.cab"
+    $PackagedDriverPath = (Join-Path $PackagedDriverGroup $CabName)
+    if (Test-Path "$PackagedDriverPath") {
+        Write-Warning "Driver Package already exists"
+    } else {
+        New-CabFileOSDDriver -ExpandedDriverPath $ExpandedDriverPath -PublishPath $PackagedDriverGroup
+    }
+    #===================================================================================================
+    #   Verify Driver Package
+    #===================================================================================================
+    if (-not (Test-Path "$PackagedDriverPath")) {
+        Write-Warning "Driver Expand: Could not package Driver to $PackagedDriverPath ... Exiting"
+        Continue
+    } else {
+        Publish-OSDDriverScripts -PublishPath $PackagedDriverGroup
+    }
+    #===================================================================================================
+    #   New-OSDDriverTask
+    #===================================================================================================
+    New-OSDDriverTask -OSDDriverFile $PackagedDriverPath -OSDGroup 'NvidiaPack' -OsVersion $OsVersion -OsArch $OsArch -DriverVersion "$DriverVersion"
 }

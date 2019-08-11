@@ -377,7 +377,7 @@ function Expand-OSDDrivers {
 
         $DriverPnpFile  = "$(Join-Path $DriverPackageDirectoryName $DriverPackageBaseName).drvpnp"
         $DriverTaskFile = "$(Join-Path $DriverPackageDirectoryName $DriverPackageBaseName).drvpack"
-        $DriverTxtFile  = "$(Join-Path $DriverPackageDirectoryName $DriverPackageBaseName).drvtxt"
+        $DriverTxtFile  = "$(Join-Path $DriverPackageDirectoryName $DriverPackageBaseName).drvtext"
         #===================================================================================================
         #   Process
         #===================================================================================================

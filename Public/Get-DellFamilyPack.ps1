@@ -1,16 +1,15 @@
 <#
 .SYNOPSIS
-Returns a DellFamily Pack Object
+Returns a PowerShell Object of the Dell Family Packs
 
 .DESCRIPTION
-Returns a DellFamily Pack Object
-Requires BITS for downloading the Downloads
-Requires Internet access for downloading the Downloads
+Returns a PowerShell Object of the Dell Family Packs by parsing http://downloads.delltechcenter.com/DIA/Drivers/
+This function is used with Save-DellFamilyPack
 
 .LINK
-https://osddrivers.osdeploy.com/functions/get-driverdellfamily
+https://osddrivers.osdeploy.com/functions/get-dellfamilypack
 #>
-function Get-DriverDellFamily {
+function Get-DellFamilyPack {
     [CmdletBinding()]
     Param ()
     #===================================================================================================
@@ -316,53 +315,53 @@ function Get-DriverDellFamily {
         #   Create Object 
         #===================================================================================================
         $ObjectProperties = @{
-            OSDVersion              = [string] $OSDVersion
+            OSDVersion              = $OSDVersion
             LastUpdate              = [datetime] $LastUpdate
-            OSDStatus               = [string] $OSDStatus
-            OSDType                 = [string] $OSDType
-            OSDGroup                = [string] $OSDGroup
+            OSDStatus               = $OSDStatus
+            OSDType                 = $OSDType
+            OSDGroup                = $OSDGroup
 
-            DriverName              = [string] $DriverName
-            DriverVersion           = [string] $DriverVersion
-            DriverReleaseId         = [string] $DriverReleaseID
+            DriverName              = $DriverName
+            DriverVersion           = $DriverVersion
+            DriverReleaseId         = $DriverReleaseID
 
-            OperatingSystem         = [array] $OperatingSystem
-            OsVersion               = [string] $OsVersion
-            OsArch                  = [array[]] $OsArch
-            OsBuildMax              = [string] $OsBuildMax
-            OsBuildMin              = [string] $OsBuildMin
+            OperatingSystem         = $OperatingSystem
+            OsVersion               = $OsVersion
+            OsArch                  = $OsArch
+            OsBuildMax              = $OsBuildMax
+            OsBuildMin              = $OsBuildMin
 
-            Make                    = [array[]] $Make
-            MakeNe                  = [array[]] $MakeNe
-            MakeLike                = [array[]] $MakeLike
-            MakeNotLike             = [array[]] $MakeNotLike
-            MakeMatch               = [array[]] $MakeMatch
-            MakeNotMatch            = [array[]] $MakeNotMatch
+            Make                    = $Make
+            MakeNe                  = $MakeNe
+            MakeLike                = $MakeLike
+            MakeNotLike             = $MakeNotLike
+            MakeMatch               = $MakeMatch
+            MakeNotMatch            = $MakeNotMatch
 
-            Generation              = [string] $Generation
-            SystemFamily            = [string] $SystemFamily
+            Generation              = $Generation
+            SystemFamily            = $SystemFamily
 
-            Model                   = [array[]] $Model
-            ModelNe                 = [array[]] $ModelNe
-            ModelLike               = [array[]] $ModelLike
-            ModelNotLike            = [array[]] $ModelNotLike
-            ModelMatch              = [array[]] $ModelMatch
-            ModelNotMatch           = [array[]] $ModelNotMatch
+            Model                   = $Model
+            ModelNe                 = $ModelNe
+            ModelLike               = $ModelLike
+            ModelNotLike            = $ModelNotLike
+            ModelMatch              = $ModelMatch
+            ModelNotMatch           = $ModelNotMatch
 
-            SystemSku               = [array[]] $SystemSku
-            SystemSkuNe             = [array[]] $SystemSkuNe
+            SystemSku               = $SystemSku
+            SystemSkuNe             = $SystemSkuNe
 
-            DriverGrouping          = [string] $DriverGrouping
-            DriverBundle            = [string] $DriverBundle
+            DriverGrouping          = $DriverGrouping
+            DriverBundle            = $DriverBundle
             DriverWeight            = [int] $DriverWeight
 
-            DownloadFile            = [string] $DownloadFile
+            DownloadFile            = $DownloadFile
             SizeMB                  = [int] $SizeMB
-            DriverUrl               = [string] $DriverUrl
-            DriverInfo              = [string] $DriverInfo
-            DriverDescription       = [string] $DriverDescription
-            Hash                    = [string] $Hash
-            OSDGuid                 = [string] $OSDGuid
+            DriverUrl               = $DriverUrl
+            DriverInfo              = $DriverInfo
+            DriverDescription       = $DriverDescription
+            Hash                    = $Hash
+            OSDGuid                 = $OSDGuid
             IsSuperseded            = [bool] $IsSuperseded
         }
         New-Object -TypeName PSObject -Property $ObjectProperties

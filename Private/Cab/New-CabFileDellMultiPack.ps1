@@ -11,7 +11,7 @@ function New-CabFileDellMultiPack
         [string]$PublishPath,
 
         [Parameter(Position = 2)]
-        [switch]$RemoveVideoIntel = $false,
+        [switch]$RemoveIntelVideo = $false,
 
         [switch]$HighCompression = $false,
         [switch]$RemoveDirective = $false,
@@ -70,7 +70,7 @@ function New-CabFileDellMultiPack
         #===================================================================================================
         #   Remove Directory - Intel Video
         #===================================================================================================
-        if ($RemoveVideoIntel.IsPresent) {
+        if ($RemoveIntelVideo.IsPresent) {
             $ExcludeDriverDirs = @()
             $ExcludeDriverDirs = Get-ChildItem "$ExpandedDriverPath" 'igfxEM.exe' -File -Recurse | Select-Object -Property Directory -Unique
             foreach ($ExcludeDir in $ExcludeDriverDirs) {

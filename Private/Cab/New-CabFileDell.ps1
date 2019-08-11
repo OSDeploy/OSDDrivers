@@ -14,13 +14,13 @@ function New-CabFileDell
         [switch]$RemoveAudio = $false,
 
         [Parameter(Position = 3)]
-        [switch]$RemoveVideoAMD = $false,
+        [switch]$RemoveAmdVideo = $false,
 
         [Parameter(Position = 4)]
-        [switch]$RemoveVideoIntel = $false,
+        [switch]$RemoveIntelVideo = $false,
 
         [Parameter(Position = 5)]
-        [switch]$RemoveVideoNvidia = $false,
+        [switch]$RemoveNvidiaVideo = $false,
 
         [switch]$HighCompression = $false,
         [switch]$RemoveDirective = $false,
@@ -102,7 +102,7 @@ function New-CabFileDell
         #===================================================================================================
         #   Remove Drivers - Intel Video
         #===================================================================================================
-        if ($RemoveVideoIntel.IsPresent) {
+        if ($RemoveIntelVideo.IsPresent) {
             Write-Warning "Remove Driver: Intel Video"
             $ExcludeDir = @()
             foreach ($item in $SupportedSystems) {
@@ -126,7 +126,7 @@ function New-CabFileDell
         #===================================================================================================
         #   Remove Directory - Intel Video
         #===================================================================================================
-        if ($RemoveVideoIntel.IsPresent) {
+        if ($RemoveIntelVideo.IsPresent) {
             $ExcludeDriverDirs = @()
             $ExcludeDriverDirs = Get-ChildItem "$ExpandedDriverPath" 'igfxEM.exe' -File -Recurse | Select-Object -Property Directory -Unique
             foreach ($item in $ExcludeDriverDirs) {
@@ -137,7 +137,7 @@ function New-CabFileDell
         #===================================================================================================
         #   Remove Drivers - AMD Video
         #===================================================================================================
-        if ($RemoveVideoAMD.IsPresent) {
+        if ($RemoveAmdVideo.IsPresent) {
             Write-Warning "Remove Driver: AMD Video"
             $ExcludeDir = @()
             foreach ($item in $SupportedSystems) {
@@ -161,7 +161,7 @@ function New-CabFileDell
         #===================================================================================================
         #   Remove Drivers - Nvidia Video
         #===================================================================================================
-        if ($RemoveVideoNvidia.IsPresent) {
+        if ($RemoveNvidiaVideo.IsPresent) {
             Write-Warning "Remove Driver: Nvidia Video"
             $ExcludeDir = @()
             foreach ($item in $SupportedSystems) {
