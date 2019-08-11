@@ -8,7 +8,7 @@ Requires BITS for downloading the Downloads
 Requires Internet access
 
 .LINK
-https://osddrivers.osdeploy.com/module/functions/Save-OSDDriver
+https://osddrivers.osdeploy.com/module/functions/save-osddriver
 
 .PARAMETER WorkspacePath
 Directory to the OSDDrivers Workspace.  This contains the Download, Expand, and Package subdirectories
