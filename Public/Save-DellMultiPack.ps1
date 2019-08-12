@@ -67,8 +67,8 @@ function Save-DellMultiPack {
         [ValidateSet ('Latitude','Optiplex','Precision')]
         [string]$SystemFamily,
 
-        [ValidateSet ('Latitude A','Latitude N','Precision M','Precision N','Precision W')]
-        [string]$CustomGroup,
+        #[ValidateSet ('Latitude A','Latitude N','Precision M','Precision N','Precision W')]
+        #[string]$CustomGroup,
         #===================================================================================================
         #   Remove
         #===================================================================================================
@@ -109,6 +109,9 @@ function Save-DellMultiPack {
         $WorkspacePackage = Get-PathOSDD -Path (Join-Path $OSDWorkspace 'Package')
         Write-Verbose "Workspace Package: $WorkspacePackage" -Verbose
         Publish-OSDDriverScripts -PublishPath $WorkspacePackage
+
+        
+        #Publish-OSDDriverDellScripts -PublishPath (Join-Path $OSDWorkspace 'Scripts')
         #===================================================================================================
     }
 
@@ -132,6 +135,7 @@ function Save-DellMultiPack {
             $OSDDrivers = $InputObject
         } else {
             $OSDDrivers = Get-DellModelPack -DownloadPath (Join-Path $WorkspaceDownload 'DellModel')
+            $OSDDrivers | Export-Clixml "$(Join-Path $WorkspaceDownload $(Join-Path 'DellModel' 'DellModelPack.clixml'))"
         }
         #===================================================================================================
         #   Set-OSDStatus
@@ -219,7 +223,12 @@ function Save-DellMultiPack {
         #   Export MultiPack Object
         #===================================================================================================
         $MultiPackPath = Get-PathOSDD -Path (Join-Path $WorkspacePackage (Join-Path 'DellMultiPack' $MultiPackName))
-        $OSDDrivers | Export-Clixml "$MultiPackPath\$MultiPackName $(Get-Date -Format yyMMddHHmmss).clixml" -Force
+        $OSDDrivers | Export-Clixml "$MultiPackPath\DellMultiPack $MultiPackName $(Get-Date -Format yyMMddHHmmss).clixml" -Force
+        $WmiQueryDellModel = @()
+        Get-ChildItem $MultiPackPath *.clixml | foreach {$WmiQueryDellModel += Import-Clixml $_.FullName}
+        if ($WmiQueryDellModel) {
+            $WmiQueryDellModel | Show-WmiQueryDellModel | Out-File "$MultiPackPath\DellMultiPack $MultiPackName WmiQuery.txt" -Force
+        }
         #===================================================================================================
         #   Execute
         #===================================================================================================

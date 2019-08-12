@@ -63,8 +63,8 @@ function Save-DellModelPack {
         [ValidateSet ('Latitude','Optiplex','Precision')]
         [string]$SystemFamily,
 
-        [ValidateSet ('Latitude A','Latitude N','Precision M','Precision N','Precision W')]
-        [string]$CustomGroup,
+        #[ValidateSet ('Latitude A','Latitude N','Precision M','Precision N','Precision W')]
+        #[string]$CustomGroup,
         #===================================================================================================
         #   Download
         #===================================================================================================

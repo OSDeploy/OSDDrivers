@@ -7,7 +7,7 @@
 RootModule = 'OSDDrivers.psm1'
 
 # Version number of his module.
-ModuleVersion = '19.8.11.0'
+ModuleVersion = '19.8.12.0'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -82,7 +82,7 @@ FunctionsToExport = 'Get-DellFamilyPack','Save-DellFamilyPack',
                     'Get-DellModelPack','Save-DellModelPack',
                     'Save-DellMultiPack',
                     'Save-OSDDriver',
-                    'New-NvidiaPack',
+                    'New-NvidiaPack','Show-WmiQueryDellModel',
                     'Update-ModuleOSDDrivers'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
