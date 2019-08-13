@@ -5,6 +5,7 @@ function New-OSDDriverTask {
         [string]$OSDDriverFile,
         [string]$OSDGroup = 'Custom',
         [string]$DriverVersion = '1.0',
+        [string]$DriverReleaseId = 'R0',
 
         [ValidateSet('x64','x86')]
         [string[]]$OsArch,
@@ -46,7 +47,7 @@ function New-OSDDriverTask {
 
         #$DriverName = ''
         #$DriverVersion = $null
-        $DriverReleaseId = $null
+        #$DriverReleaseId = $null
         $DriverGrouping = $null
 
         #$OperatingSystem = @()
@@ -97,7 +98,7 @@ function New-OSDDriverTask {
 
             DriverName              = [string] $DriverName
             DriverVersion           = [string] $DriverVersion
-            #DriverReleaseId         = [string] $DriverReleaseID
+            DriverReleaseId         = [string] $DriverReleaseID
 
             #OperatingSystem         = [array] $OperatingSystem
             OsVersion               = [string] $OsVersion

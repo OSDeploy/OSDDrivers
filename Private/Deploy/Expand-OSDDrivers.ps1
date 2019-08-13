@@ -551,6 +551,11 @@ function Expand-OSDDrivers {
     #   Expand OSDDrivers
     #===================================================================================================
     Write-Host "Expanding OSDDriver Packages ..." -Foregroundcolor Green
+    $ExpandNvida = @()
+    $ExpandNvida = $ExpandDrivers | Where-Object {$_.FullName -match 'Nvidia'} | Sort-Object BaseName
+    $ExpandNvida = $ExpandNvida | Select-Object -Last 1
+    $ExpandDrivers = $ExpandDrivers | Where-Object {$_.FullName -notmatch 'Nvidia'}
+
     foreach ($ExpandDriver in $ExpandDrivers) {
         $DriverPackageName = $ExpandDriver.Name
         $DriverPackageBaseName = $ExpandDriver.BaseName
@@ -570,8 +575,27 @@ function Expand-OSDDrivers {
             Expand-Archive -Path "$DriverPackageFullName" -DestinationPath "$ExpandDriverPath" -Force
         }
     }
+    Write-Host "Expanding OSDDriver NvidiaPack ..." -Foregroundcolor Green
 
+    foreach ($ExpandDriver in $ExpandNvida) {
+        $DriverPackageName = $ExpandDriver.Name
+        $DriverPackageBaseName = $ExpandDriver.BaseName
+        $DriverPackageFullName = $ExpandDriver.FullName
+        $DriverPackageDirectoryName = $ExpandDriver.DirectoryName
 
+        if (!(Test-Path "$ExpandDriverPath\$DriverPackageBaseName")) {
+            New-Item -Path "$ExpandDriverPath\$DriverPackageBaseName" -ItemType Directory -Force | Out-Null
+        }
+        if ($DriverPackageName -match '.cab') {
+            #Write-Host "Expanding CAB $DriverPackageFullName to $ExpandDriverPath\$DriverPackageBaseName" -ForegroundColor Cyan
+            Write-Verbose "Expanding $ExpandDriverPath\$DriverPackageBaseName" -Verbose
+            Expand -R "$DriverPackageFullName" -F:* "$ExpandDriverPath\$DriverPackageBaseName" | Out-Null
+        }
+        if ($DriverPackageName -match '.zip') {
+            Write-Host "Expanding ZIP $DriverPackageFullName to $ExpandDriverPath\$DriverPackageBaseName" -ForegroundColor Cyan
+            Expand-Archive -Path "$DriverPackageFullName" -DestinationPath "$ExpandDriverPath" -Force
+        }
+    }
 
 
 
