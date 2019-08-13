@@ -154,6 +154,7 @@ function New-NvidiaPack {
         Write-Warning "Driver Expand: Could not package Driver to $PackagedDriverPath ... Exiting"
         Continue
     } else {
+        Publish-OSDDriverScripts -PublishPath (Join-Path $WorkspacePath 'Package')
         Publish-OSDDriverScripts -PublishPath $PackagedDriverGroup
         Publish-OSDDriverScripts -PublishPath $PackagedDriverSubGroup
     }

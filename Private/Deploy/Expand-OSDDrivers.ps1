@@ -596,15 +596,5 @@ function Expand-OSDDrivers {
             Expand-Archive -Path "$DriverPackageFullName" -DestinationPath "$ExpandDriverPath" -Force
         }
     }
-
-
-
-
-
-
-
-
-
-
     Stop-Transcript | Out-Null
 }
