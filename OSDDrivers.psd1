@@ -7,7 +7,7 @@
 RootModule = 'OSDDrivers.psm1'
 
 # Version number of his module.
-ModuleVersion = '19.8.13.1'
+ModuleVersion = '19.8.15.0'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -26,6 +26,8 @@ Copyright = '(c) 2019 David Segura osdeploy.com. All rights reserved.'
 
 # Description of the functionality provided by this module
 Description = @'
+My Birthday Update
+
 BETA: OSDDrivers should be used for Testing Only!
 
 New Function:
@@ -121,7 +123,7 @@ PrivateData = @{
         # IconUri = ''
 
         # ReleaseNotes of this module
-        ReleaseNotes = 'https://osddrivers.osdeploy.com/module/release'
+        ReleaseNotes = 'https://osddrivers.osdeploy.com/release'
 
     } # End of PSData hashtable
 

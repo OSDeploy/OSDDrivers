@@ -20,6 +20,8 @@ function New-NvidiaPack {
         [Parameter(Mandatory)]
         [string]$WorkspacePath,
 
+        [string]$GroupingName,
+
         [Parameter(Mandatory)]
         [string]$DriverVersion,
 
@@ -47,6 +49,8 @@ function New-NvidiaPack {
     #   Defaults
     #===================================================================================================
     $OSDPnpClass = 'Display'
+    if ([string]::IsNullOrWhiteSpace($GroupingName)) {$GroupingName = "$OsVersion $OsArch"}
+    Write-Verbose "GroupingName: $GroupingName" -Verbose
     #===================================================================================================
     #   Test-ExpandedDriverPath
     #===================================================================================================
@@ -109,7 +113,8 @@ function New-NvidiaPack {
     #===================================================================================================
     #   Create Package
     #===================================================================================================
-    $PackagedDriverGroup = Get-PathOSDD -Path (Join-Path $WorkspacePath (Join-Path 'Package' 'NvidiaPack'))
+    $PackagedNvidiaPack = Get-PathOSDD -Path (Join-Path $WorkspacePath (Join-Path 'Package' 'NvidiaPack'))
+    $PackagedDriverGroup = Get-PathOSDD -Path (Join-Path $PackagedNvidiaPack "$GroupingName")
     $PackagedDriverSubGroup = Get-PathOSDD -Path (Join-Path $PackagedDriverGroup "NvidiaPack $NvidiaFamily $DriverReleaseId $OsVersion $OsArch")
     $SourceName = (Get-Item $ExpandedDriverPath).Name
     $CabName = "$SourceName.cab"
@@ -155,6 +160,7 @@ function New-NvidiaPack {
         Continue
     } else {
         Publish-OSDDriverScripts -PublishPath (Join-Path $WorkspacePath 'Package')
+        Publish-OSDDriverScripts -PublishPath $PackagedNvidiaPack
         Publish-OSDDriverScripts -PublishPath $PackagedDriverGroup
         Publish-OSDDriverScripts -PublishPath $PackagedDriverSubGroup
     }
