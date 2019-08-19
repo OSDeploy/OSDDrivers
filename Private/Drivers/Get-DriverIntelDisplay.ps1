@@ -199,8 +199,8 @@ function Get-DriverIntelDisplay {
             #===================================================================================================
             #   Values
             #===================================================================================================
-            $DriverName = "$OSDGroup $DriverVersion $OsArch"
-            $DriverGrouping = "$DriverResultsName $OsArch"
+            $DriverName = "$OSDGroup $DriverVersion $OsArch $OsVersion"
+            $DriverGrouping = "$DriverResultsName $OsArch $OsVersion"
             $DriverDescription = $DriverMETA | Where-Object {$_.name -eq 'Description'} | Select-Object -ExpandProperty Content
             $DriverInfo = $DriverLink.href
             $DownloadFile = Split-Path $DriverUrl -Leaf

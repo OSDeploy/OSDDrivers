@@ -29,7 +29,7 @@ Expands the downloaded Dell Model Packs
 .PARAMETER Pack
 Creates a CAB file from the DellFamily DriverPack.  Default removes Intel Video
 
-.PARAMETER MultiPackName
+.PARAMETER CustomName = 'DellMultiPack'
 Name of the MultiPack that will be created in Workspace\Packages
 
 .PARAMETER RemoveAudio
@@ -47,50 +47,61 @@ Removes Nvidia Video Drivers from being added to the CAB or MultiPack
 function Save-DellMultiPack {
     [CmdletBinding()]
     Param (
+        #====================================================================
+        #   InputObject
+        #====================================================================
         [Parameter(ValueFromPipeline = $true)]
         [Object[]]$InputObject,
-        
-        [Parameter(Mandatory = $true)]
-        [string]$MultiPackName,
-
+        #====================================================================
+        #   Basic
+        #====================================================================
         [Parameter(Mandatory)]
         [string]$WorkspacePath,
-        #===================================================================================================
+
+        [Parameter(Mandatory)]
+        [string]$AppendName = 'None',
+        #====================================================================
         #   Filters
-        #===================================================================================================
+        #====================================================================
         [ValidateSet ('X10','X9','X8','X7','X6','X5','X4','X3','X2','X1')]
         [string]$Generation,
+
+        [ValidateSet ('x64','x86')]
+        [string]$OsArch = 'x64',
 
         [ValidateSet ('10.0','6.1')]
         [string]$OsVersion = '10.0',
 
         [ValidateSet ('Latitude','Optiplex','Precision')]
         [string]$SystemFamily,
-
-        #[ValidateSet ('Latitude A','Latitude N','Precision M','Precision N','Precision W')]
-        #[string]$CustomGroup,
-        #===================================================================================================
-        #   Remove
-        #===================================================================================================
-        [switch]$RemoveAudio = $false,
+        #====================================================================
+        #   Options
+        #====================================================================
         [switch]$RemoveAmdVideo = $false,
+        [switch]$RemoveAudio = $false,
         [switch]$RemoveIntelVideo = $false,
         [switch]$RemoveNvidiaVideo = $false
-        #===================================================================================================
-        #   Scraps
-        #===================================================================================================
+        #[switch]$RemoveX86 = $false
+        #[switch]$SplitGeneration,
         #[Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName)]
         #[ValidateSet('DellModel','DellFamily')]
         #[string]$OSDGroup,
-
         #[Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName)]
         #[ValidateSet ('x64','x86')]
         #[string]$OsArch,
-
         #[switch]$SkipGridView
+        #====================================================================
     )
 
     Begin {
+        #===================================================================================================
+        #   CustomName
+        #===================================================================================================
+        if ($AppendName -eq 'None') {
+            $CustomName = "DellMultiPack $OsVersion $OsArch"
+        } else {
+            $CustomName = "DellMultiPack $OsVersion $OsArch $AppendName"
+        }
         #===================================================================================================
         #   Get-OSDWorkspace Home
         #===================================================================================================
@@ -106,12 +117,13 @@ function Save-DellMultiPack {
         $WorkspaceExpand = Get-PathOSDD -Path (Join-Path $OSDWorkspace 'Expand')
         Write-Verbose "Workspace Expand: $WorkspaceExpand" -Verbose
 
-        $WorkspacePackage = Get-PathOSDD -Path (Join-Path $OSDWorkspace 'Package')
-        Write-Verbose "Workspace Package: $WorkspacePackage" -Verbose
-        Publish-OSDDriverScripts -PublishPath $WorkspacePackage
+        $WorkspacePackages = Get-PathOSDD -Path (Join-Path $OSDWorkspace 'Packages')
+        Write-Verbose "Workspace Packages: $WorkspacePackages" -Verbose
+        Publish-OSDDriverScripts -PublishPath $WorkspacePackages
 
-        
-        #Publish-OSDDriverDellScripts -PublishPath (Join-Path $OSDWorkspace 'Scripts')
+        $PackagePath = Get-PathOSDD -Path (Join-Path $WorkspacePackages "$CustomName")
+        Write-Verbose "MultiPack Path: $PackagePath" -Verbose
+        Publish-OSDDriverScripts -PublishPath $PackagePath
         #===================================================================================================
     }
 
@@ -141,58 +153,20 @@ function Save-DellMultiPack {
         #   Set-OSDStatus
         #===================================================================================================
         foreach ($OSDDriver in $OSDDrivers) {
-            Write-Verbose "==================================================================================================="
-            $DownloadFile       = $OSDDriver.DownloadFile
-            $DriverName         = $OSDDriver.DriverName
-            $OSDCabFile         = "$($DriverName).cab"
-            $OSDGroup           = $OSDDriver.OSDGroup
-            $OSDType            = $OSDDriver.OSDType
+            $DriverName = $OSDDriver.DriverName
+            $OSDCabFile = "$($DriverName).cab"
+            $DownloadFile = $OSDDriver.DownloadFile
+            $OSDGroup = $OSDDriver.OSDGroup
+            $OSDType = $OSDDriver.OSDType
 
             $DownloadedDriverGroup  = (Join-Path $WorkspaceDownload $OSDGroup)
-            $DownloadedDriverPath   = (Join-Path $DownloadedDriverGroup $DownloadFile)
-            $ExpandedDriverPath     = (Join-Path $WorkspaceExpand (Join-Path $OSDGroup $DriverName))
-            $PackagedDriverPath     = (Join-Path $WorkspacePackage (Join-Path $OSDGroup $OSDCabFile))
             Write-Verbose "DownloadedDriverGroup: $DownloadedDriverGroup"
-            Write-Verbose "DownloadedDriverPath: $DownloadedDriverPath"
-            Write-Verbose "ExpandedDriverPath: $ExpandedDriverPath"
-            Write-Verbose "PackagedDriverPath: $PackagedDriverPath"
 
+            $DownloadedDriverPath = (Join-Path $WorkspaceDownload (Join-Path $OSDGroup $DownloadFile))
             if (Test-Path "$DownloadedDriverPath") {$OSDDriver.OSDStatus = 'Downloaded'}
+
+            $ExpandedDriverPath = (Join-Path $WorkspaceExpand (Join-Path $OSDGroup $DriverName))
             if (Test-Path "$ExpandedDriverPath") {$OSDDriver.OSDStatus = 'Expanded'}
-            if (Test-Path "$PackagedDriverPath") {$OSDDriver.OSDStatus = 'Packaged'}
-        }
-        #===================================================================================================
-        #   CustomGroup
-        #[ValidateSet ('Latitude','Latitude X',Precision M','Precision N','Precision W')]
-        #===================================================================================================
-        if ($CustomGroup) {
-            if ($CustomGroup -eq 'Latitude A') {
-                $OSDDrivers = $OSDDrivers | Where-Object {$_.SystemFamily -match 'Latitude'}
-                $OSDDrivers = $OSDDrivers | Where-Object {($_.Model -match 'Latitude D') -or ($_.Model -match 'Latitude E') -or ($_.Model -match 'Latitude X') -or ($_.Model -like "Latitude*U")}
-            }
-            if ($CustomGroup -eq 'Latitude N') {
-                $OSDDrivers = $OSDDrivers | Where-Object {$_.SystemFamily -match 'Latitude'}
-                $OSDDrivers = $OSDDrivers | Where-Object {$_.Model -notmatch 'Latitude D'}
-                $OSDDrivers = $OSDDrivers | Where-Object {$_.Model -notmatch 'Latitude E'}
-                $OSDDrivers = $OSDDrivers | Where-Object {$_.Model -notmatch 'Latitude X'}
-                $OSDDrivers = $OSDDrivers | Where-Object {$_.Model -notlike "Latitude*U"}
-            }
-            if ($CustomGroup -eq 'Precision M') {
-                $OSDDrivers = $OSDDrivers | Where-Object {$_.Model -match 'Precision M'}
-            }
-            if ($CustomGroup -eq 'Precision N') {
-                $OSDDrivers = $OSDDrivers | Where-Object {$_.SystemFamily -match 'Precision'}
-                $OSDDrivers = $OSDDrivers | Where-Object {$_.Model -notmatch 'Rack'}
-                $OSDDrivers = $OSDDrivers | Where-Object {$_.Model -notmatch 'Tower'}
-                $OSDDrivers = $OSDDrivers | Where-Object {$_.Model -notmatch 'Precision M'}
-                $OSDDrivers = $OSDDrivers | Where-Object {$_.Model -notmatch 'Precision R'}
-                $OSDDrivers = $OSDDrivers | Where-Object {$_.Model -notmatch 'Precision T'}
-                $OSDDrivers = $OSDDrivers | Where-Object {$_.Model -notmatch 'Workstation'}
-            }
-            if ($CustomGroup -eq 'Precision W') {
-                $OSDDrivers = $OSDDrivers | Where-Object {$_.SystemFamily -match 'Precision'}
-                $OSDDrivers = $OSDDrivers | Where-Object {($_.Model -match 'Rack') -or ($_.Model -match 'Tower') -or ($_.Model -match 'Precision R') -or ($_.Model -match 'Precision T') -or ($_.Model -match 'Workstation')}
-            }
         }
         #===================================================================================================
         #   OSArch
@@ -222,12 +196,11 @@ function Save-DellMultiPack {
         #===================================================================================================
         #   Export MultiPack Object
         #===================================================================================================
-        $MultiPackPath = Get-PathOSDD -Path (Join-Path $WorkspacePackage (Join-Path 'DellMultiPack' $MultiPackName))
-        $OSDDrivers | Export-Clixml "$MultiPackPath\DellMultiPack $MultiPackName $(Get-Date -Format yyMMddHHmmss).clixml" -Force
+        $OSDDrivers | Export-Clixml "$PackagePath\$CustomName $(Get-Date -Format yyMMddHHmmssfff).clixml" -Force
         $WmiQueryDellModel = @()
-        Get-ChildItem $MultiPackPath *.clixml | foreach {$WmiQueryDellModel += Import-Clixml $_.FullName}
+        Get-ChildItem $PackagePath *.clixml | foreach {$WmiQueryDellModel += Import-Clixml $_.FullName}
         if ($WmiQueryDellModel) {
-            $WmiQueryDellModel | Show-WmiQueryDellModel | Out-File "$MultiPackPath\DellMultiPack $MultiPackName WmiQuery.txt" -Force
+            $WmiQueryDellModel | Show-WmiQueryDellModel | Out-File "$PackagePath\WmiQuery.txt" -Force
         }
         #===================================================================================================
         #   Execute
@@ -242,7 +215,7 @@ function Save-DellMultiPack {
                 Write-Verbose "DriverUrl: $DriverUrl"
 
                 $DriverName = $OSDDriver.DriverName
-                Write-Verbose "DriverName: $DriverName" -Verbose
+                Write-Verbose "DriverName: $DriverName"
 
                 $DownloadFile = $OSDDriver.DownloadFile
                 Write-Verbose "DownloadFile: $DownloadFile"
@@ -256,13 +229,13 @@ function Save-DellMultiPack {
                 $DownloadedDriverGroup = (Join-Path $WorkspaceDownload $OSDGroup)
                 $DownloadedDriverPath =  (Join-Path $DownloadedDriverGroup $DownloadFile)
                 $ExpandedDriverPath = (Join-Path $WorkspaceExpand (Join-Path $OSDGroup $DriverName))
-                $PackagedDriverPath = (Join-Path $WorkspacePackage (Join-Path $OSDGroup $OSDCabFile))
+                #$PackagedDriverPath = (Join-Path $WorkspacePackages (Join-Path $OSDGroup $OSDCabFile))
 
                 if (-not(Test-Path "$DownloadedDriverGroup")) {New-Item $DownloadedDriverGroup -Directory -Force | Out-Null}
 
                 Write-Verbose "DownloadedDriverPath: $DownloadedDriverPath"
                 Write-Verbose "ExpandedDriverPath: $ExpandedDriverPath"
-                Write-Verbose "PackagedDriverPath: $PackagedDriverPath"
+                #Write-Verbose "PackagedDriverPath: $PackagedDriverPath"
 
                 Write-Host "$DriverName" -ForegroundColor Green
                 #===================================================================================================
@@ -330,12 +303,22 @@ function Save-DellMultiPack {
                 #   OSDDriver Objects
                 #===================================================================================================
                 if ($MyInvocation.MyCommand.Name -eq 'Save-DellMultiPack') {
-                    $PackagedDriverGroup = Get-PathOSDD -Path (Join-Path $WorkspacePackage (Join-Path 'DellMultiPack' $MultiPackName))
-                    $OSDDriver | ConvertTo-Json | Out-File -FilePath "$PackagedDriverGroup\$($OSDDriver.DriverName).drvpack" -Force
-                } else {
-                    $PackagedDriverGroup = Get-PathOSDD -Path (Join-Path $WorkspacePackage $OSDGroup)
-                    $OSDDriver | Export-Clixml -Path "$ExpandedDriverPath\OSDDriver.clixml" -Force
-                    $OSDDriver | ConvertTo-Json | Out-File -FilePath "$ExpandedDriverPath\OSDDriver.drvpack" -Force
+                    #$PackagedDriverGroup = Get-PathOSDD -Path (Join-Path $WorkspaceProject (Join-Path 'DellMultiPack' $CustomName = 'DellMultiPack'))
+
+<#                     if ($SplitGeneration.IsPresent) {
+                        $WmiQueryDellModel = @()
+                        Get-ChildItem $PackagedDriverGroup *.clixml | foreach {$WmiQueryDellModel += Import-Clixml $_.FullName}
+                        $WmiQueryDellModel = $WmiQueryDellModel | Where-Object {$_.Generation -match $OSDDriver.Generation}
+
+                        $PackagedDriverGroup = Get-PathOSDD -Path (Join-Path $WorkspaceProject (Join-Path 'DellMultiPack' (Join-Path $CustomName = 'DellMultiPack' "Dell $($OSDDriver.Generation)")))
+
+                        if ($WmiQueryDellModel) {
+                            $WmiQueryDellModel | Show-WmiQueryDellModel | Out-File "$PackagedDriverGroup\WmiQuery.txt" -Force
+                        }
+                    } #>
+
+
+                    $OSDDriver | ConvertTo-Json | Out-File -FilePath "$PackagePath\$($OSDDriver.DriverName).drvpack" -Force
                 }
                 #===================================================================================================
                 #   MultiPack
@@ -346,7 +329,11 @@ function Save-DellMultiPack {
                     #   Get SourceContent
                     #===================================================================================================
                     $SourceContent = @()
-                    $SourceContent = Get-ChildItem "$ExpandedDriverPath\*\*\*\*\*" -Directory | Select-Object -Property *
+                    if ($OsArch -eq 'x86') {
+                        $SourceContent = Get-ChildItem "$ExpandedDriverPath\*\*\x86\*\*" -Directory | Select-Object -Property *
+                    } else {
+                        $SourceContent = Get-ChildItem "$ExpandedDriverPath\*\*\x64\*\*" -Directory | Select-Object -Property *
+                    }
                     #===================================================================================================
                     #   Filter SourceContent
                     #===================================================================================================
@@ -372,17 +359,17 @@ function Save-DellMultiPack {
                             }
                         }
                         $MultiPackFiles += $DriverDir
-                        New-CabFileDellMultiPack "$($DriverDir.FullName)" "$PackagedDriverGroup\$(($DriverDir.Parent).parent)\$($DriverDir.Parent)" $RemoveIntelVideo
+                        New-CabFileDellMultiPack "$($DriverDir.FullName)" "$PackagePath\$(($DriverDir.Parent).parent)\$($DriverDir.Parent)" $RemoveIntelVideo
                     }
                     foreach ($MultiPackFile in $MultiPackFiles) {
                         $MultiPackFile.Name = "$(($MultiPackFile.Parent).Parent)\$($MultiPackFile.Parent)\$($MultiPackFile.Name).cab"
                     }
                     $MultiPackFiles = $MultiPackFiles | Select-Object -ExpandProperty Name
-                    $MultiPackFiles | ConvertTo-Json | Out-File -FilePath "$PackagedDriverGroup\$($DriverName).multipack" -Force
+                    $MultiPackFiles | ConvertTo-Json | Out-File -FilePath "$PackagePath\$($DriverName).multipack" -Force
                     #===================================================================================================
                     #   Publish-OSDDriverScripts
                     #===================================================================================================
-                    Publish-OSDDriverScripts -PublishPath $PackagedDriverGroup
+                    #Publish-OSDDriverScripts -PublishPath $PackagePath
                 }
             }
         } else {

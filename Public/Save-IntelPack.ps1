@@ -8,7 +8,7 @@ Requires BITS for downloading the Downloads
 Requires Internet access
 
 .LINK
-https://osddrivers.osdeploy.com/module/functions/save-osddriver
+https://osddrivers.osdeploy.com/module/functions/save-intelpack
 
 .PARAMETER WorkspacePath
 Directory to the OSDDrivers Workspace.  This contains the Download, Expand, and Package subdirectories
@@ -28,32 +28,50 @@ Creates a CAB file from the Driver
 .PARAMETER SkipGridView
 Skips GridView for Automation
 #>
-function Save-OSDDriver {
+function Save-IntelPack {
     [CmdletBinding()]
     Param (
+        #====================================================================
+        #   InputObject
+        #====================================================================
         #[Parameter(ValueFromPipeline = $true)]
         #[Object[]]$InputObject,
-
-        [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
+        #====================================================================
+        #   Basic
+        #====================================================================
+        [Parameter(Mandatory)]
         [string]$WorkspacePath,
 
-        [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName)]
+        [Parameter(Mandatory)]
+        [string]$AppendName = 'None',
+        #====================================================================
+        #   Filters
+        #====================================================================
         [ValidateSet('IntelDisplay','IntelWireless')]
         [string]$OSDGroup,
 
-        [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName)]
         [ValidateSet ('x64','x86')]
         [string]$OsArch,
 
-        [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName)]
         [ValidateSet ('10.0','6.3','6.1')]
         [string]$OsVersion,
-
+        #====================================================================
+        #   Options
+        #====================================================================
         [switch]$Pack,
         [switch]$SkipGridView
+        #====================================================================
     )
 
     Begin {
+        #===================================================================================================
+        #   CustomName
+        #===================================================================================================
+        if ($AppendName -eq 'None') {
+            $CustomName = "IntelPack"
+        } else {
+            $CustomName = "IntelPack $AppendName"
+        }
         #===================================================================================================
         #   Get-OSDWorkspace Home
         #===================================================================================================
@@ -69,9 +87,13 @@ function Save-OSDDriver {
         $WorkspaceExpand = Get-PathOSDD -Path (Join-Path $OSDWorkspace 'Expand')
         Write-Verbose "Workspace Expand: $WorkspaceExpand" -Verbose
 
-        $WorkspacePackage = Get-PathOSDD -Path (Join-Path $OSDWorkspace 'Package')
-        Write-Verbose "Workspace Package: $WorkspacePackage" -Verbose
-        Publish-OSDDriverScripts -PublishPath $WorkspacePackage
+        $WorkspacePackages = Get-PathOSDD -Path (Join-Path $OSDWorkspace 'Packages')
+        Write-Verbose "Workspace Packages: $WorkspacePackages" -Verbose
+        Publish-OSDDriverScripts -PublishPath $WorkspacePackages
+
+        $PackagePath = Get-PathOSDD -Path (Join-Path $WorkspacePackages "$CustomName")
+        Write-Verbose "Package Path: $PackagePath" -Verbose
+        Publish-OSDDriverScripts -PublishPath $PackagePath
         #===================================================================================================
     }
 
@@ -95,23 +117,23 @@ function Save-OSDDriver {
         #   Set-OSDStatus
         #===================================================================================================
         foreach ($OSDDriver in $OSDDrivers) {
-            Write-Verbose "==================================================================================================="
             $DriverName = $OSDDriver.DriverName
             $OSDCabFile = "$($DriverName).cab"
             $DownloadFile = $OSDDriver.DownloadFile
             $OSDGroup = $OSDDriver.OSDGroup
             $OSDType = $OSDDriver.OSDType
+
+            $DownloadedDriverGroup  = (Join-Path $WorkspaceDownload $OSDGroup)
+            Write-Verbose "DownloadedDriverGroup: $DownloadedDriverGroup"
+
             $DownloadedDriverPath = (Join-Path $WorkspaceDownload (Join-Path $OSDGroup $DownloadFile))
-            $ExpandedDriverPath = (Join-Path $WorkspaceExpand (Join-Path $OSDGroup $DriverName))
-            $PackagedDriverPath = (Join-Path $WorkspacePackage (Join-Path $OSDGroup $OSDCabFile))
-
             if (Test-Path "$DownloadedDriverPath") {$OSDDriver.OSDStatus = 'Downloaded'}
+
+            $ExpandedDriverPath = (Join-Path $WorkspaceExpand (Join-Path $OSDGroup $DriverName))
             if (Test-Path "$ExpandedDriverPath") {$OSDDriver.OSDStatus = 'Expanded'}
+
+            $PackagedDriverPath = (Join-Path $PackagePath (Join-Path $OSDGroup $OSDCabFile))
             if (Test-Path "$PackagedDriverPath") {$OSDDriver.OSDStatus = 'Packaged'}
-
-            Write-Verbose "OSDCabFile: $OSDCabFile"
-
-            if (Test-Path "$ExpandedDriverPath\OSDDriver.drvpnp") {$OSDPnpFile = "$($DriverName).drvpnp"}
         }
         #===================================================================================================
         #   OsArch
@@ -160,7 +182,7 @@ function Save-OSDDriver {
                 $ExpandedDriverPath = (Join-Path $WorkspaceExpand (Join-Path $OSDGroup $DriverName))
                 Write-Verbose "ExpandedDriverPath: $ExpandedDriverPath"
 
-                $PackagedDriverPath = (Join-Path $WorkspacePackage (Join-Path $OSDGroup $OSDCabFile))
+                $PackagedDriverPath = (Join-Path $PackagePath (Join-Path $OSDGroup $OSDCabFile))
                 Write-Verbose "PackagedDriverPath: $PackagedDriverPath"
 
                 Write-Host "$DriverName" -ForegroundColor Green
@@ -229,7 +251,7 @@ function Save-OSDDriver {
                     #===================================================================================================
                     #   Create Package
                     #===================================================================================================
-                    $PackagedDriverGroup = Get-PathOSDD -Path (Join-Path $WorkspacePackage $OSDGroup)
+                    $PackagedDriverGroup = Get-PathOSDD -Path (Join-Path $PackagePath $OSDGroup)
                     Write-Verbose "Verify: $PackagedDriverPath"
                     if (Test-Path "$PackagedDriverPath") {
                         #Write-Warning "Compress-OSDDriver: $PackagedDriverPath already exists"
@@ -264,7 +286,7 @@ function Save-OSDDriver {
                     #===================================================================================================
                     #   Publish-OSDDriverScripts
                     #===================================================================================================
-                    Publish-OSDDriverScripts -PublishPath $PackagedDriverGroup
+                    #Publish-OSDDriverScripts -PublishPath $PackagedDriverGroup
                 }
             }
         } else {
@@ -276,7 +298,6 @@ function Save-OSDDriver {
         #===================================================================================================
         #   Publish-OSDDriverScripts
         #===================================================================================================
-        Publish-OSDDriverScripts -PublishPath $WorkspacePackage
         Write-Host "Complete!" -ForegroundColor Green
         #===================================================================================================
     }

@@ -122,20 +122,14 @@ function Save-DellFamilyPack {
             $DownloadedDriverGroup  = (Join-Path $WorkspaceDownload $OSDGroup)
             $DownloadedDriverPath   = (Join-Path $DownloadedDriverGroup $DownloadFile)
             $ExpandedDriverPath     = (Join-Path $WorkspaceExpand (Join-Path $OSDGroup $DriverName))
-            $PackagedDriverPath     = (Join-Path $WorkspacePackage (Join-Path $OSDGroup $OSDCabFile))
+            #$PackagedDriverPath     = (Join-Path $WorkspacePackage (Join-Path $OSDGroup $OSDCabFile))
             Write-Verbose "DownloadedDriverGroup: $DownloadedDriverGroup"
             Write-Verbose "DownloadedDriverPath: $DownloadedDriverPath"
             Write-Verbose "ExpandedDriverPath: $ExpandedDriverPath"
-            Write-Verbose "PackagedDriverPath: $PackagedDriverPath"
+            #Write-Verbose "PackagedDriverPath: $PackagedDriverPath"
 
             if (Test-Path "$DownloadedDriverPath") {$OSDDriver.OSDStatus = 'Downloaded'}
             if (Test-Path "$ExpandedDriverPath") {$OSDDriver.OSDStatus = 'Expanded'}
-
-            if ($PSCmdlet.ParameterSetName -ne 'MultiPack') {
-                if (Test-Path "$PackagedDriverPath") {$OSDDriver.OSDStatus = 'Packaged'}
-                Write-Verbose "OSDCabFile: $OSDCabFile"
-                if (Test-Path "$ExpandedDriverPath\OSDDriver.drvpnp") {$OSDPnpFile = "$($DriverName).drvpnp"}
-            }
         }
         #===================================================================================================
         #   OSArch
@@ -197,13 +191,13 @@ function Save-DellFamilyPack {
                 $DownloadedDriverGroup = (Join-Path $WorkspaceDownload $OSDGroup)
                 $DownloadedDriverPath =  (Join-Path $DownloadedDriverGroup $DownloadFile)
                 $ExpandedDriverPath = (Join-Path $WorkspaceExpand (Join-Path $OSDGroup $DriverName))
-                $PackagedDriverPath = (Join-Path $WorkspacePackage (Join-Path $OSDGroup $OSDCabFile))
+                #$PackagedDriverPath = (Join-Path $WorkspacePackage (Join-Path $OSDGroup $OSDCabFile))
 
                 if (-not(Test-Path "$DownloadedDriverGroup")) {New-Item $DownloadedDriverGroup -Directory -Force | Out-Null}
 
                 Write-Verbose "DownloadedDriverPath: $DownloadedDriverPath"
                 Write-Verbose "ExpandedDriverPath: $ExpandedDriverPath"
-                Write-Verbose "PackagedDriverPath: $PackagedDriverPath"
+                #Write-Verbose "PackagedDriverPath: $PackagedDriverPath"
 
                 Write-Host "$DriverName" -ForegroundColor Green
                 #===================================================================================================

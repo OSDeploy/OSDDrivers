@@ -141,7 +141,7 @@ function New-NvidiaPack {
     $WmiCodePath = Join-Path -Path "$PackagedDriverSubGroup" -ChildPath "WmiQuery.txt"
     
     $WmiCodeString = [System.Text.StringBuilder]::new()
-    [void]$WmiCodeString.AppendLine('SELECT DeviceId FROM Win32_PNPEntity  WHERE')
+    [void]$WmiCodeString.AppendLine('SELECT DeviceId FROM Win32_PNPEntity WHERE')
 
     foreach ($Pnp in $OSDDriverPnp) {
         [void]$WmiCodeString.AppendLine("DeviceId LIKE '%$($Pnp.HardwareId)%'")

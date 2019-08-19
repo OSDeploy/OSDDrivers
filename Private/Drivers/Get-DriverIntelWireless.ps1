@@ -158,8 +158,8 @@ function Get-DriverIntelWireless {
             #===================================================================================================
             #   Values
             #===================================================================================================
-            $DriverName = "$OSDGroup $DriverVersion $OsNameMatch $OsArch"
-            $DriverGrouping = "Intel Wireless $OsNameMatch $OsArch"
+            $DriverName = "$OSDGroup $DriverVersion $OsArch $OsVersion" 
+            $DriverGrouping = "Intel Wireless $OsArch $OsVersion"
             $DriverInfo = $DriverLink.href
 
             $OSDPnpClass = 'Net'

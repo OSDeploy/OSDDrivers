@@ -7,7 +7,7 @@
 RootModule = 'OSDDrivers.psm1'
 
 # Version number of his module.
-ModuleVersion = '19.8.15.0'
+ModuleVersion = '19.8.19.0'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -26,21 +26,7 @@ Copyright = '(c) 2019 David Segura osdeploy.com. All rights reserved.'
 
 # Description of the functionality provided by this module
 Description = @'
-My Birthday Update
-
 BETA: OSDDrivers should be used for Testing Only!
-
-New Function:
-Get-DellModelPack - Returns the Dell Model Packs
-New-NvidiaPack - Creates an Nvidia Driver CAB and Task
-Save-DellFamilyPack - Downloads and Expands Dell Family Packs
-Save-DellModelPack - Downloads and Expands Dell Model Packs
-Save-DellMultiPack - Saves a Dell Model Pack as a MultiPack
-Save-OSDDriver - Downloads Intel Display and Wireless Drivers
-
-Updates:
-Save-DellModelPack does not remove Intel Video Drivers by default.  New parameter -RemoveIntelVideo has been added.
-Intel Video Drivers are still removed when using -Pack as there would be too many files to compress without removing it
 '@
 
 # Minimum version of the Windows PowerShell engine required by this module
@@ -82,9 +68,7 @@ PowerShellVersion = '5.0'
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
 FunctionsToExport = 'Get-DellFamilyPack','Save-DellFamilyPack',
                     'Get-DellModelPack','Save-DellModelPack',
-                    'Save-DellMultiPack',
-                    'Save-OSDDriver',
-                    'New-NvidiaPack','Show-WmiQueryDellModel',
+                    'Save-DellMultiPack','Save-IntelPack',
                     'Update-ModuleOSDDrivers'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.

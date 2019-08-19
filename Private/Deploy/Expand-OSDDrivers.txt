@@ -1,0 +1,628 @@
+function Expand-OSDDrivers {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
+        [string]$PublishPath,
+
+        [string]$ExpandDriverPath,
+
+        [switch]$GridView,
+
+        [string]$SetMake,
+        [string]$SetModel,
+        [string]$SetFamily,
+        [string]$SetSku,
+
+        [ValidateSet('x64','x86')]
+        [string]$SetOSArch,
+
+        [string]$SetOSBuild,
+
+        #[ValidateSet('Client','Server')]
+        #[string]$SetOSInstallationType,
+
+        [ValidateSet('6.1','6.2','6.3','10.0')]
+        [string]$SetOSVersion
+    )
+    #===================================================================================================
+    #   Get-OSDDriver
+    #===================================================================================================
+    $OSDDriverMultiPacks = @()
+    $OSDDriverMultiPacks = Get-OSDDriverMultiPacks -PublishPath $PublishPath -ErrorAction SilentlyContinue
+
+    $OSDDriverPackages = @()
+    $OSDDriverPackages = Get-OSDDriverPackages -PublishPath $PublishPath -ErrorAction SilentlyContinue
+
+    $OSDDriverTasks = @()
+    $OSDDriverTasks = Get-OSDDriverTasks -PublishPath $PublishPath -ErrorAction SilentlyContinue
+    #===================================================================================================
+    #   Connect to Task Sequence Environment
+    #===================================================================================================
+    try {
+        $TSEnv = New-Object -ComObject Microsoft.SMS.TSEnvironment
+    }
+    catch [System.Exception] {
+        Write-Warning -Message "Unable to construct Microsoft.SMS.TSEnvironment object"
+    }
+    #===================================================================================================
+    #   Defaults
+    #===================================================================================================
+    $IsWinPE = $env:SystemDrive -eq 'X:'
+    Write-Verbose "IsWinPE: $IsWinPE" -Verbose
+    #===================================================================================================
+    #   Set OSDisk
+    #===================================================================================================
+    $OSDisk = 'C:'
+    #===================================================================================================
+    #   WinPE = Find OSDisk
+    #===================================================================================================
+    if ($IsWinPE) {
+        if ($TSEnv) {
+            #MDT Default
+            if ($TSEnv.Value('OSDisk') -match ':') {$OSDisk = $TSEnv.Value('OSDisk')}
+            #MDT Secondary
+            elseif ($TSEnv.Value('OSDTargetDriveCache') -match ':') {$OSDisk = $TSEnv.Value('OSDTargetDriveCache')}
+            #SCCM Default
+            elseif ($TSEnv.Value('OSDTargetSystemDrive') -match ':') {$OSDisk = $TSEnv.Value('OSDTargetSystemDrive')}
+        }
+    } else {
+        $OSDisk = $env:SystemDrive
+    }
+    Write-Verbose "OSDisk: $OSDisk" -Verbose
+    #===================================================================================================
+    #   ExpandDriverPath
+    #===================================================================================================
+    if (!$ExpandDriverPath) {$ExpandDriverPath = $OSDisk + '\Drivers'}
+    Write-Verbose "ExpandDriverPath: $ExpandDriverPath" -Verbose
+    #===================================================================================================
+    #   Validate
+    #===================================================================================================
+    if (-not (Test-Path "$ExpandDriverPath")) {
+        try {
+            New-Item -Path "$ExpandDriverPath\" -ItemType Directory -Force | Out-Null
+        }
+        catch {
+            Write-Warning "Could not create $ExpandDriverPath ... Exiting"
+            Start-Sleep 10
+            Exit 0
+        }
+    }
+    #===================================================================================================
+    #   Start-Transcript
+    #===================================================================================================
+    $LogName = "$((Get-Date).ToString('yyyy-MM-dd-HHmmss'))-OSDDrivers.log"
+    Start-Transcript -Path "$ExpandDriverPath\$LogName" | Out-Null
+    #===================================================================================================
+    #   Image OSArchitecture
+    #===================================================================================================
+    if ($SetOSArch) {
+        Write-Verbose "SetOSArch (Parameter): $SetOSArch" -Verbose
+        $ImageOSArchitecture = $SetOSArch
+    } else {
+        #MDT
+        if ($TSEnv) {$ImageProcessor = $TSEnv.Value('ImageProcessor')}
+
+        if ($ImageProcessor) {
+            Write-Verbose "ImageProcessor (TSEnv): $ImageProcessor" -Verbose
+            $ImageOSArchitecture = $ImageProcessor
+        } else {
+            $CimOSArchitecture = (Get-CimInstance -ClassName Win32_OperatingSystem).OSArchitecture
+            Write-Verbose "Cim OS Architecture (Win32_OperatingSystem): $CimOSArchitecture" -Verbose
+            if ($CimOSArchitecture -like "*64*") {$ImageOSArchitecture = 'x64'}
+            if ($CimOSArchitecture -like "*32*") {$ImageOSArchitecture = 'x86'}
+
+            if ($TSEnv) {Write-Warning "This parameter can be set by adding a Task Sequence Variable: g"}
+        }
+    }
+    Write-Verbose "Image OSArchitecture: $ImageOSArchitecture" -Verbose
+    #===================================================================================================
+    #   ImageOSBuild
+    #===================================================================================================
+    if ($SetOSBuild) {
+        Write-Verbose "SetOSBuild (Parameter): $SetOSBuild" -Verbose
+        $ImageOSBuild = $SetOSBuild
+    } else {
+        #MDT
+        if ($TSEnv) {$ImageBuild = $TSEnv.Value('ImageBuild')}
+
+        if ($ImageBuild) {
+            Write-Verbose "ImageBuild (TSEnv): $ImageBuild" -Verbose
+            $ImageOSBuild = ([version]$ImageBuild).Build
+        } else {
+            $ImageOSBuild = (Get-CimInstance -ClassName Win32_OperatingSystem).BuildNumber
+            Write-Verbose "Cim OS BuildNumber (Win32_OperatingSystem): $ImageOSBuild" -Verbose
+        }
+    }
+    Write-Verbose "Image OSBuild: $ImageOSBuild" -Verbose
+    #===================================================================================================
+    #   ImageOSVersion
+    #===================================================================================================
+    if ($SetOSVersion) {
+        Write-Verbose "SetOSVersion (Parameter): $SetOSVersion" -Verbose
+        $ImageOSVersion = $SetOSVersion
+    } else {
+        #MDT
+        if ($TSEnv) {$ImageBuild = $TSEnv.Value('ImageBuild')}
+
+        if ($ImageBuild) {
+            Write-Verbose "ImageBuild (TSEnv): $ImageBuild" -Verbose
+            $ImageOSVersion = "$(([version]$ImageBuild).Major).$(([version]$ImageBuild).Minor)"
+        } else {
+            $CimOSVersion = (Get-CimInstance -ClassName Win32_OperatingSystem).Version
+            Write-Verbose "Cim OS Version (Win32_OperatingSystem): $CimOSVersion" -Verbose
+            $ImageOSVersion = "$(([version]$CimOSVersion).Major).$(([version]$CimOSVersion).Minor)"
+        }
+    }
+    Write-Verbose "Image OSVersion: $ImageOSVersion" -Verbose
+
+    #TODO
+    #===================================================================================================
+    #   ImageOSInstallationType
+    #===================================================================================================
+<#     if ($TSEnv) {$TaskSequenceTemplate = $TSEnv.Value('TaskSequenceTemplate')}
+
+    if ($SetOSInstallationType) {
+        Write-Verbose "Reading value from Parameter" -Verbose
+        $ImageOSInstallationType = $SetOSInstallationType
+    } elseif ($TaskSequenceTemplate) {
+        Write-Verbose "Reading value from TSEnv" -Verbose
+        if ($TaskSequenceTemplate -like "*Client*") {$ImageOSInstallationType = 'Client'}
+        if ($TaskSequenceTemplate -like "*Server*") {$ImageOSInstallationType = 'Server'}
+    } else {
+        Write-Verbose "Reading value from Registry" -Verbose
+        $ImageOSInstallationType = (Get-ItemProperty 'HKLM:SOFTWARE\Microsoft\Windows NT\CurrentVersion').InstallationType
+    }
+    if ($ImageOSInstallationType -eq 'WinPE') {$ImageOSInstallationType = 'Client'}
+    Write-Verbose "Image OSInstallationType: $ImageOSInstallationType" -Verbose #>
+    #===================================================================================================
+    #   Hardware
+    #===================================================================================================
+    $SystemMake = (Get-CimInstance -ClassName Win32_ComputerSystem).Manufacturer
+    if ($SetMake) {$SystemMake = $SetMake}
+    Write-Verbose "System Make: $SystemMake" -Verbose
+
+    $SystemModel = (Get-CimInstance -ClassName Win32_ComputerSystem).Model
+    if ($SetModel) {$SystemModel = $SetModel}
+    Write-Verbose "System Model: $SystemModel" -Verbose
+
+    $SystemFamily = (Get-CimInstance -ClassName Win32_ComputerSystem).SystemFamily
+    if ($SetFamily) {$SystemFamily = $SetFamily}
+    Write-Verbose "System Family: $SystemFamily" -Verbose
+
+    $SystemSKUNumber = (Get-CimInstance -ClassName Win32_ComputerSystem).SystemSKUNumber
+    if ($SetSku) {$SystemSKUNumber = $SetSku}
+    Write-Verbose "System SKUNumber: $SystemSKUNumber" -Verbose
+    #===================================================================================================
+    #   Save-MyHardware
+    #===================================================================================================
+    $MyHardware = @()
+    Save-MyHardware -ExpandDriverPath $ExpandDriverPath | Out-Null
+    $MyHardware = Get-MyHardware | Select-Object -Property DeviceID, Caption
+    # Alternate Method
+    # $MyHardware = (Save-MyHardware -ExpandDriverPath $ExpandDriverPath | Import-CliXml | Select-Object -Property DeviceID, Caption)
+
+    #===================================================================================================
+    #   Process MultiPacks
+    #===================================================================================================
+    Write-Host "Searching OSDDriver MultiPacks ..." -ForegroundColor Green
+    $ExpandDrivers = @()
+
+    foreach ($DriverTask in $OSDDriverTasks) {
+
+
+
+
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    #===================================================================================================
+    #   Process MultiPacks
+    #===================================================================================================
+    Write-Host "Searching OSDDriver MultiPacks ..." -ForegroundColor Green
+    $ExpandDrivers = @()
+
+    foreach ($MultiPack in $OSDDriverMultiPacks) {
+        #===================================================================================================
+        #   Set Defaults
+        #===================================================================================================
+        $ExpandDriverPackage = $true
+        #$MultiPack | Out-GridView
+        #===================================================================================================
+        #   Variables
+        #===================================================================================================
+        $MultiPackDirectory         = $MultiPack.DirectoryName
+        $MultiPackTaskBaseName      = $MultiPack.BaseName
+        $MultiPackName              = Split-Path $MultiPackDirectory -Leaf
+        $MultiPackTaskFile          = "$(Join-Path $MultiPackDirectory $MultiPackTaskBaseName).drvpack"
+        $MultiPackFileList          = $MultiPack.FullName
+
+        Write-Verbose "$MultiPackName"
+        Write-Verbose "$MultiPackTaskBaseName"
+        Write-Verbose "$MultiPackDirectory"
+        Write-Verbose "$MultiPackTaskFile"
+        Write-Verbose "$MultiPackFileList"
+        #===================================================================================================
+        #   Process
+        #===================================================================================================
+        if ((Test-Path "$MultiPackTaskFile") -and (Test-Path "$MultiPackFileList")) {
+            Write-Host -ForegroundColor Gray "$MultiPackTaskFile"
+        } else {
+            Write-Verbose "$MultiPackTaskFile is not OSDDriver MultiPack compatible" -Verbose
+            Continue
+        }
+        #===================================================================================================
+        #   MultiPackTaskFile
+        #===================================================================================================
+        $DriverTask = @()
+        $DriverTask = Get-Content "$MultiPackTaskFile" | ConvertFrom-Json
+        #===================================================================================================
+        #   OsVersion
+        #===================================================================================================
+        if ($DriverTask.OsVersion) {
+            $ExpandDriverPackage = $false
+            foreach ($item in $DriverTask.OsVersion) {
+                Write-Verbose "Driver Package Compatible OsArch: $item"
+                if ($ImageOSVersion -match $item) {$ExpandDriverPackage = $true}
+            }
+            if ($ExpandDriverPackage -eq $false) {
+                Write-Verbose "OSDDriver MultiPack is not compatible with ImageOSVersion $ImageOSVersion"
+                Continue
+            }
+        }
+        #===================================================================================================
+        #   OsArch
+        #===================================================================================================
+        if ($DriverTask.OsArch) {
+            $ExpandDriverPackage = $false
+            foreach ($item in $DriverTask.OsArch) {
+                Write-Verbose "Driver Package Compatible OsArch: $item"
+                if ($ImageOSArchitecture -match $item) {$ExpandDriverPackage = $true}
+            }
+            if ($ExpandDriverPackage -eq $false) {
+                Write-Verbose "OSDDriver MultiPack is not compatible with ImageOSArchitecture $ImageOSArchitecture"
+                Continue
+            }
+        }
+        #===================================================================================================
+        #   Make
+        #===================================================================================================
+        if ($DriverTask.Make) {
+            $ExpandDriverPackage = $false
+            foreach ($item in $DriverTask.Make) {
+                Write-Verbose "Driver CAB Compatible Make: $item"
+                if ($SystemMake -match $item) {$ExpandDriverPackage = $true}
+            }
+            if ($ExpandDriverPackage -eq $false) {
+                Write-Verbose "OSDDriver MultiPack is not compatible with SystemMake $SystemMake"
+                Continue
+            }
+        }
+        #===================================================================================================
+        #   ModelPack DellModel
+        #===================================================================================================
+        if ($DriverTask.OSDType -eq 'ModelPack' -and $DriverTask.OSDGroup -eq 'DellModel') {
+            if ($DriverTask.Model -or $DriverTask.SystemSku) {
+                $ExpandDriverPackage = $false
+                foreach ($item in $DriverTask.Model) {
+                    if ($SystemModel -eq $item) {
+                        $ExpandDriverPackage = $true
+                        Write-Verbose "OSDDriver MultiPack is compatible with $SystemModel"
+                        #$ExpandDrivers += $DriverPackage
+                        Continue
+                    }
+                }
+                foreach ($item in $DriverTask.SystemSku) {
+                    if ($SystemSKUNumber -eq $item) {
+                        $ExpandDriverPackage = $true
+                        Write-Verbose "OSDDriver MultiPack is compatible with SystemSKUNumber $SystemSKUNumber"
+                        #$ExpandDrivers += $DriverPackage
+                        Continue
+                    }
+                }
+                if ($ExpandDriverPackage -eq $false) {
+                    Write-Verbose "OSDDriver MultiPack is not compatible with SystemModel $SystemModel $SystemSKUNumber"
+                    Continue
+                } else {
+                    Write-Verbose "OSDDriver MultiPack $MultiPackName is compatible with $SystemModel"
+                    #$ExpandDrivers += $DriverPackage
+                    #Continue
+                }
+            }
+        }
+        #Write-Host "Expanding OSDDriver MultiPacks ..." -ForegroundColor Green
+        #===================================================================================================
+        #   MultiPackFileList
+        #===================================================================================================
+        $MultiPackDrivers = @()
+        $MultiPackDrivers = Get-Content "$MultiPackFileList" | ConvertFrom-Json
+        $MultiPackDrivers = $MultiPackDrivers | Where-Object {$_ -match $ImageOSArchitecture}
+
+        foreach ($ExpandDriver in $MultiPackDrivers) {
+
+            $MultiPackDriverFullName = (Join-Path $MultiPackDirectory $ExpandDriver)
+            Write-Verbose "$MultiPackDriverFullName"
+
+            if (Test-Path "$MultiPackDriverFullName") {
+                $ExpandMultiPack = (Join-Path $ExpandDriverPath $MultiPackName)
+                Write-Verbose "$ExpandMultiPack"
+                
+                $MultiPackDriverBaseName = ((Get-Item $MultiPackDriverFullName).BaseName)
+                Write-Verbose "$MultiPackDriverBaseName"
+                $MultiPackDriverCategory = ((Get-Item $MultiPackDriverFullName).Directory.Name)
+                Write-Verbose "$MultiPackDriverCategory"
+                $MultiPackDriverOsArch = ((Get-Item $MultiPackDriverFullName).Directory.Parent)
+                Write-Verbose "$MultiPackDriverOsArch"
+
+                $ExpandParent = "$ExpandMultiPack\$MultiPackDriverOsArch\$MultiPackDriverCategory"
+                $ExpandDirectory = "$ExpandParent\$MultiPackDriverBaseName"
+
+                Write-Verbose "Expanding $ExpandDirectory" -Verbose
+
+                if (!(Test-Path "$ExpandDirectory")) {
+                    New-Item -Path "$ExpandDirectory" -ItemType Directory -Force | Out-Null
+                }
+                if ($MultiPackDriverFullName -match '.cab') {
+                    Write-Verbose "Expanding CAB $MultiPackDriverFullName to $ExpandDirectory"
+                    Expand -R "$MultiPackDriverFullName" -F:* "$ExpandDirectory" | Out-Null
+                }
+                if ($MultiPackDriverFullName -match '.zip') {
+                    Write-Verbose "Expanding ZIP $MultiPackDriverFullName to $ExpandDirectory"
+                    Expand-Archive -Path "$MultiPackDriverFullName" -DestinationPath "$ExpandParent" -Force
+                }
+            }
+        }
+    }
+    #===================================================================================================
+    #   Process OSDDrivers
+    #===================================================================================================
+    Write-Host "Searching OSDDriver Packages ..." -ForegroundColor Green
+    $ExpandDrivers = @()
+
+    foreach ($DriverPackage in $OSDDriverPackages) {
+        #===================================================================================================
+        #   Set Defaults
+        #===================================================================================================
+        $ExpandDriverPackage = $true
+        #===================================================================================================
+        #   Variables
+        #===================================================================================================
+        $DriverPackageName              = $DriverPackage.Name
+        $DriverPackageBaseName          = $DriverPackage.BaseName
+        $DriverPackageFullName          = $DriverPackage.FullName
+        $DriverPackageDirectoryName     = $DriverPackage.DirectoryName
+
+        $DriverPnpFile  = "$(Join-Path $DriverPackageDirectoryName $DriverPackageBaseName).drvpnp"
+        $DriverTaskFile = "$(Join-Path $DriverPackageDirectoryName $DriverPackageBaseName).drvpack"
+        $DriverTxtFile  = "$(Join-Path $DriverPackageDirectoryName $DriverPackageBaseName).drvtext"
+        #===================================================================================================
+        #   Process
+        #===================================================================================================
+        if ((Test-Path "$DriverPnpFile") -or (Test-Path "$DriverTaskFile") -or (Test-Path "$DriverTxtFile")) {
+            Write-Host -ForegroundColor Gray "$DriverPackageFullName"
+        } else {
+            Write-Verbose "$DriverPackageFullName is not OSDDriver compatible"
+            Continue
+        }
+        #===================================================================================================
+        #   Abort if Driver File has WinPE in the FileName
+        #===================================================================================================
+        if ($DriverPackageName -match 'WinPE') {
+            Write-Host "is not intended for WinPE" -ForegroundColor DarkGray
+            Continue
+        }
+        #===================================================================================================
+        #   DriverTaskFile
+        #===================================================================================================
+        if (Test-Path $DriverTaskFile) {
+            $DriverTask = @()
+            $DriverTask = Get-Content "$DriverTaskFile" | ConvertFrom-Json
+            #===================================================================================================
+            #   OsVersion
+            #===================================================================================================
+            if ($DriverTask.OsVersion) {
+                $ExpandDriverPackage = $false
+                foreach ($item in $DriverTask.OsVersion) {
+                    Write-Verbose "Driver Package Compatible OsArch: $item"
+                    if ($ImageOSVersion -match $item) {$ExpandDriverPackage = $true}
+                }
+                if ($ExpandDriverPackage -eq $false) {
+                    #Write-Host "Not compatible with ImageOSVersion $ImageOSVersion" -Foregroundcolor DarkGray
+                    Continue
+                }
+            }
+            #===================================================================================================
+            #   OsArch
+            #===================================================================================================
+            if ($DriverTask.OsArch) {
+                $ExpandDriverPackage = $false
+                foreach ($item in $DriverTask.OsArch) {
+                    Write-Verbose "Driver Package Compatible OsArch: $item"
+                    if ($ImageOSArchitecture -match $item) {$ExpandDriverPackage = $true}
+                }
+                if ($ExpandDriverPackage -eq $false) {
+                    #Write-Host "Not compatible with ImageOSArchitecture $ImageOSArchitecture" -Foregroundcolor DarkGray
+                    Continue
+                }
+            }
+            #===================================================================================================
+            #   Make
+            #===================================================================================================
+            if ($DriverTask.Make) {
+                $ExpandDriverPackage = $false
+                foreach ($item in $DriverTask.Make) {
+                    Write-Verbose "Driver CAB Compatible Make: $item"
+                    if ($SystemMake -match $item) {$ExpandDriverPackage = $true}
+                }
+                if ($ExpandDriverPackage -eq $false) {
+                    #Write-Host "Not compatible with SystemMake $SystemMake" -Foregroundcolor DarkGray
+                    Continue
+                }
+            }
+            #===================================================================================================
+            #   ModelPack DellModel
+            #===================================================================================================
+            if ($DriverTask.OSDType -eq 'ModelPack' -and $DriverTask.OSDGroup -eq 'DellModel') {
+                if ($DriverTask.Model -or $DriverTask.SystemSku) {
+                    $ExpandDriverPackage = $false
+                    foreach ($item in $DriverTask.Model) {
+                        if ($SystemModel -eq $item) {
+                            $ExpandDriverPackage = $true
+                            #Write-Host "ModelPack is compatible with $SystemModel" -ForegroundColor Cyan
+                            #$ExpandDrivers += $DriverPackage
+                            Continue
+                        }
+                    }
+                    foreach ($item in $DriverTask.SystemSku) {
+                        if ($SystemSKUNumber -eq $item) {
+                            $ExpandDriverPackage = $true
+                            #Write-Host "ModelPack is compatible with SystemSKUNumber $SystemSKUNumber" -ForegroundColor Cyan
+                            #$ExpandDrivers += $DriverPackage
+                            Continue
+                        }
+                    }
+                    if ($ExpandDriverPackage -eq $false) {
+                        #Write-Host "Not compatible with SystemModel $SystemModel $SystemSKUNumber" -Foregroundcolor DarkGray
+                        Continue
+                    } else {
+                        Write-Host "ModelPack is compatible with $SystemModel" -ForegroundColor Cyan
+                        $ExpandDrivers += $DriverPackage
+                        Continue
+                    }
+                }
+            }
+            #===================================================================================================
+            #   MakeNotMatch
+            #===================================================================================================
+            if ($DriverTask.MakeNotMatch) {
+                foreach ($item in $DriverTask.MakeNotMatch) {
+                    if ($SystemMake -match $item) {$ExpandDriverPackage = $false}
+                }
+                if ($ExpandDriverPackage -eq $false) {Continue}
+            }
+            #===================================================================================================
+            #   ModelNotMatch
+            #===================================================================================================
+            if ($DriverTask.ModelNotMatch) {
+                foreach ($item in $DriverTask.ModelNotMatch) {
+                    if ($SystemModel -match $item) {$ExpandDriverPackage = $false}
+                }
+                if ($ExpandDriverPackage -eq $false) {Continue}
+            }
+            #===================================================================================================
+            #   OsBuildMin
+            #===================================================================================================
+<#             if ($DriverTask.OsBuildMin) {
+                $OsBuildMin = $DriverTask.OsBuildMin
+                if (-not($ImageOSBuild -ge "$($OsBuildMin)")) {
+                    Write-Host "Image OSBuild $ImageOSBuild is not Greater or Equal to OSBuild Minimum $($OsBuildMin)" -ForegroundColor DarkGray
+                    Continue
+                }
+            } #>
+            #===================================================================================================
+            #   OsBuildMax
+            #===================================================================================================
+<#             if ($DriverTask.OsBuildMax) {
+                $OsBuildMax = $DriverTask.OsBuildMax
+                if (-not($ImageOSBuild -le "$($OsBuildMax)")) {
+                    Write-Host "$DriverPackageFullName reuires an Image OSBuild $ImageOSBuild is not Less or Equal to required OSBuild Maximum $($OsBuildMax)" -ForegroundColor DarkGray
+                    Continue
+                }
+            } #>
+        }
+        #===================================================================================================
+        #   DriverPnpFile
+        #===================================================================================================
+        #Write-Host "Checking Pnp"
+        if (Test-Path $DriverPnpFile) {
+            $ExpandDriverPackage = $false
+            $HardwareIdMatches = @()
+            $OSDPnpFile = @()
+            $OSDPnpFile = Import-CliXml -Path "$DriverPnpFile"
+        
+            foreach ($PnpDriverId in $OSDPnpFile) {
+                $HardwareDescription = $($PnpDriverId.HardwareDescription)
+                $HardwareId = $($PnpDriverId.HardwareId)
+        
+                if ($MyHardware -like "*$HardwareId*") {
+                    #Write-Host "$HardwareDescription $HardwareId " -Foregroundcolor Cyan
+                    $ExpandDriverPackage = $true
+                    $HardwareIdMatches += "$HardwareDescription $HardwareId"
+                }
+            }
+
+            if ($ExpandDriverPackage -eq $false) {
+                Write-Verbose "Driver does not support the Hardware in this system"
+                Continue
+            }
+            if ($HardwareIdMatches) {
+                #Write-Host "HardwareID Match"
+                foreach ($HardwareIdMatch in $HardwareIdMatches) {
+                    Write-Verbose "$($HardwareIdMatch)" -Verbose
+                }
+            }
+        }
+        $ExpandDrivers += $DriverPackage
+    }
+    #===================================================================================================
+    #   Expand OSDDrivers
+    #===================================================================================================
+    Write-Host "Expanding OSDDriver Packages ..." -Foregroundcolor Green
+    $ExpandNvida = @()
+    $ExpandNvida = $ExpandDrivers | Where-Object {$_.FullName -match 'Nvidia'} | Sort-Object BaseName
+    $ExpandNvida = $ExpandNvida | Select-Object -Last 1
+    $ExpandDrivers = $ExpandDrivers | Where-Object {$_.FullName -notmatch 'Nvidia'}
+
+    foreach ($ExpandDriver in $ExpandDrivers) {
+        $DriverPackageName = $ExpandDriver.Name
+        $DriverPackageBaseName = $ExpandDriver.BaseName
+        $DriverPackageFullName = $ExpandDriver.FullName
+        $DriverPackageDirectoryName = $ExpandDriver.DirectoryName
+
+        if (!(Test-Path "$ExpandDriverPath\$DriverPackageBaseName")) {
+            New-Item -Path "$ExpandDriverPath\$DriverPackageBaseName" -ItemType Directory -Force | Out-Null
+        }
+        if ($DriverPackageName -match '.cab') {
+            #Write-Host "Expanding CAB $DriverPackageFullName to $ExpandDriverPath\$DriverPackageBaseName" -ForegroundColor Cyan
+            Write-Verbose "Expanding $ExpandDriverPath\$DriverPackageBaseName" -Verbose
+            Expand -R "$DriverPackageFullName" -F:* "$ExpandDriverPath\$DriverPackageBaseName" | Out-Null
+        }
+        if ($DriverPackageName -match '.zip') {
+            Write-Host "Expanding ZIP $DriverPackageFullName to $ExpandDriverPath\$DriverPackageBaseName" -ForegroundColor Cyan
+            Expand-Archive -Path "$DriverPackageFullName" -DestinationPath "$ExpandDriverPath" -Force
+        }
+    }
+    Write-Host "Expanding OSDDriver NvidiaPack ..." -Foregroundcolor Green
+
+    foreach ($ExpandDriver in $ExpandNvida) {
+        $DriverPackageName = $ExpandDriver.Name
+        $DriverPackageBaseName = $ExpandDriver.BaseName
+        $DriverPackageFullName = $ExpandDriver.FullName
+        $DriverPackageDirectoryName = $ExpandDriver.DirectoryName
+
+        if (!(Test-Path "$ExpandDriverPath\$DriverPackageBaseName")) {
+            New-Item -Path "$ExpandDriverPath\$DriverPackageBaseName" -ItemType Directory -Force | Out-Null
+        }
+        if ($DriverPackageName -match '.cab') {
+            #Write-Host "Expanding CAB $DriverPackageFullName to $ExpandDriverPath\$DriverPackageBaseName" -ForegroundColor Cyan
+            Write-Verbose "Expanding $ExpandDriverPath\$DriverPackageBaseName" -Verbose
+            Expand -R "$DriverPackageFullName" -F:* "$ExpandDriverPath\$DriverPackageBaseName" | Out-Null
+        }
+        if ($DriverPackageName -match '.zip') {
+            Write-Host "Expanding ZIP $DriverPackageFullName to $ExpandDriverPath\$DriverPackageBaseName" -ForegroundColor Cyan
+            Expand-Archive -Path "$DriverPackageFullName" -DestinationPath "$ExpandDriverPath" -Force
+        }
+    }
+    Stop-Transcript | Out-Null
+}
