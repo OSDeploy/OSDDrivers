@@ -15,7 +15,7 @@ Directory to the OSDDrivers Workspace.  This contains the Download, Expand, and 
 Downloaded Dell Family Packs will be saved to $WorkspacePath\Download\DellFamily
 
 .PARAMETER Expand
-Expands the Dell Family Pack after Download
+Expands the downloaded Dell Family Pack
 #>
 function Save-DellFamilyPack {
     [CmdletBinding()]

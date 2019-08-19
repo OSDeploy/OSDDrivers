@@ -210,7 +210,6 @@ function Expand-OSDDrivers {
     $DriverPacks = @()
     $MultiPacks = @()
     $NvidiaPacks = @()
-
     #===================================================================================================
     #   DriverTaskFile
     #===================================================================================================
@@ -372,133 +371,137 @@ function Expand-OSDDrivers {
     #===================================================================================================
     #   Process DriverPacks
     #===================================================================================================
-    Write-Host "Processing DriverPacks ..." -ForegroundColor Green
-    $ExpandDriverPacks = @()
-    foreach ($DriverTaskFile in $DriverPacks) {
-
-        $DriverTaskBaseName     = $DriverTaskFile.BaseName
-        $DriverTaskDirectory    = $DriverTaskFile.DirectoryName
-        $DriverTaskFullName     = $DriverTaskFile.FullName
-        
-        $DriverTaskGroup         = Split-Path $DriverTaskDirectory -Leaf
-
-        $DriverTaskCab          = "$(Join-Path $DriverTaskDirectory $DriverTaskBaseName).cab"
-        $DriverTaskZip          = "$(Join-Path $DriverTaskDirectory $DriverTaskBaseName).zip"
-        $DriverTaskPnp          = "$(Join-Path $DriverTaskDirectory $DriverTaskBaseName).drvpnp"
-        $DriverTaskMultiPack      = "$(Join-Path $DriverTaskDirectory $DriverTaskBaseName).multipack"
-
-
-        Write-Verbose "DriverTaskGroup: $DriverTaskGroup"
-        Write-Verbose "DriverTaskBaseName: $DriverTaskBaseName"
-        Write-Verbose "DriverTaskDirectory: $DriverTaskDirectory"
-        Write-Verbose "DriverTaskFullName: $DriverTaskFullName"
-        Write-Verbose "DriverTaskCab: $DriverTaskCab"
-        Write-Verbose "DriverTaskPnp: $DriverTaskPnp"
-        Write-Verbose "DriverTaskMultiPack: $DriverTaskMultiPack"
-
-        Write-Host -ForegroundColor Gray "$($DriverTaskFile.FullName)"
-
-        if (Test-Path $DriverTaskPnp) {
-            $ExpandDriverPackage = $false
-            $HardwareIdMatches = @()
-            $OSDPnpFile = @()
-            $OSDPnpFile = Import-CliXml -Path "$DriverTaskPnp"
-        
-            foreach ($PnpDriverId in $OSDPnpFile) {
-                $HardwareDescription = $($PnpDriverId.HardwareDescription)
-                $HardwareId = $($PnpDriverId.HardwareId)
-        
-                if ($MyHardware -like "*$HardwareId*") {
-                    #Write-Host "$HardwareDescription $HardwareId " -Foregroundcolor Cyan
-                    $ExpandDriverPackage = $true
-                    $HardwareIdMatches += "$HardwareDescription $HardwareId"
+    if ($DriverPacks) {
+        Write-Host "Processing DriverPacks ..." -ForegroundColor Green
+        $ExpandDriverPacks = @()
+        foreach ($DriverTaskFile in $DriverPacks) {
+    
+            $DriverTaskBaseName     = $DriverTaskFile.BaseName
+            $DriverTaskDirectory    = $DriverTaskFile.DirectoryName
+            $DriverTaskFullName     = $DriverTaskFile.FullName
+            
+            $DriverTaskGroup         = Split-Path $DriverTaskDirectory -Leaf
+    
+            $DriverTaskCab          = "$(Join-Path $DriverTaskDirectory $DriverTaskBaseName).cab"
+            $DriverTaskZip          = "$(Join-Path $DriverTaskDirectory $DriverTaskBaseName).zip"
+            $DriverTaskPnp          = "$(Join-Path $DriverTaskDirectory $DriverTaskBaseName).drvpnp"
+            $DriverTaskMultiPack      = "$(Join-Path $DriverTaskDirectory $DriverTaskBaseName).multipack"
+    
+    
+            Write-Verbose "DriverTaskGroup: $DriverTaskGroup"
+            Write-Verbose "DriverTaskBaseName: $DriverTaskBaseName"
+            Write-Verbose "DriverTaskDirectory: $DriverTaskDirectory"
+            Write-Verbose "DriverTaskFullName: $DriverTaskFullName"
+            Write-Verbose "DriverTaskCab: $DriverTaskCab"
+            Write-Verbose "DriverTaskPnp: $DriverTaskPnp"
+            Write-Verbose "DriverTaskMultiPack: $DriverTaskMultiPack"
+    
+            Write-Host -ForegroundColor Gray "$($DriverTaskFile.FullName)"
+    
+            if (Test-Path $DriverTaskPnp) {
+                $ExpandDriverPackage = $false
+                $HardwareIdMatches = @()
+                $OSDPnpFile = @()
+                $OSDPnpFile = Import-CliXml -Path "$DriverTaskPnp"
+            
+                foreach ($PnpDriverId in $OSDPnpFile) {
+                    $HardwareDescription = $($PnpDriverId.HardwareDescription)
+                    $HardwareId = $($PnpDriverId.HardwareId)
+            
+                    if ($MyHardware -like "*$HardwareId*") {
+                        #Write-Host "$HardwareDescription $HardwareId " -Foregroundcolor Cyan
+                        $ExpandDriverPackage = $true
+                        $HardwareIdMatches += "$HardwareDescription $HardwareId"
+                    }
+                }
+    
+                if ($ExpandDriverPackage -eq $false) {
+                    Write-Verbose "Driver does not support the Hardware in this system"
+                    Continue
+                }
+                if ($HardwareIdMatches) {
+                    #Write-Host "HardwareID Match"
+                    foreach ($HardwareIdMatch in $HardwareIdMatches) {
+                        Write-Verbose "$($HardwareIdMatch)" -Verbose
+                    }
                 }
             }
-
-            if ($ExpandDriverPackage -eq $false) {
-                Write-Verbose "Driver does not support the Hardware in this system"
-                Continue
+            if (Test-Path $DriverTaskCab) {
+                $ExpandDriverPacks += $DriverTaskCab
             }
-            if ($HardwareIdMatches) {
-                #Write-Host "HardwareID Match"
-                foreach ($HardwareIdMatch in $HardwareIdMatches) {
-                    Write-Verbose "$($HardwareIdMatch)" -Verbose
-                }
+            if (Test-Path $DriverTaskZip) {
+                $ExpandDriverPacks += $DriverTaskZip
             }
-        }
-        if (Test-Path $DriverTaskCab) {
-            $ExpandDriverPacks += $DriverTaskCab
-        }
-        if (Test-Path $DriverTaskZip) {
-            $ExpandDriverPacks += $DriverTaskZip
         }
     }
     #===================================================================================================
     #   Process NvidiaPacks
     #===================================================================================================
-    Write-Host "Processing NvidiaPacks ..." -ForegroundColor Green
-    $ExpandNvidiaPacks = @()
-    $ExpandNvidiaTasks = @()
-    foreach ($DriverTaskFile in $NvidiaPacks) {
-        $DriverTaskBaseName     = $DriverTaskFile.BaseName
-        $DriverTaskDirectory    = $DriverTaskFile.DirectoryName
-        $DriverTaskFullName     = $DriverTaskFile.FullName
-        
-        $DriverTaskGroup         = Split-Path $DriverTaskDirectory -Leaf
-
-        $DriverTaskCab          = "$(Join-Path $DriverTaskDirectory $DriverTaskBaseName).cab"
-        $DriverTaskZip          = "$(Join-Path $DriverTaskDirectory $DriverTaskBaseName).zip"
-        $DriverTaskPnp          = "$(Join-Path $DriverTaskDirectory $DriverTaskBaseName).drvpnp"
-        $DriverTaskMultiPack      = "$(Join-Path $DriverTaskDirectory $DriverTaskBaseName).multipack"
-
-
-        Write-Verbose "DriverTaskGroup: $DriverTaskGroup"
-        Write-Verbose "DriverTaskBaseName: $DriverTaskBaseName"
-        Write-Verbose "DriverTaskDirectory: $DriverTaskDirectory"
-        Write-Verbose "DriverTaskFullName: $DriverTaskFullName"
-        Write-Verbose "DriverTaskCab: $DriverTaskCab"
-        Write-Verbose "DriverTaskPnp: $DriverTaskPnp"
-        Write-Verbose "DriverTaskMultiPack: $DriverTaskMultiPack"
-
-        Write-Host -ForegroundColor Gray "$($DriverTaskFile.FullName)"
-
-        if (Test-Path $DriverTaskPnp) {
-            $ExpandDriverPackage = $false
-            $HardwareIdMatches = @()
-            $OSDPnpFile = @()
-            $OSDPnpFile = Import-CliXml -Path "$DriverTaskPnp"
-        
-            foreach ($PnpDriverId in $OSDPnpFile) {
-                $HardwareDescription = $($PnpDriverId.HardwareDescription)
-                $HardwareId = $($PnpDriverId.HardwareId)
-        
-                if ($MyHardware -like "*$HardwareId*") {
-                    #Write-Host "$HardwareDescription $HardwareId " -Foregroundcolor Cyan
-                    $ExpandDriverPackage = $true
-                    $HardwareIdMatches += "$HardwareDescription $HardwareId"
+    if ($NvidiaPacks) {
+        Write-Host "Processing NvidiaPacks ..." -ForegroundColor Green
+        $ExpandNvidiaPacks = @()
+        $ExpandNvidiaTasks = @()
+        foreach ($DriverTaskFile in $NvidiaPacks) {
+            $DriverTaskBaseName     = $DriverTaskFile.BaseName
+            $DriverTaskDirectory    = $DriverTaskFile.DirectoryName
+            $DriverTaskFullName     = $DriverTaskFile.FullName
+            
+            $DriverTaskGroup         = Split-Path $DriverTaskDirectory -Leaf
+    
+            $DriverTaskCab          = "$(Join-Path $DriverTaskDirectory $DriverTaskBaseName).cab"
+            $DriverTaskZip          = "$(Join-Path $DriverTaskDirectory $DriverTaskBaseName).zip"
+            $DriverTaskPnp          = "$(Join-Path $DriverTaskDirectory $DriverTaskBaseName).drvpnp"
+            $DriverTaskMultiPack      = "$(Join-Path $DriverTaskDirectory $DriverTaskBaseName).multipack"
+    
+    
+            Write-Verbose "DriverTaskGroup: $DriverTaskGroup"
+            Write-Verbose "DriverTaskBaseName: $DriverTaskBaseName"
+            Write-Verbose "DriverTaskDirectory: $DriverTaskDirectory"
+            Write-Verbose "DriverTaskFullName: $DriverTaskFullName"
+            Write-Verbose "DriverTaskCab: $DriverTaskCab"
+            Write-Verbose "DriverTaskPnp: $DriverTaskPnp"
+            Write-Verbose "DriverTaskMultiPack: $DriverTaskMultiPack"
+    
+            Write-Host -ForegroundColor Gray "$($DriverTaskFile.FullName)"
+    
+            if (Test-Path $DriverTaskPnp) {
+                $ExpandDriverPackage = $false
+                $HardwareIdMatches = @()
+                $OSDPnpFile = @()
+                $OSDPnpFile = Import-CliXml -Path "$DriverTaskPnp"
+            
+                foreach ($PnpDriverId in $OSDPnpFile) {
+                    $HardwareDescription = $($PnpDriverId.HardwareDescription)
+                    $HardwareId = $($PnpDriverId.HardwareId)
+            
+                    if ($MyHardware -like "*$HardwareId*") {
+                        #Write-Host "$HardwareDescription $HardwareId " -Foregroundcolor Cyan
+                        $ExpandDriverPackage = $true
+                        $HardwareIdMatches += "$HardwareDescription $HardwareId"
+                    }
+                }
+    
+                if ($ExpandDriverPackage -eq $false) {
+                    Write-Verbose "Driver does not support the Hardware in this system"
+                    Continue
+                }
+                if ($HardwareIdMatches) {
+                    #Write-Host "HardwareID Match"
+                    foreach ($HardwareIdMatch in $HardwareIdMatches) {
+                        Write-Verbose "$($HardwareIdMatch)" -Verbose
+                    }
                 }
             }
-
-            if ($ExpandDriverPackage -eq $false) {
-                Write-Verbose "Driver does not support the Hardware in this system"
+            if (Test-Path $DriverTaskCab) {
+                $ExpandNvidiaPacks += $DriverTaskCab
                 Continue
             }
-            if ($HardwareIdMatches) {
-                #Write-Host "HardwareID Match"
-                foreach ($HardwareIdMatch in $HardwareIdMatches) {
-                    Write-Verbose "$($HardwareIdMatch)" -Verbose
-                }
+            if (Test-Path $DriverTaskZip) {
+                $ExpandNvidiaPacks += $DriverTaskZip
+                Continue
             }
+            $ExpandNvidiaTasks += $DriverTaskFullName
         }
-        if (Test-Path $DriverTaskCab) {
-            $ExpandNvidiaPacks += $DriverTaskCab
-            Continue
-        }
-        if (Test-Path $DriverTaskZip) {
-            $ExpandNvidiaPacks += $DriverTaskZip
-            Continue
-        }
-        $ExpandNvidiaTasks += $DriverTaskFullName
     }
     #===================================================================================================
     #   Throw NvidiaPacks
@@ -582,70 +585,70 @@ function Expand-OSDDrivers {
     #===================================================================================================
     #   Process MultiPacks
     #===================================================================================================
-    Write-Host "Processing MultiPacks ..." -ForegroundColor Green
-    foreach ($DriverTaskFile in $MultiPacks) {
-        $DriverTaskBaseName     = $DriverTaskFile.BaseName
-        $DriverTaskDirectory    = $DriverTaskFile.DirectoryName
-        $DriverTaskFullName     = $DriverTaskFile.FullName
-        
-        $DriverTaskGroup         = Split-Path $DriverTaskDirectory -Leaf
-        $DriverTaskMultiPack      = "$(Join-Path $DriverTaskDirectory $DriverTaskBaseName).multipack"
-
-
-        Write-Verbose "DriverTaskGroup: $DriverTaskGroup"
-        Write-Verbose "DriverTaskBaseName: $DriverTaskBaseName"
-        Write-Verbose "DriverTaskDirectory: $DriverTaskDirectory"
-        Write-Verbose "DriverTaskFullName: $DriverTaskFullName"
-        Write-Verbose "DriverTaskMultiPack: $DriverTaskMultiPack"
-
-        Write-Host -ForegroundColor Gray "$($DriverTaskFile.FullName)"
-
-        if (!(Test-Path "$DriverTaskMultiPack")) {
-            Write-Verbose "Could not find $DriverTaskMultiPack"
-            Continue
-        }
-
-        #===================================================================================================
-        #   MultiPackFileList
-        #===================================================================================================
-        $MultiPackDrivers = @()
-        $MultiPackDrivers = Get-Content "$DriverTaskMultiPack" | ConvertFrom-Json
-        foreach ($ExpandDriver in $MultiPackDrivers) {
-            $MultiPackDriverFullName = (Join-Path $DriverTaskDirectory $ExpandDriver)
-            Write-Verbose "MultiPackDriverFullName: $MultiPackDriverFullName"
-
-            if (Test-Path "$MultiPackDriverFullName") {
-                $ExpandMultiPack = (Join-Path $ExpandDriverPath $DriverTaskBaseName)
-                Write-Verbose "ExpandMultiPack: $ExpandMultiPack"
-                
-                $MultiPackDriverBaseName = ((Get-Item $MultiPackDriverFullName).BaseName)
-                Write-Verbose "MultiPackDriverBaseName: $MultiPackDriverBaseName"
-                $MultiPackDriverCategory = ((Get-Item $MultiPackDriverFullName).Directory.Name)
-                Write-Verbose "MultiPackDriverCategory: $MultiPackDriverCategory"
-                $MultiPackDriverOsArch = ((Get-Item $MultiPackDriverFullName).Directory.Parent)
-                Write-Verbose "MultiPackDriverOsArch: $MultiPackDriverOsArch"
-
-                $ExpandParent = "$ExpandMultiPack\$MultiPackDriverOsArch\$MultiPackDriverCategory"
-                $ExpandDirectory = "$ExpandParent\$MultiPackDriverBaseName"
-
-                Write-Verbose "Expanding $ExpandDirectory" -Verbose
-
-                if (!(Test-Path "$ExpandDirectory")) {
-                    New-Item -Path "$ExpandDirectory" -ItemType Directory -Force | Out-Null
-                }
-                if ($MultiPackDriverFullName -match '.cab') {
-                    Write-Verbose "Expanding CAB $MultiPackDriverFullName to $ExpandDirectory"
-                    Expand -R "$MultiPackDriverFullName" -F:* "$ExpandDirectory" | Out-Null
-                }
-                if ($MultiPackDriverFullName -match '.zip') {
-                    Write-Verbose "Expanding ZIP $MultiPackDriverFullName to $ExpandDirectory"
-                    Expand-Archive -Path "$MultiPackDriverFullName" -DestinationPath "$ExpandParent" -Force
+    if ($MultiPacks) {
+        Write-Host "Processing MultiPacks ..." -ForegroundColor Green
+        foreach ($DriverTaskFile in $MultiPacks) {
+            $DriverTaskBaseName     = $DriverTaskFile.BaseName
+            $DriverTaskDirectory    = $DriverTaskFile.DirectoryName
+            $DriverTaskFullName     = $DriverTaskFile.FullName
+            
+            $DriverTaskGroup         = Split-Path $DriverTaskDirectory -Leaf
+            $DriverTaskMultiPack      = "$(Join-Path $DriverTaskDirectory $DriverTaskBaseName).multipack"
+    
+    
+            Write-Verbose "DriverTaskGroup: $DriverTaskGroup"
+            Write-Verbose "DriverTaskBaseName: $DriverTaskBaseName"
+            Write-Verbose "DriverTaskDirectory: $DriverTaskDirectory"
+            Write-Verbose "DriverTaskFullName: $DriverTaskFullName"
+            Write-Verbose "DriverTaskMultiPack: $DriverTaskMultiPack"
+    
+            Write-Host -ForegroundColor Gray "$($DriverTaskFile.FullName)"
+    
+            if (!(Test-Path "$DriverTaskMultiPack")) {
+                Write-Verbose "Could not find $DriverTaskMultiPack"
+                Continue
+            }
+    
+            #===================================================================================================
+            #   MultiPackFileList
+            #===================================================================================================
+            $MultiPackDrivers = @()
+            $MultiPackDrivers = Get-Content "$DriverTaskMultiPack" | ConvertFrom-Json
+            foreach ($ExpandDriver in $MultiPackDrivers) {
+                $MultiPackDriverFullName = (Join-Path $DriverTaskDirectory $ExpandDriver)
+                Write-Verbose "MultiPackDriverFullName: $MultiPackDriverFullName"
+    
+                if (Test-Path "$MultiPackDriverFullName") {
+                    $ExpandMultiPack = (Join-Path $ExpandDriverPath $DriverTaskBaseName)
+                    Write-Verbose "ExpandMultiPack: $ExpandMultiPack"
+                    
+                    $MultiPackDriverBaseName = ((Get-Item $MultiPackDriverFullName).BaseName)
+                    Write-Verbose "MultiPackDriverBaseName: $MultiPackDriverBaseName"
+                    $MultiPackDriverCategory = ((Get-Item $MultiPackDriverFullName).Directory.Name)
+                    Write-Verbose "MultiPackDriverCategory: $MultiPackDriverCategory"
+                    $MultiPackDriverOsArch = ((Get-Item $MultiPackDriverFullName).Directory.Parent)
+                    Write-Verbose "MultiPackDriverOsArch: $MultiPackDriverOsArch"
+    
+                    $ExpandParent = "$ExpandMultiPack\$MultiPackDriverOsArch\$MultiPackDriverCategory"
+                    $ExpandDirectory = "$ExpandParent\$MultiPackDriverBaseName"
+    
+                    Write-Verbose "Expanding $ExpandDirectory" -Verbose
+    
+                    if (!(Test-Path "$ExpandDirectory")) {
+                        New-Item -Path "$ExpandDirectory" -ItemType Directory -Force | Out-Null
+                    }
+                    if ($MultiPackDriverFullName -match '.cab') {
+                        Write-Verbose "Expanding CAB $MultiPackDriverFullName to $ExpandDirectory"
+                        Expand -R "$MultiPackDriverFullName" -F:* "$ExpandDirectory" | Out-Null
+                    }
+                    if ($MultiPackDriverFullName -match '.zip') {
+                        Write-Verbose "Expanding ZIP $MultiPackDriverFullName to $ExpandDirectory"
+                        Expand-Archive -Path "$MultiPackDriverFullName" -DestinationPath "$ExpandParent" -Force
+                    }
                 }
             }
         }
     }
-
-
 <#     #===================================================================================================
     #   Process MultiPacks
     #===================================================================================================

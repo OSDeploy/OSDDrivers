@@ -13,17 +13,20 @@ https://osddrivers.osdeploy.com/module/functions/save-intelpack
 .PARAMETER WorkspacePath
 Directory to the OSDDrivers Workspace.  This contains the Download, Expand, and Package subdirectories
 
+.PARAMETER AppendName
+Appends the string to the Driver Pack Name
+
 .PARAMETER OSDGroup
 Driver Group.  This will be expanded in the future to contain more groups
 
 .PARAMETER OsArch
-Supported Architecture of the Driver.  Default is x64
+Supported Operating System Architecture of the Driver
 
 .PARAMETER OsVersion
-Supported Operating Systems Version of the Driver.  This includes both Client and Server Operating Systems.  Default is 10.0
+Supported Operating Systems Version of the Driver.  This includes both Client and Server Operating Systems
 
 .PARAMETER Pack
-Creates a CAB file from the Driver
+Creates a CAB file from the downloaded Intel Driver
 
 .PARAMETER SkipGridView
 Skips GridView for Automation

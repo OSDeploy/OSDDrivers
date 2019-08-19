@@ -14,23 +14,23 @@ https://osddrivers.osdeploy.com/module/functions/save-dellmultipack
 .PARAMETER WorkspacePath
 Directory to the OSDDrivers Workspace.  This contains the Download, Expand, and Package subdirectories
 
+.PARAMETER AppendName
+Appends the string to the DellMultiPack Name
+
 .PARAMETER Generation
 Generation of the Dell Model
 
+.PARAMETER OsArch
+Operating System Architecture of the Model Pack to be extracted
+
 .PARAMETER OsVersion
-OsVersion of the Driver
+Operating System Version of the Model Pack to be extracted
 
 .PARAMETER SystemFamily
 Filters compatibility to Latitude, Optiplex, or Precision.  Venue, Vostro, and XPS are not included
 
 .PARAMETER Expand
 Expands the downloaded Dell Model Packs
-
-.PARAMETER Pack
-Creates a CAB file from the DellFamily DriverPack.  Default removes Intel Video
-
-.PARAMETER CustomName = 'DellMultiPack'
-Name of the MultiPack that will be created in Workspace\Packages
 
 .PARAMETER RemoveAudio
 Removes drivers in the Audio Directory from being added to the CAB or MultiPack
@@ -50,8 +50,8 @@ function Save-DellMultiPack {
         #====================================================================
         #   InputObject
         #====================================================================
-        [Parameter(ValueFromPipeline = $true)]
-        [Object[]]$InputObject,
+        #[Parameter(ValueFromPipeline = $true)]
+        #[Object[]]$InputObject,
         #====================================================================
         #   Basic
         #====================================================================
@@ -69,7 +69,7 @@ function Save-DellMultiPack {
         [ValidateSet ('x64','x86')]
         [string]$OsArch = 'x64',
 
-        [ValidateSet ('10.0','6.1')]
+        [ValidateSet ('10.0','6.3','6.1')]
         [string]$OsVersion = '10.0',
 
         [ValidateSet ('Latitude','Optiplex','Precision')]
