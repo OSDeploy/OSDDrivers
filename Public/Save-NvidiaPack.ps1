@@ -12,7 +12,7 @@ function Save-NvidiaPack {
         [Parameter(Mandatory)]
         [string]$WorkspacePath,
 
-        #[Parameter(Mandatory)]
+        [Parameter(Mandatory)]
         [string]$AppendName = 'None',
         #====================================================================
         #   Filters
@@ -218,10 +218,11 @@ function Save-NvidiaPack {
                 $OSDDriver | ConvertTo-Json | Out-File -FilePath "$ExpandedDriverPath\OSDDriver.drvpack" -Force
 
                 Publish-OSDDriverScripts -PublishPath "$PackagePath Test"
-                Copy-Item "$ExpandedDriverPath\OSDDriver.drvpack" "$PackagePath Test\$DriverName.drvpack" -Force
-                Copy-Item "$ExpandedDriverPath\OSDDriver.drvpnp" "$PackagePath Test\$DriverName.drvpnp" -Force
-                Copy-Item "$ExpandedDriverPath\OSDDriver-Devices.csv" "$PackagePath Test\$DriverName.csv" -Force
-                Copy-Item "$ExpandedDriverPath\OSDDriver-Devices.txt" "$PackagePath Test\$DriverName.txt" -Force
+                New-Item "$PackagePath Test\$DriverGrouping" -ItemType Directory -Force | Out-Null
+                Copy-Item "$ExpandedDriverPath\OSDDriver.drvpack" "$PackagePath Test\$DriverGrouping\$DriverName.drvpack" -Force
+                Copy-Item "$ExpandedDriverPath\OSDDriver.drvpnp" "$PackagePath Test\$DriverGrouping\$DriverName.drvpnp" -Force
+                Copy-Item "$ExpandedDriverPath\OSDDriver-Devices.csv" "$PackagePath Test\$DriverGrouping\$DriverName.csv" -Force
+                Copy-Item "$ExpandedDriverPath\OSDDriver-Devices.txt" "$PackagePath Test\$DriverGrouping\$DriverName.txt" -Force
 
                 if ($Pack.IsPresent) {
                     #===================================================================================================
