@@ -95,7 +95,6 @@ function Save-DellModelPack {
         #===================================================================================================
         $WorkspaceDownload = Get-PathOSDD -Path (Join-Path $OSDWorkspace 'Download')
         Write-Verbose "Workspace Download: $WorkspaceDownload" -Verbose
-        Publish-OSDDriverScripts -PublishPath $WorkspaceDownload
 
         $WorkspaceExpand = Get-PathOSDD -Path (Join-Path $OSDWorkspace 'Expand')
         Write-Verbose "Workspace Expand: $WorkspaceExpand" -Verbose

@@ -511,10 +511,10 @@ function Expand-OSDDrivers {
 
         $NvidiaTask = @()
         $NvidiaTask = Get-Content "$ExpandNvidiaTasks" | ConvertFrom-Json
+        Write-Verbose "Selecting NvidiaPack $($NvidiaTask.DriverReleaseId)" -Verbose
 
-        #Return $NvidiaTask.DriverReleaseId
         if ($TSEnv) {
-            Write-Verbose "Setting TSEnv NvidiaPack to $($NvidiaTask.DriverReleaseId)"
+            Write-Verbose "Setting Task Sequence Variable NvidiaPack to $($NvidiaTask.DriverReleaseId)" -Verbose
             $TSEnv.Value('NvidiaPack') = "$($NvidiaTask.DriverReleaseId)"
         }
     }

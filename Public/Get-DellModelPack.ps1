@@ -201,7 +201,7 @@ function Get-DellModelPack {
         #   Create Object 
         #===================================================================================================
         $ObjectProperties = @{
-            OSDVersion              = $OSDVersion
+            OSDVersion              = [string]$OSDVersion
             LastUpdate              = [datetime] $LastUpdate
             OSDStatus               = $OSDStatus
             OSDType                 = $OSDType

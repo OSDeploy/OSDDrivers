@@ -1,37 +1,4 @@
-<#
-.SYNOPSIS
-Downloads IntelDisplay and IntelWireless Drivers
-
-.DESCRIPTION
-Downloads IntelDisplay and IntelWireless Drivers
-Requires BITS for downloading the Downloads
-Requires Internet access
-
-.LINK
-https://osddrivers.osdeploy.com/module/functions/save-intelpack
-
-.PARAMETER WorkspacePath
-Directory to the OSDDrivers Workspace.  This contains the Download, Expand, and Package subdirectories
-
-.PARAMETER AppendName
-Appends the string to the Driver Pack Name
-
-.PARAMETER OSDGroup
-Driver Group.  This will be expanded in the future to contain more groups
-
-.PARAMETER OsArch
-Supported Operating System Architecture of the Driver
-
-.PARAMETER OsVersion
-Supported Operating Systems Version of the Driver.  This includes both Client and Server Operating Systems
-
-.PARAMETER Pack
-Creates a CAB file from the downloaded Intel Driver
-
-.PARAMETER SkipGridView
-Skips GridView for Automation
-#>
-function Save-IntelPack {
+function Save-NvidiaPack {
     [CmdletBinding()]
     Param (
         #====================================================================
@@ -45,23 +12,21 @@ function Save-IntelPack {
         [Parameter(Mandatory)]
         [string]$WorkspacePath,
 
-        [Parameter(Mandatory)]
+        #[Parameter(Mandatory)]
         [string]$AppendName = 'None',
         #====================================================================
         #   Filters
         #====================================================================
-        [ValidateSet('IntelDisplay','IntelWireless')]
-        [string]$OSDGroup,
+        #[ValidateSet ('x64','x86')]
+        #[string]$OsArch,
 
-        [ValidateSet ('x64','x86')]
-        [string]$OsArch,
-
-        [ValidateSet ('10.0','6.3','6.1')]
-        [string]$OsVersion,
+        #[ValidateSet ('10.0','6.3','6.1')]
+        #[string]$OsVersion = '10.0',
         #====================================================================
         #   Options
         #====================================================================
         [switch]$Pack,
+        #[switch]$PackTest,
         [switch]$SkipGridView
         #====================================================================
     )
@@ -71,9 +36,9 @@ function Save-IntelPack {
         #   CustomName
         #===================================================================================================
         if ($AppendName -eq 'None') {
-            $CustomName = "IntelPack"
+            $CustomName = "NvidiaPack"
         } else {
-            $CustomName = "IntelPack $AppendName"
+            $CustomName = "NvidiaPack $AppendName"
         }
         #===================================================================================================
         #   Get-OSDWorkspace Home
@@ -108,12 +73,7 @@ function Save-IntelPack {
             $SkipGridView = $true
             $OSDDrivers = $InputObject
         } else {
-            if ($OSDGroup -eq 'IntelDisplay') {$OSDDrivers = Get-DriverIntelDisplay}
-            elseif ($OSDGroup -eq 'IntelWireless') {$OSDDrivers = Get-DriverIntelWireless}
-            else {
-                $OSDDrivers += Get-DriverIntelDisplay
-                $OSDDrivers += Get-DriverIntelWireless
-            }
+            $OSDDrivers = Get-DriverNvidia
         }
         #===================================================================================================
         #   Set-OSDStatus
@@ -125,6 +85,9 @@ function Save-IntelPack {
             $OSDGroup = $OSDDriver.OSDGroup
             $OSDType = $OSDDriver.OSDType
 
+            $DriverGrouping = $OSDDriver.DriverGrouping
+            #Write-Verbose "DriverGrouping: $DriverGrouping"
+
             $DownloadedDriverGroup  = (Join-Path $WorkspaceDownload $OSDGroup)
             Write-Verbose "DownloadedDriverGroup: $DownloadedDriverGroup"
 
@@ -134,7 +97,8 @@ function Save-IntelPack {
             $ExpandedDriverPath = (Join-Path $WorkspaceExpand (Join-Path $OSDGroup $DriverName))
             if (Test-Path "$ExpandedDriverPath") {$OSDDriver.OSDStatus = 'Expanded'}
 
-            $PackagedDriverPath = (Join-Path $PackagePath (Join-Path $OSDGroup $OSDCabFile))
+            $PackagedDriverPath = (Join-Path $PackagePath (Join-Path $DriverGrouping $OSDCabFile))
+            #$PackagedDriverPath = (Join-Path $PackagePath (Join-Path $OSDGroup $OSDCabFile))
             if (Test-Path "$PackagedDriverPath") {$OSDDriver.OSDStatus = 'Packaged'}
         }
         #===================================================================================================
@@ -169,6 +133,9 @@ function Save-IntelPack {
                 $DriverName = $OSDDriver.DriverName
                 Write-Verbose "DriverName: $DriverName"
 
+                $DriverGrouping = $OSDDriver.DriverGrouping
+                Write-Verbose "DriverGrouping: $DriverGrouping"
+
                 $DownloadFile = $OSDDriver.DownloadFile
                 Write-Verbose "DownloadFile: $DownloadFile"
 
@@ -184,7 +151,7 @@ function Save-IntelPack {
                 $ExpandedDriverPath = (Join-Path $WorkspaceExpand (Join-Path $OSDGroup $DriverName))
                 Write-Verbose "ExpandedDriverPath: $ExpandedDriverPath"
 
-                $PackagedDriverPath = (Join-Path $PackagePath (Join-Path $OSDGroup $OSDCabFile))
+                $PackagedDriverPath = (Join-Path $PackagePath (Join-Path $DriverGrouping $OSDCabFile))
                 Write-Verbose "PackagedDriverPath: $PackagedDriverPath"
 
                 Write-Host "$DriverName" -ForegroundColor Green
@@ -210,6 +177,15 @@ function Save-IntelPack {
                     Break
                 }
                 #===================================================================================================
+                #   Verify 7zip
+                #===================================================================================================
+                if (-not (test-path "$env:ProgramFiles\7-Zip\7z.exe")) {
+                    Write-Warning "Could not find $env:ProgramFiles\7-Zip\7z.exe"
+                    Write-Warning "7-zip is required to expand this Downloaded Driver"
+                    Write-Warning "You can download it from https://www.7-zip.org/"
+                    Continue
+                } 
+                #===================================================================================================
                 #   Driver Expand
                 #===================================================================================================
                 Write-Host "Driver Expand: $ExpandedDriverPath " -ForegroundColor Gray -NoNewline
@@ -217,15 +193,7 @@ function Save-IntelPack {
                     Write-Host 'Complete!' -ForegroundColor Cyan
                 } else {
                     Write-Host 'Expanding ...' -ForegroundColor Cyan
-                    if ($DownloadFile -match '.zip') {
-                        Expand-Archive -Path "$DownloadedDriverPath" -DestinationPath "$ExpandedDriverPath" -Force -ErrorAction Stop
-                    }
-                    if ($DownloadFile -match '.cab') {
-                        if (-not (Test-Path "$ExpandedDriverPath")) {
-                            New-Item "$ExpandedDriverPath" -ItemType Directory -Force -ErrorAction Stop | Out-Null
-                        }
-                        Expand -R "$DownloadedDriverPath" -F:* "$ExpandedDriverPath" | Out-Null
-                    }
+                    & "$env:ProgramFiles\7-Zip\7z.exe" x -o"$ExpandedDriverPath" "$DownloadedDriverPath" -r ;
                 }
                 #===================================================================================================
                 #   Verify Driver Expand
@@ -249,12 +217,19 @@ function Save-IntelPack {
                 $OSDDriver | Export-Clixml -Path "$ExpandedDriverPath\OSDDriver.clixml" -Force
                 $OSDDriver | ConvertTo-Json | Out-File -FilePath "$ExpandedDriverPath\OSDDriver.drvpack" -Force
 
+                Publish-OSDDriverScripts -PublishPath "$PackagePath Test"
+                Copy-Item "$ExpandedDriverPath\OSDDriver.drvpack" "$PackagePath Test\$DriverName.drvpack" -Force
+                Copy-Item "$ExpandedDriverPath\OSDDriver.drvpnp" "$PackagePath Test\$DriverName.drvpnp" -Force
+                Copy-Item "$ExpandedDriverPath\OSDDriver-Devices.csv" "$PackagePath Test\$DriverName.csv" -Force
+                Copy-Item "$ExpandedDriverPath\OSDDriver-Devices.txt" "$PackagePath Test\$DriverName.txt" -Force
+
                 if ($Pack.IsPresent) {
                     #===================================================================================================
                     #   Create Package
                     #===================================================================================================
-                    $PackagedDriverGroup = Get-PathOSDD -Path (Join-Path $PackagePath $OSDGroup)
-                    Write-Verbose "Verify: $PackagedDriverPath"
+                    $PackagedDriverGroup = Get-PathOSDD -Path (Join-Path $PackagePath $DriverGrouping)
+                    Write-Verbose "PackagedDriverGroup: $PackagedDriverGroup" -Verbose
+                    Write-Verbose "PackagedDriverPath: $PackagedDriverPath" -Verbose
                     if (Test-Path "$PackagedDriverPath") {
                         #Write-Warning "Compress-OSDDriver: $PackagedDriverPath already exists"
                     } else {
@@ -264,7 +239,7 @@ function Save-IntelPack {
                     #   Verify Driver Package
                     #===================================================================================================
                     if (-not (Test-Path "$PackagedDriverPath")) {
-                        Write-Warning "Driver Expand: Could not package Driver to $PackagedDriverPath ... Exiting"
+                        Write-Warning "Driver Package: Could not package Driver to $PackagedDriverPath ... Exiting"
                         Continue
                     }
                     $OSDDriver.OSDStatus = 'Package'
@@ -288,7 +263,7 @@ function Save-IntelPack {
                     #===================================================================================================
                     #   Publish-OSDDriverScripts
                     #===================================================================================================
-                    #Publish-OSDDriverScripts -PublishPath $PackagedDriverGroup
+                    Publish-OSDDriverScripts -PublishPath $PackagedDriverGroup
                 }
             }
         } else {
