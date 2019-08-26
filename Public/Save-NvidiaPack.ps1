@@ -12,16 +12,16 @@ function Save-NvidiaPack {
         [Parameter(Mandatory)]
         [string]$WorkspacePath,
 
-        [Parameter(Mandatory)]
+        #[Parameter(Mandatory)]
         [string]$AppendName = 'None',
         #====================================================================
         #   Filters
         #====================================================================
-        #[ValidateSet ('x64','x86')]
-        #[string]$OsArch,
+        [ValidateSet ('x64','x86')]
+        [string]$OsArch = 'x64',
 
-        #[ValidateSet ('10.0','6.3','6.1')]
-        #[string]$OsVersion = '10.0',
+        [ValidateSet ('10.0','6.3','6.1')]
+        [string]$OsVersion = '10.0',
         #====================================================================
         #   Options
         #====================================================================
@@ -36,9 +36,9 @@ function Save-NvidiaPack {
         #   CustomName
         #===================================================================================================
         if ($AppendName -eq 'None') {
-            $CustomName = "NvidiaPack"
+            $CustomName = "NvidiaPack $OsVersion $OsArch"
         } else {
-            $CustomName = "NvidiaPack $AppendName"
+            $CustomName = "NvidiaPack $OsVersion $OsArch $AppendName"
         }
         #===================================================================================================
         #   Get-OSDWorkspace Home
