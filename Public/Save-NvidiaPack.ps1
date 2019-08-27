@@ -1,3 +1,31 @@
+<#
+.SYNOPSIS
+Downloads Nvidia Drivers
+
+.DESCRIPTION
+Downloads Nvidia Drivers
+Requires 7-Zip for EXE extraction
+Requires BITS for downloading the Downloads
+Requires Internet access
+
+.LINK
+https://osddrivers.osdeploy.com/module/functions/save-nvidiapack
+
+.PARAMETER WorkspacePath
+Directory to the OSDDrivers Workspace.  This contains the Download, Expand, and Package subdirectories
+
+.PARAMETER OsArch
+Supported Operating System Architecture of the Driver
+
+.PARAMETER OsVersion
+Supported Operating Systems Version of the Driver.  This includes both Client and Server Operating Systems
+
+.PARAMETER Pack
+Creates a CAB file from the downloaded Nvidia Driver
+
+.PARAMETER SkipGridView
+Skips GridView for Automation
+#>
 function Save-NvidiaPack {
     [CmdletBinding()]
     Param (
@@ -13,14 +41,14 @@ function Save-NvidiaPack {
         [string]$WorkspacePath,
 
         #[Parameter(Mandatory)]
-        [string]$AppendName = 'None',
+        #[string]$AppendName = 'None',
         #====================================================================
         #   Filters
         #====================================================================
         [ValidateSet ('x64','x86')]
         [string]$OsArch = 'x64',
 
-        [ValidateSet ('10.0','6.3','6.1')]
+        [ValidateSet ('10.0','6.1')]
         [string]$OsVersion = '10.0',
         #====================================================================
         #   Options
@@ -40,6 +68,7 @@ function Save-NvidiaPack {
         } else {
             $CustomName = "NvidiaPack $OsVersion $OsArch $AppendName"
         }
+        $CustomName = "NvidiaPack $OsVersion $OsArch"
         #===================================================================================================
         #   Get-OSDWorkspace Home
         #===================================================================================================
