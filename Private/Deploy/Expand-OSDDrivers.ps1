@@ -493,10 +493,12 @@ function Expand-OSDDrivers {
                 }
             }
             if (Test-Path $DriverTaskCab) {
+                $ExpandNvidiaTasks += $DriverTaskFullName
                 $ExpandNvidiaPacks += $DriverTaskCab
                 Continue
             }
             if (Test-Path $DriverTaskZip) {
+                $ExpandNvidiaTasks += $DriverTaskFullName
                 $ExpandNvidiaPacks += $DriverTaskZip
                 Continue
             }
@@ -521,6 +523,7 @@ function Expand-OSDDrivers {
             $TSEnv.Value('NvidiaPackReleaseId') = "$($NvidiaTask.DriverReleaseId)"
         }
     }
+    $ExpandNvidiaPacks = $ExpandNvidiaPacks | Where-Object {$_ -match $NvidiaTask.DriverGrouping}
     #===================================================================================================
     #   Expand DriverPacks
     #===================================================================================================
