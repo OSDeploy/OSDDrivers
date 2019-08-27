@@ -111,7 +111,9 @@ function Expand-OSDDrivers {
             if ($CimOSArchitecture -like "*64*") {$ImageOSArchitecture = 'x64'}
             if ($CimOSArchitecture -like "*32*") {$ImageOSArchitecture = 'x86'}
 
-            if ($TSEnv) {Write-Warning "This parameter can be set by adding a Task Sequence Variable: g"}
+            if ($TSEnv) {
+                #Write-Warning "This parameter can be set by adding a Task Sequence Variable: g"
+            }
         }
     }
     Write-Verbose "Image OSArchitecture: $ImageOSArchitecture" -Verbose
@@ -519,11 +521,11 @@ function Expand-OSDDrivers {
         if ($TSEnv) {
             Write-Verbose "Setting Task Sequence Variable NvidiaPackGrouping to $($NvidiaTask.DriverGrouping)" -Verbose
             $TSEnv.Value('NvidiaPackGrouping') = "$($NvidiaTask.DriverGrouping)"
-            Write-Verbose "Setting Task Sequence Variable NvidiaPackReleaseId to $($NvidiaTask.DriverReleaseId)" -Verbose
-            $TSEnv.Value('NvidiaPackReleaseId') = "$($NvidiaTask.DriverReleaseId)"
+            Write-Verbose "Setting Task Sequence Variable NvidiaPack to $($NvidiaTask.DriverReleaseId)" -Verbose
+            $TSEnv.Value('NvidiaPack') = "$($NvidiaTask.DriverReleaseId)"
         }
+        $ExpandNvidiaPacks = $ExpandNvidiaPacks | Where-Object {$_ -match $NvidiaTask.DriverReleaseId}
     }
-    $ExpandNvidiaPacks = $ExpandNvidiaPacks | Where-Object {$_ -match $NvidiaTask.DriverGrouping}
     #===================================================================================================
     #   Expand DriverPacks
     #===================================================================================================
