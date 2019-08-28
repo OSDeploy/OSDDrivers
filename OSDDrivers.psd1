@@ -7,7 +7,7 @@
 RootModule = 'OSDDrivers.psm1'
 
 # Version number of his module.
-ModuleVersion = '19.8.28.0'
+ModuleVersion = '19.8.29.0'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -26,7 +26,7 @@ Copyright = '(c) 2019 David Segura osdeploy.com. All rights reserved.'
 
 # Description of the functionality provided by this module
 Description = @'
-BETA: OSDDrivers should be used for Testing Only!
+HASMUG Release Version
 '@
 
 # Minimum version of the Windows PowerShell engine required by this module
