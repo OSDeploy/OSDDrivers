@@ -1,84 +1,35 @@
 <#
 .SYNOPSIS
-Downloads Hp Model Packs
+Downloads Dell Family Packs
 
 .DESCRIPTION
-Downloads Hp Model Packs to $WorkspacePath\Download\HpModel
+Downloads Dell Family Packs to $WorkspacePath\Download\DellFamily
 Requires BITS for downloading the Downloads
 Requires Internet access
 
 .LINK
-https://osddrivers.osdeploy.com/module/functions/save-Hpmodelpack
+https://osddrivers.osdeploy.com/module/functions/save-dellfamilypack
 
 .PARAMETER WorkspacePath
 Directory to the OSDDrivers Workspace.  This contains the Download, Expand, and Package subdirectories
+Downloaded Dell Family Packs will be saved to $WorkspacePath\Download\DellFamily
 
 .PARAMETER Expand
-Expands the downloaded Hp Model Pack
-
-.PARAMETER Generation
-Generation of the Hp Model
-
-.PARAMETER OsVersion
-Operating System Version of the Model Pack to be downloaded
+Expands the downloaded Dell Family Pack
 #>
-function Save-HpModelPack {
+function Save-OSDFamilyPack {
     [CmdletBinding()]
     Param (
         #[Parameter(ValueFromPipeline = $true)]
         #[Object[]]$InputObject,
 
-        #[string]$CMPackageName = 'HpMultiPack',
-
         [Parameter(Mandatory)]
         [string]$WorkspacePath,
-        #===================================================================================================
-        #   Filters
-        #===================================================================================================
-        [ValidateSet ('G6','G5','G4','G3','G2','G1','G0')]
-        [string]$Generation,
 
-        #[ValidateSet ('10.0','6.3','6.1')]
-        #[string]$OsVersion = '10.0',
-
-        #[ValidateSet ('Latitude A','Latitude N','Precision M','Precision N','Precision W')]
-        #[string]$CustomGroup,
-        #===================================================================================================
-        #   Download
-        #===================================================================================================
         [switch]$Expand
-        #===================================================================================================
-        #   Pack
-        #===================================================================================================
-        #[Parameter(ParameterSetName = 'Pack', Mandatory = $true)]
-        #[switch]$Pack,
-        #===================================================================================================
-        #   Remove
-        #===================================================================================================
-        #[Parameter(ParameterSetName = 'Pack')]
-        #[switch]$RemoveAudio = $false,
-        
-        #[Parameter(ParameterSetName = 'Pack')]
-        #[switch]$RemoveAmdVideo = $false,
-
-        #[Parameter(ParameterSetName = 'Pack')]
-        #[switch]$RemoveNvidiaVideo = $false
-        #===================================================================================================
-        #   Scraps
-        #===================================================================================================
-        #[Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName)]
-        #[ValidateSet('HpModel','HpFamily')]
-        #[string]$OSDGroup,
-
-        #[Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName)]
-        #[ValidateSet ('x64','x86')]
-        #[string]$OsArch,
-
-        #[switch]$SkipGridView
     )
 
     Begin {
-        $CMPackageName = 'HpModel'
         #===================================================================================================
         #   Get-OSDWorkspace Home
         #===================================================================================================
@@ -93,13 +44,11 @@ function Save-HpModelPack {
         $WorkspaceExpand = Get-PathOSDD -Path (Join-Path $OSDWorkspace 'Expand')
         Write-Verbose "Workspace Expand: $WorkspaceExpand" -Verbose
 
-        $WorkspacePackages = Get-PathOSDD -Path (Join-Path $OSDWorkspace 'Packages')
-        #Write-Verbose "Workspace Packages: $WorkspacePackages" -Verbose
-        #Publish-OSDDriverScripts -PublishPath $WorkspacePackages
-
-        #$PackagePath = Get-PathOSDD -Path (Join-Path $WorkspacePackages "$CMPackageName")
-        #Write-Verbose "Package Path: $PackagePath" -Verbose
-        #Publish-OSDDriverScripts -PublishPath $PackagePath
+        if ($MyInvocation.MyCommand.Name -eq 'Save-DellModelPack') {
+            $WorkspacePackage = Get-PathOSDD -Path (Join-Path $OSDWorkspace 'Package')
+            Write-Verbose "Workspace Package: $WorkspacePackage" -Verbose
+            #Publish-OSDDriverScripts -PublishPath $WorkspacePackage
+        }
         #===================================================================================================
     }
 
@@ -107,18 +56,46 @@ function Save-HpModelPack {
         #===================================================================================================
         #   Defaults
         #===================================================================================================
-        $OSDGroup = 'HpModel'
-
-        if ($PSCmdlet.ParameterSetName -eq 'Pack') {
+        if ($MyInvocation.MyCommand.Name -eq 'Save-OSDFamilyPack') {
+            $OSDGroup = 'DellFamily'
+            $OsVersion = '10.0'
+            $OsArch = 'x64'
+            $RemoveAudio = $true
+            $RemoveAmdVideo = $true
+            $RemoveNvidiaVideo = $true
+        }
+        if ($MyInvocation.MyCommand.Name -eq 'Save-DellModelPack') {
+            $OSDGroup = 'DellModel'
+            #$OsVersion = '10.0'
+            #$OsArch = 'x64'
+            #$RemoveAudio = $true
+            #$RemoveAmdVideo = $true
+            #$RemoveNvidiaVideo = $true
+            Publish-OSDDriverScripts -PublishPath (Join-Path $WorkspaceDownload 'DellModel')
+        }
+        if ($PSCmdlet.ParameterSetName -eq 'MultiPack') {
             $Expand = $true
+            $OSDGroup = 'DellModel'
+            #$OsVersion = '10.0'
+            #$OsArch = 'x64'
+            #$RemoveAudio = $true
+            #$RemoveAmdVideo = $true
+            #$RemoveNvidiaVideo = $true
+            if ($RemoveAudio -eq $true) {Write-Warning "Audio Drivers will be removed from resulting packages"}
+            if ($RemoveAmdVideo -eq $true) {Write-Warning "AMD Video Drivers will be removed from resulting packages"}
+            if ($RemoveIntelVideo -eq $true) {Write-Warning "Intel Video Drivers will be removed from resulting packages"}
+            if ($RemoveNvidiaVideo -eq $true) {Write-Warning "Nvidia Video Drivers will be removed from resulting packages"}
+        } else {
             $RemoveIntelVideo = $true
         }
 
-        if ($RemoveAudio -eq $true) {Write-Warning "Audio Drivers will be removed from resulting packages"}
-        if ($RemoveAmdVideo -eq $true) {Write-Warning "AMD Video Drivers will be removed from resulting packages"}
-        if ($RemoveIntelVideo -eq $true) {Write-Warning "Intel Video Drivers will be removed from resulting packages"}
-        if ($RemoveNvidiaVideo -eq $true) {Write-Warning "Nvidia Video Drivers will be removed from resulting packages"}
-        Publish-OSDDriverScripts -PublishPath (Join-Path $WorkspaceDownload 'HpModel')
+        if ($PSCmdlet.ParameterSetName -eq 'Pack') {
+            $Expand = $true
+            if ($RemoveAudio -eq $true) {Write-Warning "Audio Drivers will be removed from resulting packages"}
+            Write-Warning "Intel Video Drivers will be removed from resulting packages by default"
+            if ($RemoveAmdVideo -eq $true) {Write-Warning "AMD Video Drivers will be removed from resulting packages"}
+            if ($RemoveNvidiaVideo -eq $true) {Write-Warning "Nvidia Video Drivers will be removed from resulting packages"}
+        }
         #===================================================================================================
         #   Get-OSDDrivers
         #===================================================================================================
@@ -127,29 +104,31 @@ function Save-HpModelPack {
             $SkipGridView = $true
             $OSDDrivers = $InputObject
         } else {
-            $OSDDrivers = Get-HpModelPack -DownloadPath (Join-Path $WorkspaceDownload 'HpModel')
+            if ($MyInvocation.MyCommand.Name -eq 'Save-OSDFamilyPack') {$OSDDrivers = Get-DellFamilyPack}
+            if ($MyInvocation.MyCommand.Name -eq 'Save-DellModelPack') {$OSDDrivers = Get-DellModelPack -DownloadPath (Join-Path $WorkspaceDownload 'DellModel')}
         }
         #===================================================================================================
         #   Set-OSDStatus
         #===================================================================================================
         foreach ($OSDDriver in $OSDDrivers) {
-            $DriverName = $OSDDriver.DriverName
-            $OSDCabFile = "$($DriverName).cab"
-            $DownloadFile = $OSDDriver.DownloadFile
-            $OSDGroup = $OSDDriver.OSDGroup
-            $OSDType = $OSDDriver.OSDType
+            Write-Verbose "==================================================================================================="
+            $DownloadFile       = $OSDDriver.DownloadFile
+            $DriverName         = $OSDDriver.DriverName
+            $OSDCabFile         = "$($DriverName).cab"
+            $OSDGroup           = $OSDDriver.OSDGroup
+            $OSDType            = $OSDDriver.OSDType
 
             $DownloadedDriverGroup  = (Join-Path $WorkspaceDownload $OSDGroup)
+            $DownloadedDriverPath   = (Join-Path $DownloadedDriverGroup $DownloadFile)
+            $ExpandedDriverPath     = (Join-Path $WorkspaceExpand (Join-Path $OSDGroup $DriverName))
+            #$PackagedDriverPath     = (Join-Path $WorkspacePackage (Join-Path $OSDGroup $OSDCabFile))
             Write-Verbose "DownloadedDriverGroup: $DownloadedDriverGroup"
+            Write-Verbose "DownloadedDriverPath: $DownloadedDriverPath"
+            Write-Verbose "ExpandedDriverPath: $ExpandedDriverPath"
+            #Write-Verbose "PackagedDriverPath: $PackagedDriverPath"
 
-            $DownloadedDriverPath = (Join-Path $WorkspaceDownload (Join-Path $OSDGroup $DownloadFile))
             if (Test-Path "$DownloadedDriverPath") {$OSDDriver.OSDStatus = 'Downloaded'}
-
-            $ExpandedDriverPath = (Join-Path $WorkspaceExpand (Join-Path $OSDGroup $DriverName))
             if (Test-Path "$ExpandedDriverPath") {$OSDDriver.OSDStatus = 'Expanded'}
-
-            #$PackagedDriverPath = (Join-Path $PackagePath (Join-Path $OSDGroup $OSDCabFile))
-            #if (Test-Path "$PackagedDriverPath") {$OSDDriver.OSDStatus = 'Packaged'}
         }
         #===================================================================================================
         #   OSArch
@@ -164,13 +143,25 @@ function Save-HpModelPack {
         #===================================================================================================
         if ($Generation) {$OSDDrivers = $OSDDrivers | Where-Object {$_.Generation -eq "$Generation"}}
         #===================================================================================================
+        #   DriverFamily
+        #===================================================================================================
+        if ($SystemFamily) {$OSDDrivers = $OSDDrivers | Where-Object {$_.SystemFamily -match "$SystemFamily"}}
+        #===================================================================================================
+        #   Filter
+        #===================================================================================================
+        #if ($MyInvocation.MyCommand.Name -eq 'New-DellMultiPack') {$OSDDrivers = $OSDDrivers | Where-Object {$_.OSDStatus -ne ''}}
+        #$OSDDrivers = $OSDDrivers | Where-Object {$_.DriverFamily -ne 'Venue'}
+        #$OSDDrivers = $OSDDrivers | Where-Object {$_.DriverFamily -ne 'Vostro'}
+        #$OSDDrivers = $OSDDrivers | Where-Object {$_.DriverFamily -ne 'XPS'}
+        #===================================================================================================
         #   GridView
         #===================================================================================================
         $OSDDrivers = $OSDDrivers | Sort-Object LastUpdate -Descending
-        if ($SkipGridView) {
-            #Write-Warning "SkipGridView: Skipping Out-GridView"
+        if ($SkipGridView.IsPresent) {
+            Write-Warning "SkipGridView: Skipping Out-GridView"
         } else {
-            $OSDDrivers = $OSDDrivers | Out-GridView -PassThru -Title "Select Drivers to Download and press OK"
+            if ($PSCmdlet.ParameterSetName -eq 'MultiPack') {$OSDDrivers = $OSDDrivers | Out-GridView -PassThru -Title "Select Drivers to MultiPack and press OK"}
+            else {$OSDDrivers = $OSDDrivers | Out-GridView -PassThru -Title "Select Drivers to Download and press OK"}
         }
         #===================================================================================================
         #   Execute
@@ -185,7 +176,7 @@ function Save-HpModelPack {
                 Write-Verbose "DriverUrl: $DriverUrl"
 
                 $DriverName = $OSDDriver.DriverName
-                Write-Verbose "DriverName: $DriverName" -Verbose
+                Write-Verbose "DriverName: $DriverName"
 
                 $DownloadFile = $OSDDriver.DownloadFile
                 Write-Verbose "DownloadFile: $DownloadFile"
@@ -199,7 +190,7 @@ function Save-HpModelPack {
                 $DownloadedDriverGroup = (Join-Path $WorkspaceDownload $OSDGroup)
                 $DownloadedDriverPath =  (Join-Path $DownloadedDriverGroup $DownloadFile)
                 $ExpandedDriverPath = (Join-Path $WorkspaceExpand (Join-Path $OSDGroup $DriverName))
-                #$PackagedDriverPath = (Join-Path $WorkspacePackages (Join-Path $OSDGroup $OSDCabFile))
+                #$PackagedDriverPath = (Join-Path $WorkspacePackage (Join-Path $OSDGroup $OSDCabFile))
 
                 if (-not(Test-Path "$DownloadedDriverGroup")) {New-Item $DownloadedDriverGroup -Directory -Force | Out-Null}
 
@@ -208,12 +199,11 @@ function Save-HpModelPack {
                 #Write-Verbose "PackagedDriverPath: $PackagedDriverPath"
 
                 Write-Host "$DriverName" -ForegroundColor Green
-                $DownloadModels = $OSDDriver.Model | Sort-Object
-                foreach ($Model in $DownloadModels) {Write-Host "$($Model)"}
                 #===================================================================================================
                 #   Driver Download
                 #===================================================================================================
                 Write-Host "Driver Download: $DownloadedDriverPath " -ForegroundColor Gray -NoNewline
+
 
                 if (Test-Path "$DownloadedDriverPath") {
                     Write-Host 'Complete!' -ForegroundColor Cyan
@@ -236,7 +226,7 @@ function Save-HpModelPack {
                 #===================================================================================================
                 #   Driver Expand
                 #===================================================================================================
-                if ($Expand) {
+                if ($Expand.IsPresent) {
                     Write-Host "Driver Expand: $ExpandedDriverPath " -ForegroundColor Gray -NoNewline
                     if (Test-Path "$ExpandedDriverPath") {
                         Write-Host 'Complete!' -ForegroundColor Cyan
@@ -251,11 +241,6 @@ function Save-HpModelPack {
                             }
                             Expand -R "$DownloadedDriverPath" -F:* "$ExpandedDriverPath" | Out-Null
                         }
-                        if ($DownloadFile -match '.exe') {
-                            #Thanks Maurice @ Driver Automation Tool
-                            $HPSoftPaqSilentSwitches = "-PDF -F" + "$ExpandedDriverPath" + " -S -E"
-                            Start-Process -FilePath "$DownloadedDriverPath" -ArgumentList $HPSoftPaqSilentSwitches -Verb RunAs -Wait
-                        }
                     }
                 } else {
                     Continue
@@ -264,28 +249,12 @@ function Save-HpModelPack {
                 #   Verify Driver Expand
                 #===================================================================================================
                 if (Test-Path "$ExpandedDriverPath") {
-                    <# $NormalizeContent = Get-ChildItem "$ExpandedDriverPath\*\*\*\*\*" -Directory #| Where-Object {($_.Name -match '_A') -and ($_.Name -notmatch '_A00-00')}
-                    foreach ($FunkyNameDriver in $NormalizeContent) {
-                        $NewBaseName = ($FunkyNameDriver.Name -split '_')[0]
-                        Write-Verbose "Renaming '$($FunkyNameDriver.FullName)' to '$($NewBaseName)_A00-00'" -Verbose
-                        Rename-Item "$($FunkyNameDriver.FullName)" -NewName "$($NewBaseName)_A00-00" -Force | Out-Null
-                    } #>
+                    $OSDDriver | Export-Clixml -Path "$ExpandedDriverPath\OSDDriver.clixml" -Force
                 } else {
                     Write-Warning "Driver Expand: Could not expand Driver to $ExpandedDriverPath ... Exiting"
                     Continue
                 }
                 $OSDDriver.OSDStatus = 'Expanded'
-                #===================================================================================================
-                #   OSDDriver Objects
-                #===================================================================================================
-                if ($MyInvocation.MyCommand.Name -eq 'Save-HpMultiPack') {
-                    $PackagedDriverGroup = Get-PathOSDD -Path (Join-Path $WorkspacePackages (Join-Path 'HpMultiPack' $MultiPackName))
-                    $OSDDriver | ConvertTo-Json | Out-File -FilePath "$PackagedDriverGroup\$($OSDDriver.DriverName).drvpack" -Force
-                } else {
-                    $PackagedDriverGroup = Get-PathOSDD -Path (Join-Path $WorkspacePackages $OSDGroup)
-                    $OSDDriver | Export-Clixml -Path "$ExpandedDriverPath\OSDDriver.clixml" -Force
-                    $OSDDriver | ConvertTo-Json | Out-File -FilePath "$ExpandedDriverPath\OSDDriver.drvpack" -Force
-                }
             }
         } else {
             Return $OSDDrivers
@@ -294,7 +263,7 @@ function Save-HpModelPack {
 
     End {
         #===================================================================================================
-        #   Publish-OSDDriverScripts
+        #   Complete
         #===================================================================================================
         Write-Host "Complete!" -ForegroundColor Green
         #===================================================================================================

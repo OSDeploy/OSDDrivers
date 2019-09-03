@@ -72,7 +72,7 @@ FunctionsToExport = 'Get-DellFamilyPack',
                     'Update-OSDMultiPack',
                     'Save-AmdPack','Save-IntelPack','Save-NvidiaPack',
                     'Show-OSDWmiQuery',
-                    'Update-OSDDriverScripts',
+                    'Update-OSDDriverScripts','Get-DellFamilyPack',
                     'Update-ModuleOSDDrivers'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
