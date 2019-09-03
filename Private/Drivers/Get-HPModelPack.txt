@@ -11,26 +11,11 @@ Directory containing the downloaded Dell Model Packs.  This allows the function 
 .LINK
 https://osddrivers.osdeploy.com/functions/get-dellmodelpack
 #>
-function Get-DellModelPack {
+function Get-HPModelPack {
     [CmdletBinding()]
     Param (
         [string]$DownloadPath
     )
-    #===================================================================================================
-    #   OSDDrivers.json
-    #===================================================================================================
-    if (Test-Path "$env:ProgramData\OSDDrivers\OSDDrivers.json") {
-        $OSDDrivers = Get-Content "$env:ProgramData\OSDDrivers\OSDDrivers.json" | ConvertFrom-Json
-    } else {
-        Write-Verbose "Creating $env:ProgramData\OSDDrivers\OSDDrivers.json" -Verbose
-        if (!(Test-Path "$env:ProgramData\OSDDrivers")) {New-Item "$env:ProgramData\OSDDrivers" -ItemType Directory -Force | Out-Null}
-        $OSDDrivers = New-Object -TypeName PSObject -Property @{
-            WorkspacePath = $null
-            DellModels = $null
-            HPModels = $null
-        }
-        $OSDDrivers | ConvertTo-Json | Out-File -FilePath "$env:ProgramData\OSDDrivers\OSDDrivers.json" -Force
-    }
     #===================================================================================================
     #   DownloadPath
     #===================================================================================================
@@ -40,40 +25,24 @@ function Get-DellModelPack {
     #   Dell Variables
     #===================================================================================================
     # Define Dell Download Sources
-    $DellDownloadsListUrl = "http://downloads.dell.com/published/Pages/index.html"
-    $DellDownloadsBaseUrl = "http://downloads.dell.com"
-    $DellDriverListUrl = "http://en.community.dell.com/techcenter/enterprise-client/w/wiki/2065.dell-command-deploy-driver-packs-for-enterprise-client-os-deployment"
-    $DellCommunityUrl = "http://en.community.dell.com"
-    $Dell64BiosUtilityUtl = "http://en.community.dell.com/techcenter/enterprise-client/w/wiki/12237.64-bit-bios-installation-utility"
+    $HpDownloadsListUrl = "http://downloads.dell.com/published/Pages/index.html"
+    $HpDownloadsBaseUrl = "http://downloads.dell.com"
+    $HpDriverListUrl = "http://en.community.dell.com/techcenter/enterprise-client/w/wiki/2065.dell-command-deploy-driver-packs-for-enterprise-client-os-deployment"
+    $HpCommunityUrl = "http://en.community.dell.com"
+    $Hp64BiosUtilityUtl = "http://en.community.dell.com/techcenter/enterprise-client/w/wiki/12237.64-bit-bios-installation-utility"
     
     # Define Dell Download Sources
-    $DellDriverPackCatalogUrl = "http://downloads.dell.com/catalog/DriverPackCatalog.cab"
-    $DellCatalogPcUrl = "http://downloads.dell.com/catalog/CatalogPC.cab"
+    $DriverPackCatalog = "https://ftp.hp.com/pub/caps-softpaq/cmit/HPClientDriverPackCatalog.cab"
+    $HpCatalogPcUrl = "http://downloads.dell.com/catalog/CatalogPC.cab"
     
     # Define Dell Cabinet/XL Names and Paths
-    $DellCabFile = [string]($DellDriverPackCatalogUrl | Split-Path -Leaf)
-    $DellCatalogFile = [string]($DellCatalogPcUrl | Split-Path -Leaf)
-    #$DellXMLFile = $DellCabFile.Trim(".cab")
-    #$DellXMLFile = $DellXMLFile + ".xml"
-    #$DellCatalogXMLFile = $DellCatalogFile.Trim(".cab") + ".xml"
-    
-    # Define Dell Global Variables
-    #$global:DellCatalogXML = $null
-    #$global:DellModelXML = $null
-    #$global:DellModelCabFiles = $null
-    #===================================================================================================
-    #   Driver
-    #===================================================================================================
-<#     (New-Object System.Net.WebClient).DownloadFile($DellCatalogPcUrl, "$env:TEMP\CatalogPC.cab")
-    Expand "$env:TEMP\CatalogPC.cab" "$env:TEMP\CatalogPC.xml"
-    Remove-Item -Path "$env:TEMP\CatalogPC.cab" -Force
-    [xml]$DellDriverCatalog = Get-Content "$env:TEMP\CatalogPC.xml" -ErrorAction Stop
-    $DellDriverList = $DellDriverCatalog.DriverPackManifest.DriverPackage #>
+    $HpCabFile = [string]($DriverPackCatalog | Split-Path -Leaf)
+    $HpCatalogFile = [string]($HpCatalogPcUrl | Split-Path -Leaf)
     #===================================================================================================
     #   DriverPackCatalog
     #===================================================================================================
     if (-not(Test-Path "$DownloadPath")) {New-Item "$DownloadPath" -ItemType Directory -Force | Out-Null}
-    (New-Object System.Net.WebClient).DownloadFile($DellDriverPackCatalogUrl, "$DownloadPath\DriverPackCatalog.cab")
+    (New-Object System.Net.WebClient).DownloadFile($DriverPackCatalog, "$DownloadPath\DriverPackCatalog.cab")
 
     Expand "$DownloadPath\DriverPackCatalog.cab" "$DownloadPath\DriverPackCatalog.xml" | Out-Null
 
@@ -82,34 +51,38 @@ function Get-DellModelPack {
     }
 
     [xml]$DriverPackageCatalog = Get-Content "$DownloadPath\DriverPackCatalog.xml" -ErrorAction Stop
-    $DellDriverPackCatalog = $DriverPackageCatalog.DriverPackManifest.DriverPackage
+    $HpDriverPackCatalog = $DriverPackageCatalog.NewDataSet.HPClientDriverPackCatalog.SoftPaqList.SoftPaq
     #===================================================================================================
     #   ForEach
     #===================================================================================================
     $ErrorActionPreference = 'SilentlyContinue'
     $DriverResults = @()
-    $DriverResults = foreach ($DriverPackage in $DellDriverPackCatalog) {
+    $DriverResults = foreach ($DriverPackage in $HpDriverPackCatalog) {
+        #===================================================================================================
+        #   Skip
+        #===================================================================================================
+        if ($DriverPackage.Name -match 'IOT') {Continue}
         #===================================================================================================
         #   Defaults
         #===================================================================================================
         $OSDVersion = $(Get-Module -Name OSDDrivers | Sort-Object Version | Select-Object Version -Last 1).Version
-        $LastUpdate = [datetime] $(Get-Date)
+        $LastUpdate = [datetime] $DriverPackage.DateReleased
         $OSDStatus = $null
         $OSDType = 'ModelPack'
-        $OSDGroup = 'DellModel'
+        $OSDGroup = 'HPModel'
 
         $DriverName = $null
-        $DriverVersion = $null
+        $DriverVersion = $DriverPackage.Version.Trim()
         $DriverReleaseId = $null
         $DriverGrouping = $null
 
         $OperatingSystem = @()
-        $OsVersion = @()
-        $OsArch = @()
+        $OsVersion = $null
+        $OsArch = $null
         $OsBuildMax = @()
         $OsBuildMin = @()
 
-        $Make = 'Dell'
+        $Make = 'HP'
         $MakeNe = @()
         $MakeLike = @()
         $MakeNotLike = @()
@@ -129,30 +102,40 @@ function Get-DellModelPack {
         $SystemSku = @()
         $SystemSkuNe = @()
 
+        $SystemBaseband = $null
+        $SystemBasebandNe = $null
+
         $DriverBundle = $null
         $DriverWeight = 100
 
-        $DownloadFile = $null
-        $SizeMB = $null
-        $DriverUrl = $null
-        $DriverInfo = $null
-        $DriverDescription = $null
-        $Hash = $null
+        $DownloadFile = $DriverPackage.Url | Split-Path -Leaf
+        $SizeMB = ($DriverPackage.Size.Trim() | Select-Object -Unique) / 1024
+        $DriverUrl = $DriverPackage.Url
+        $DriverInfo = $DriverPackage.CvaFileUrl
+        $DriverDescription = $DriverPackage.ReleaseNotesUrl
+        $Hash = $DriverPackage.MD5.Trim()
         $OSDGuid = $(New-Guid)
         #===================================================================================================
         #   Get Values
         #===================================================================================================
-        $LastUpdate         = [datetime] $DriverPackage.dateTime
-        $DriverVersion      = $DriverPackage.dellVersion.Trim()
-        $DriverDelta        = $DriverPackage.delta.Trim()
-        $DriverFormat       = $DriverPackage.format.Trim()
-        $Hash               = $DriverPackage.hashMD5.Trim()
-        $DownloadFile       = $DriverPackage.Name.Display.'#cdata-section'.Trim()
-        $DriverReleaseId    = $DriverPackage.releaseID.Trim()
-        $SizeMB             = ($DriverPackage.size.Trim() | Select-Object -Unique) / 1024
+        if ($DriverPackage.Name -match 'x64') {$OsArch = 'x64'}
+        if ($DriverPackage.Name -match 'x86') {$OsArch = 'x86'}
+        if ($null -eq $OsArch) {$OsArch = 'x64'}
+        if ($DriverPackage.Name -match 'Win7') {$OsVersion = '6.1'}
+        if ($DriverPackage.Name -match 'Win 7') {$OsVersion = '6.1'}
+        if ($DriverPackage.Name -match 'Window 7') {$OsVersion = '6.1'}
+        if ($DriverPackage.Name -match 'Windows 7') {$OsVersion = '6.1'}
+        if ($DriverPackage.Name -match 'Win8') {$OsVersion = '6.3'}
+        if ($DriverPackage.Name -match 'Win 8') {$OsVersion = '6.3'}
+        if ($DriverPackage.Name -match 'Windows 8') {$OsVersion = '6.3'}
+        if ($DriverPackage.Name -match 'Win10') {$OsVersion = '10.0'}
+        if ($DriverPackage.Name -match 'Win 10') {$OsVersion = '10.0'}
+        if ($DriverPackage.Name -match 'Windows 10') {$OsVersion = '10.0'}
+
+
+        $DriverReleaseId    = $DriverPackage.Name.Trim()
         $DriverType         = $DriverPackage.type.Trim()
         $VendorVersion      = $DriverPackage.vendorVersion.Trim()
-        $DriverInfo         = $DriverPackage.ImportantInfo.URL.Trim() | Select-Object -Unique
         $OperatingSystem    = $DriverPackage.SupportedOperatingSystems.OperatingSystem.Display.'#cdata-section'.Trim() | Select-Object -Unique
         $OsArch             = $DriverPackage.SupportedOperatingSystems.OperatingSystem.osArch.Trim() | Select-Object -Unique
         $OsCode             = $DriverPackage.SupportedOperatingSystems.OperatingSystem.osCode.Trim() | Select-Object -Unique
@@ -195,8 +178,6 @@ function Get-DellModelPack {
         #===================================================================================================
         #   Corrections
         #===================================================================================================
-        if ($Model -eq 'Precision M4600') {$Generation = 'X3'}
-        if ($Model -eq 'Precision M3800') {$Model = 'Dell Precision M3800'}
         #===================================================================================================
         #   Customizations
         #===================================================================================================
@@ -205,9 +186,8 @@ function Get-DellModelPack {
         #if ($OsCode -eq 'Windows8') {Continue}
         #if ($OsCode -eq 'Windows8.1') {Continue}
         if ($OsCode -match 'WinPE') {Continue}
-        $DriverUrl = "$DellDownloadsBaseUrl/$($DriverPackage.path)"
-        $OsVersion = "$($OsMajor).$($OsMinor)"
-        $DriverName = "$OSDGroup $Generation $Model $OsVersion $DriverVersion"
+        #$OsVersion = "$($OsMajor).$($OsMinor)"
+        $DriverName = "$OSDGroup $DriverReleaseId $DriverVersion"
         $DriverGrouping = "$Generation $Model $OsVersion"
         if (Test-Path "$DownloadPath\$DownloadFile") {
             $OSDStatus = 'Downloaded'
@@ -217,7 +197,7 @@ function Get-DellModelPack {
         #===================================================================================================
         $ObjectProperties = @{
             OSDVersion              = [string]$OSDVersion
-            LastUpdate              = $(($LastUpdate).ToString("yyyy-MM-dd"))
+            LastUpdate              = [datetime] $LastUpdate
             OSDStatus               = $OSDStatus
             OSDType                 = $OSDType
             OSDGroup                = $OSDGroup
@@ -269,13 +249,18 @@ function Get-DellModelPack {
     #===================================================================================================
     #   Select-Object
     #===================================================================================================
-    $DriverResults = $DriverResults | Select-Object LastUpdate,`
-    OSDType, OSDGroup, OSDStatus, `
-    DriverGrouping, DriverName, Make, Generation, Model, SystemSku,`
-    DriverVersion, DriverReleaseId,`
-    OsVersion, OsArch,
-    DownloadFile, SizeMB, DriverUrl, DriverInfo,`
-    Hash, OSDGuid, OSDVersion
+    $DriverResults = $DriverResults | Select-Object OSDVersion, LastUpdate,`
+    OSDStatus, OSDType, OSDGroup,`
+    DriverName, DriverVersion, DriverReleaseId,`
+    OsVersion, OsArch,` #OperatingSystem
+    Generation,`
+    Make,` #MakeNe, MakeLike, MakeNotLike
+    SystemFamily,`
+    Model,` #ModelNe, ModelLike, ModelNotLike, ModelMatch, ModelNotMatch
+    SystemSku,` #SystemSkuNe
+    DriverGrouping,`
+    DownloadFile, SizeMB, DriverUrl, DriverInfo, DriverDescription,
+    Hash, OSDGuid
     #===================================================================================================
     #   Sort Object
     #===================================================================================================

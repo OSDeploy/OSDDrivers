@@ -95,6 +95,6 @@ function New-CabDellMultiPack {
             }
         }
         #Write-Warning "Build: $OSDDriverCabFile ... This may take a while"
-        New-CabFileDellMultiPack -ExpandedDriverPath "$ExpandedDriverPath" -PublishPath $PublishPath
+        New-MultiPackCabFile -ExpandedDriverPath "$ExpandedDriverPath" -PublishPath $PublishPath
     }
 }

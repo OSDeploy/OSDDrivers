@@ -1,4 +1,4 @@
-function New-CabFileDellMultiPack
+function New-MultiPackCabFile
 {
     [CmdletBinding()]
     Param (
