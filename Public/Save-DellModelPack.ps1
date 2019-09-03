@@ -222,11 +222,12 @@ function Save-DellModelPack {
                 #Write-Verbose "PackagedDriverPath: $PackagedDriverPath"
 
                 Write-Host "$DriverName" -ForegroundColor Green
+                $DownloadModels = $OSDDriver.Model | Sort-Object
+                foreach ($Model in $DownloadModels) {Write-Host "$($Model)"}
                 #===================================================================================================
                 #   Driver Download
                 #===================================================================================================
                 Write-Host "Driver Download: $DownloadedDriverPath " -ForegroundColor Gray -NoNewline
-
 
                 if (Test-Path "$DownloadedDriverPath") {
                     Write-Host 'Complete!' -ForegroundColor Cyan
@@ -263,6 +264,11 @@ function Save-DellModelPack {
                                 New-Item "$ExpandedDriverPath" -ItemType Directory -Force -ErrorAction Stop | Out-Null
                             }
                             Expand -R "$DownloadedDriverPath" -F:* "$ExpandedDriverPath" | Out-Null
+                        }
+                        if ($DownloadFile -match '.exe') {
+                            #Thanks Maurice @ Driver Automation Tool
+                            $HPSoftPaqSilentSwitches = "-PDF -F" + "$ExpandedDriverPath" + " -S -E"
+                            Start-Process -FilePath "$DownloadedDriverPath" -ArgumentList $HPSoftPaqSilentSwitches -Verb RunAs -Wait
                         }
                     }
                 } else {

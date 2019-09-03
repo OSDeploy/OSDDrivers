@@ -214,8 +214,10 @@ function Save-HpModelPack {
                 #   Driver Download
                 #===================================================================================================
                 Write-Host "Driver Download: $DownloadedDriverPath " -ForegroundColor Gray -NoNewline
-                if (Test-Path "$DownloadedDriverPath") {Write-Host 'Complete!' -ForegroundColor Cyan}
-                else {
+
+                if (Test-Path "$DownloadedDriverPath") {
+                    Write-Host 'Complete!' -ForegroundColor Cyan
+                } else {
                     Write-Host "Downloading ..." -ForegroundColor Cyan
                     Write-Host "$DriverUrl" -ForegroundColor Gray
                     Start-BitsTransfer -Source $DriverUrl -Destination "$DownloadedDriverPath" -ErrorAction Stop
@@ -240,9 +242,20 @@ function Save-HpModelPack {
                         Write-Host 'Complete!' -ForegroundColor Cyan
                     } else {
                         Write-Host 'Expanding ...' -ForegroundColor Cyan
-                        #Thanks Maurice @ Driver Automation Tool
-                        $HPSoftPaqSilentSwitches = "-PDF -F" + "$ExpandedDriverPath" + " -S -E"
-                        Start-Process -FilePath "$DownloadedDriverPath" -ArgumentList $HPSoftPaqSilentSwitches -Verb RunAs -Wait
+                        if ($DownloadFile -match '.zip') {
+                            Expand-Archive -Path "$DownloadedDriverPath" -DestinationPath "$ExpandedDriverPath" -Force -ErrorAction Stop
+                        }
+                        if ($DownloadFile -match '.cab') {
+                            if (-not (Test-Path "$ExpandedDriverPath")) {
+                                New-Item "$ExpandedDriverPath" -ItemType Directory -Force -ErrorAction Stop | Out-Null
+                            }
+                            Expand -R "$DownloadedDriverPath" -F:* "$ExpandedDriverPath" | Out-Null
+                        }
+                        if ($DownloadFile -match '.exe') {
+                            #Thanks Maurice @ Driver Automation Tool
+                            $HPSoftPaqSilentSwitches = "-PDF -F" + "$ExpandedDriverPath" + " -S -E"
+                            Start-Process -FilePath "$DownloadedDriverPath" -ArgumentList $HPSoftPaqSilentSwitches -Verb RunAs -Wait
+                        }
                     }
                 } else {
                     Continue
