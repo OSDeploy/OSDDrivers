@@ -19,7 +19,7 @@ function Get-DellModelPack {
     #===================================================================================================
     #   OSDDrivers.json
     #===================================================================================================
-    if (Test-Path "$env:ProgramData\OSDDrivers\OSDDrivers.json") {
+<#     if (Test-Path "$env:ProgramData\OSDDrivers\OSDDrivers.json") {
         $OSDDrivers = Get-Content "$env:ProgramData\OSDDrivers\OSDDrivers.json" | ConvertFrom-Json
     } else {
         Write-Verbose "Creating $env:ProgramData\OSDDrivers\OSDDrivers.json" -Verbose
@@ -30,7 +30,7 @@ function Get-DellModelPack {
             HPModels = $null
         }
         $OSDDrivers | ConvertTo-Json | Out-File -FilePath "$env:ProgramData\OSDDrivers\OSDDrivers.json" -Force
-    }
+    } #>
     #===================================================================================================
     #   DownloadPath
     #===================================================================================================

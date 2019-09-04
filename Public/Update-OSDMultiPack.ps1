@@ -17,7 +17,7 @@ Directory to the OSDDrivers Workspace.  This contains the Download, Expand, and 
 .PARAMETER Force
 Bypass the Remove Driver Parameter check
 
-.PARAMETER RemoveAudio
+.PARAMETER SaveAudioDrivers
 Removes drivers in the Audio Directory from being added to the CAB or MultiPack
 
 .PARAMETER RemoveAmdVideo
@@ -42,24 +42,23 @@ function Update-OSDMultiPack {
         #====================================================================
         [Parameter(Mandatory)]
         [string]$WorkspacePath,
-        [switch]$Force = $false,
         #====================================================================
-        #   Options
+        #   Switches
         #====================================================================
-        [switch]$RemoveAmdVideo = $false,
-        [switch]$RemoveAudio = $false,
-        [switch]$RemoveIntelVideo = $false,
-        [switch]$RemoveNvidiaVideo = $false
-        #[switch]$SkipGridView
+        [switch]$SaveAudioDrivers = $false,
+        [switch]$SaveAmdVideo = $false,
+        [switch]$SaveIntelVideo = $false,
+        [switch]$SaveNvidiaVideo = $false
         #====================================================================
     )
-    
     #===================================================================================================
-    #   Defaults
+    #   Get-OSDWorkspace Home
     #===================================================================================================
     $OSDWorkspace = Get-PathOSDD -Path $WorkspacePath
     Write-Verbose "Workspace Path: $OSDWorkspace" -Verbose
-
+    #===================================================================================================
+    #   Get-OSDWorkspace Children
+    #===================================================================================================
     $WorkspaceDownload = Get-PathOSDD -Path (Join-Path $OSDWorkspace 'Download')
     Write-Verbose "Workspace Download: $WorkspaceDownload" -Verbose
 
@@ -73,38 +72,29 @@ function Update-OSDMultiPack {
     #   Defaults
     #===================================================================================================
     $Expand = $true
-    $OSDGroup = 'DellModel'
-    if ($RemoveAudio -eq $false -and $RemoveAmdVideo -eq $false -and $RemoveIntelVideo -eq $false -and $RemoveNvidiaVideo -eq $false) {
-        Write-Warning "Your really should be using one or more of the following parameters for your MultiPack"
-        Write-Warning "-RemoveAudio -RemoveAmdVideo -RemoveIntelVideo -RemoveNvidiaVideo"
-        if ($Force -eq $false) {
-            Write-Warning "To bypass this Stop Message, use the -Force parameter"
-            Break
-        }
-    }
-
-    if ($RemoveAudio -eq $true) {Write-Warning "Audio Drivers will be removed from resulting packages"}
-    if ($RemoveAmdVideo -eq $true) {Write-Warning "AMD Video Drivers will be removed from resulting packages"}
-    if ($RemoveIntelVideo -eq $true) {Write-Warning "Intel Video Drivers will be removed from resulting packages"}
-    if ($RemoveNvidiaVideo -eq $true) {Write-Warning "Nvidia Video Drivers will be removed from resulting packages"}
+    if ($SaveAudioDrivers -eq $false) {Write-Warning "Audio Drivers will be removed from resulting packages"}
+    if ($SaveAmdVideo -eq $false) {Write-Warning "AMD Video Drivers will be removed from resulting packages"}
+    if ($SaveIntelVideo -eq $false) {Write-Warning "Intel Video Drivers will be removed from resulting packages"}
+    if ($SaveNvidiaVideo -eq $false) {Write-Warning "Nvidia Video Drivers will be removed from resulting packages"}
     #===================================================================================================
     #   OSDDrivers
     #===================================================================================================
     $AllOSDDrivers = @()
     $AllOSDDrivers = Get-DellModelPack -DownloadPath (Join-Path $WorkspaceDownload 'DellModel')
+    $AllOSDDrivers += Get-HpModelPack -DownloadPath (Join-Path $WorkspaceDownload 'HpModel')
     #===================================================================================================
-    #   DellMultiPacks
+    #   UpdateMultiPacks
     #===================================================================================================
-    $DellMultiPacks = @()
-    $DellMultiPacks = Get-ChildItem $WorkspacePackages -Directory | Where-Object {$_.Name -match 'DellMultiPack'} | Select-Object Name, FullName
-    $DellMultiPacks = $DellMultiPacks | Out-GridView -PassThru -Title 'Select Dell MultiPacks to Update and press OK'
+    $UpdateMultiPacks = @()
+    $UpdateMultiPacks = Get-ChildItem $WorkspacePackages -Directory | Where-Object {$_.Name -match 'DellMultiPack' -or $_.Name -match 'HpMultiPack'} | Select-Object Name, FullName
+    $UpdateMultiPacks = $UpdateMultiPacks | Out-GridView -PassThru -Title 'Select MultiPacks to Update and press OK'
     #===================================================================================================
-    if ($AllOSDDrivers -and $DellMultiPacks) {
-        foreach ($DellMultiPack in $DellMultiPacks) {
+    if ($AllOSDDrivers -and $UpdateMultiPacks) {
+        foreach ($UpdateMultiPack in $UpdateMultiPacks) {
             #===================================================================================================
             #   Get DRVPACKS
             #===================================================================================================
-            $PackagePath = $DellMultiPack.FullName
+            $PackagePath = $UpdateMultiPack.FullName
             Write-Host "MultiPack: $PackagePath" -ForegroundColor Green
             Publish-OSDDriverScripts -PublishPath $PackagePath
 
@@ -143,17 +133,23 @@ function Update-OSDMultiPack {
             #===================================================================================================
             #   Filters
             #===================================================================================================
-            if ($DellMultiPack.Name -match 'x86') {$OsArch = 'x86'}
+            if ($UpdateMultiPack.Name -match 'x86') {$OsArch = 'x86'}
             else {$OsArch = 'x64'}
             #===================================================================================================
             #   Generate WMI
             #===================================================================================================
-            $OSDDrivers | Export-Clixml "$(Join-Path $PackagePath 'DellMultiPack.clixml')"
+            $OSDDrivers | Export-Clixml "$(Join-Path $PackagePath 'OSDMultiPack.clixml')"
             $OSDWmiQuery = @()
             Get-ChildItem $PackagePath *.clixml | foreach {$OSDWmiQuery += Import-Clixml $_.FullName}
             if ($OSDWmiQuery) {
-                $OSDWmiQuery | Show-OSDWmiQuery -Make Dell -Result Model | Out-File "$PackagePath\WmiQuery.txt" -Force
-                $OSDWmiQuery | Show-OSDWmiQuery -Make Dell -Result SystemId | Out-File "$PackagePath\WmiQuerySystemId.txt" -Force
+                if ($OSDGroup -match 'DellModel') {
+                    $OSDWmiQuery | Show-OSDWmiQuery -Make Dell -Result Model | Out-File "$PackagePath\WmiQuery.txt" -Force
+                    $OSDWmiQuery | Show-OSDWmiQuery -Make Dell -Result SystemId | Out-File "$PackagePath\WmiQuerySystemId.txt" -Force
+                }
+                if ($OSDGroup -match 'HpModel') {
+                    $OSDWmiQuery | Show-OSDWmiQuery -Make HP -Result Model | Out-File "$PackagePath\WmiQuery.txt" -Force
+                    $OSDWmiQuery | Show-OSDWmiQuery -Make HP -Result SystemId | Out-File "$PackagePath\WmiQuerySystemId.txt" -Force
+                }
             }
             #===================================================================================================
             #   Execute
@@ -270,7 +266,7 @@ function Update-OSDMultiPack {
                     #===================================================================================================
                     #   Filter SourceContent
                     #===================================================================================================
-                    if ($RemoveAudio.IsPresent) {$SourceContent = $SourceContent | Where-Object {$_.FullName -notmatch '\\Audio\\'}}
+                    if ($SaveAudioDrivers.IsPresent) {$SourceContent = $SourceContent | Where-Object {$_.FullName -notmatch '\\Audio\\'}}
                     if ($RemoveVideo.IsPresent) {$SourceContent = $SourceContent | Where-Object {$_.FullName -notmatch '\\Video\\'}}
                     foreach ($DriverDir in $SourceContent) {
                         if ($RemoveIntelVideo.IsPresent) {

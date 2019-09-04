@@ -19,10 +19,9 @@ function Get-HpModelPack {
     #===================================================================================================
     #   OSDDrivers.json
     #===================================================================================================
-    if (Test-Path "$env:ProgramData\OSDDrivers\OSDDrivers.json") {
+<#     if (Test-Path "$env:ProgramData\OSDDrivers\OSDDrivers.json") {
         $OSDDrivers = Get-Content "$env:ProgramData\OSDDrivers\OSDDrivers.json"
-    }
-
+    } #>
     #===================================================================================================
     #   DownloadPath
     #===================================================================================================
