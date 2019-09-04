@@ -166,6 +166,9 @@ function Save-OSDDriverPack {
                 $OSDType = $OSDDriver.OSDType
                 Write-Verbose "OSDType: $OSDType"
 
+                $DriverInfo = $OSDDriver.DriverInfo
+                Write-Verbose "DriverInfo: $DriverInfo"
+
                 $DriverUrl = $OSDDriver.DriverUrl
                 Write-Verbose "DriverUrl: $DriverUrl"
 
@@ -206,7 +209,20 @@ function Save-OSDDriverPack {
                 } else {
                     Write-Host "Downloading ..." -ForegroundColor Cyan
                     Write-Host "$DriverUrl" -ForegroundColor Gray
-                    Start-BitsTransfer -Source $DriverUrl -Destination "$DownloadedDriverPath" -ErrorAction Stop
+                    if ($OSDGroup -eq 'AmdPack') {
+                        Write-Host ""
+                        Write-Warning "AMD has blocked direct Driver downloads so use this workaround"
+                        Write-Host "1) Open the following URL: " -NoNewline -ForegroundColor Cyan
+                        Write-Host "$DriverInfo"
+                        Write-Host "2) Find the Driver link to " -NoNewline -ForegroundColor Cyan
+                        Write-Host "$DownloadFile"
+                        Write-Host "3) Save the download as " -NoNewline -ForegroundColor Cyan
+                        Write-Host "$DownloadedDriverPath"
+                        Write-Host ""
+                        Pause
+                    } else {
+                        Start-BitsTransfer -Source $DriverUrl -Destination "$DownloadedDriverPath" -ErrorAction Stop
+                    }
                 }
                 #===================================================================================================
                 #   Validate Driver Download
