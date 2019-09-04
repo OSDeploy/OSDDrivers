@@ -26,7 +26,7 @@ Copyright = '(c) 2019 David Segura osdeploy.com. All rights reserved.'
 
 # Description of the functionality provided by this module
 Description = @'
-HASMUG Release Version
+AmdPack and HP Release Version
 '@
 
 # Minimum version of the Windows PowerShell engine required by this module
