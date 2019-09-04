@@ -227,6 +227,11 @@ function Update-OSDMultiPack {
                                 }
                                 Expand -R "$DownloadedDriverPath" -F:* "$ExpandedDriverPath" | Out-Null
                             }
+                            if ($DownloadFile -match '.exe') {
+                                #Thanks Maurice @ Driver Automation Tool
+                                $HPSoftPaqSilentSwitches = "-PDF -F" + "$ExpandedDriverPath" + " -S -E"
+                                Start-Process -FilePath "$DownloadedDriverPath" -ArgumentList $HPSoftPaqSilentSwitches -Verb RunAs -Wait
+                            }
                         }
                     } else {
                         Continue
@@ -235,11 +240,13 @@ function Update-OSDMultiPack {
                     #   Verify Driver Expand
                     #===================================================================================================
                     if (Test-Path "$ExpandedDriverPath") {
-                        $NormalizeContent = Get-ChildItem "$ExpandedDriverPath\*\*\*\*\*" -Directory | Where-Object {($_.Name -match '_A') -and ($_.Name -notmatch '_A00-00')}
-                        foreach ($FunkyNameDriver in $NormalizeContent) {
-                            $NewBaseName = ($FunkyNameDriver.Name -split '_')[0]
-                            Write-Verbose "Renaming '$($FunkyNameDriver.FullName)' to '$($NewBaseName)_A00-00'" -Verbose
-                            Rename-Item "$($FunkyNameDriver.FullName)" -NewName "$($NewBaseName)_A00-00" -Force | Out-Null
+                        if ($OSDGroup -eq 'DellModel') {
+                            $NormalizeContent = Get-ChildItem "$ExpandedDriverPath\*\*\*\*\*" -Directory | Where-Object {($_.Name -match '_A') -and ($_.Name -notmatch '_A00-00')}
+                            foreach ($FunkyNameDriver in $NormalizeContent) {
+                                $NewBaseName = ($FunkyNameDriver.Name -split '_')[0]
+                                Write-Verbose "Renaming '$($FunkyNameDriver.FullName)' to '$($NewBaseName)_A00-00'" -Verbose
+                                Rename-Item "$($FunkyNameDriver.FullName)" -NewName "$($NewBaseName)_A00-00" -Force | Out-Null
+                            }
                         }
                     } else {
                         Write-Warning "Driver Expand: Could not expand Driver to $ExpandedDriverPath ... Exiting"
@@ -254,47 +261,73 @@ function Update-OSDMultiPack {
                     #   MultiPack
                     #===================================================================================================
                     $MultiPackFiles = @()
-                    #===================================================================================================
-                    #   Get SourceContent
-                    #===================================================================================================
                     $SourceContent = @()
-                    if ($OsArch -eq 'x86') {
-                        $SourceContent = Get-ChildItem "$ExpandedDriverPath\*\*\x86\*\*" -Directory | Select-Object -Property *
-                    } else {
-                        $SourceContent = Get-ChildItem "$ExpandedDriverPath\*\*\x64\*\*" -Directory | Select-Object -Property *
+                    if ($OSDGroup -eq 'DellModel') {
+                        if ($OsArch -eq 'x86') {
+                            $SourceContent = Get-ChildItem "$ExpandedDriverPath\*\*\x86\*\*" -Directory | Select-Object -Property *
+                        } else {
+                            $SourceContent = Get-ChildItem "$ExpandedDriverPath\*\*\x64\*\*" -Directory | Select-Object -Property *
+                        }
+                    }
+                    if ($OSDGroup -eq 'HpModel') {
+                        $SourceContent = Get-ChildItem "$ExpandedDriverPath\*\*\*\*\*" -Directory | Select-Object -Property *
                     }
                     #===================================================================================================
-                    #   Filter SourceContent
+                    #   Dell
                     #===================================================================================================
-                    if ($SaveAudioDrivers.IsPresent) {$SourceContent = $SourceContent | Where-Object {$_.FullName -notmatch '\\Audio\\'}}
-                    if ($RemoveVideo.IsPresent) {$SourceContent = $SourceContent | Where-Object {$_.FullName -notmatch '\\Video\\'}}
-                    foreach ($DriverDir in $SourceContent) {
-                        if ($RemoveIntelVideo.IsPresent) {
-                            if (($DriverDir.FullName -match '\\Video\\') -and (Get-ChildItem "$($DriverDir.FullName)" igfx*.* -File -Recurse)) {
-                                Write-Host "IntelDisplay: $($DriverDir.FullName)" -ForegroundColor Gray
-                                Continue
+                    if ($OSDGroup -eq 'DellModel') {
+                        if ($SaveAudioDrivers -eq $false) {$SourceContent = $SourceContent | Where-Object {$_.FullName -notmatch '\\Audio\\'}}
+                        #if ($RemoveVideo.IsPresent) {$SourceContent = $SourceContent | Where-Object {$_.FullName -notmatch '\\Video\\'}}
+                        foreach ($DriverDir in $SourceContent) {
+                            if ($SaveAmdVideo -eq $false) {
+                                if (($DriverDir.FullName -match '\\Video\\') -and (Get-ChildItem "$($DriverDir.FullName)" ati*.dl* -File -Recurse)) {
+                                    Write-Host "AMDDisplay: $($DriverDir.FullName)" -ForegroundColor Gray
+                                    Continue
+                                }
+                            }
+                            if ($SaveNvidiaVideo -eq $false) {
+                                if (($DriverDir.FullName -match '\\Video\\') -and (Get-ChildItem "$($DriverDir.FullName)" nv*.dl* -File -Recurse)) {
+                                    Write-Host "NvidiaDisplay: $($DriverDir.FullName)" -ForegroundColor Gray
+                                    Continue
+                                }
+                            }
+                            if ($SaveIntelVideo -eq $false) {
+                                if (($DriverDir.FullName -match '\\Video\\') -and (Get-ChildItem "$($DriverDir.FullName)" igfx*.* -File -Recurse)) {
+                                    Write-Host "IntelDisplay: $($DriverDir.FullName)" -ForegroundColor Gray
+                                    Continue
+                                }
+                            }
+                            $MultiPackFiles += $DriverDir
+                            if ($SaveIntelVideo -eq $true) {
+                                New-MultiPackCabFile "$($DriverDir.FullName)" "$PackagePath\$(($DriverDir.Parent).parent)\$($DriverDir.Parent)"
+                            } else {
+                                New-MultiPackCabFile "$($DriverDir.FullName)" "$PackagePath\$(($DriverDir.Parent).parent)\$($DriverDir.Parent)" $true
                             }
                         }
-                        if ($RemoveAmdVideo.IsPresent) {
-                            if (($DriverDir.FullName -match '\\Video\\') -and (Get-ChildItem "$($DriverDir.FullName)" ati*.dl* -File -Recurse)) {
-                                Write-Host "AMDDisplay: $($DriverDir.FullName)" -ForegroundColor Gray
-                                Continue
-                            }
-                        }
-                        if ($RemoveNvidiaVideo.IsPresent) {
-                            if (($DriverDir.FullName -match '\\Video\\') -and (Get-ChildItem "$($DriverDir.FullName)" nv*.dl* -File -Recurse)) {
-                                Write-Host "NvidiaDisplay: $($DriverDir.FullName)" -ForegroundColor Gray
-                                Continue
-                            }
-                        }
-                        $MultiPackFiles += $DriverDir
-                        New-MultiPackCabFile "$($DriverDir.FullName)" "$PackagePath\$(($DriverDir.Parent).parent)\$($DriverDir.Parent)" $RemoveIntelVideo
                     }
+                    #===================================================================================================
+                    #   HP
+                    #===================================================================================================
+                    if ($OSDGroup -eq 'HpModel') {
+                        if ($SaveAudioDrivers -eq $false) {$SourceContent = $SourceContent | Where-Object {"$($_.Parent.Parent)" -ne 'audio'}}
+                        #if ($RemoveVideo.IsPresent) {$SourceContent = $SourceContent | Where-Object {"$($_.Parent.Parent)" -ne 'graphics'}}
+                        if ($SaveAmdVideo -eq $false) {$SourceContent = $SourceContent | Where-Object {"$($_.FullName)" -notmatch '\\graphics\\amd\\'}}
+                        if ($SaveIntelVideo -eq $false) {$SourceContent = $SourceContent | Where-Object {"$($_.FullName)" -notmatch '\\graphics\\intel\\'}}
+                        if ($SaveNvidiaVideo -eq $false) {$SourceContent = $SourceContent | Where-Object {"$($_.FullName)" -notmatch '\\graphics\\nvidia\\'}}
+                        foreach ($DriverDir in $SourceContent) {
+                            $MultiPackFiles += $DriverDir
+                            New-MultiPackCabFile "$($DriverDir.FullName)" "$PackagePath\$(($DriverDir.Parent).parent)\$($DriverDir.Parent)"
+                        }
+                    }
+                    #===================================================================================================
+                    #   Publish Objects
+                    #===================================================================================================
                     foreach ($MultiPackFile in $MultiPackFiles) {
                         $MultiPackFile.Name = "$(($MultiPackFile.Parent).Parent)\$($MultiPackFile.Parent)\$($MultiPackFile.Name).cab"
                     }
                     $MultiPackFiles = $MultiPackFiles | Select-Object -ExpandProperty Name
                     $MultiPackFiles | ConvertTo-Json | Out-File -FilePath "$PackagePath\$($DriverName).multipack" -Force
+                    #Publish-OSDDriverScripts -PublishPath $PackagePath
                 }
             }
         

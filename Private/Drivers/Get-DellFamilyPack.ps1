@@ -21,11 +21,13 @@ function Get-DellFamilyPack {
     #   DriverWebContentRaw
     #===================================================================================================
     $DriverWebContentRaw = @()
+    Write-Host ""
+    Write-Verbose "Connecting to $Uri" -Verbose
     try {
-        $DriverWebContentRaw = (Invoke-WebRequest $Uri).Content
+        $DriverWebContentRaw = (Invoke-WebRequest $Uri).Links
     }
     catch {
-        Write-Error "Could not connect to $Uri" -ErrorAction Stop
+        Write-Error "OSDDrivers uses Internet Explorer to parse the HTML data.  Make sure you can open the URL in Internet Explorer and that you dismiss any first run wizards" -ErrorAction Stop
     }
     #===================================================================================================
     #   DriverWebContentByLine

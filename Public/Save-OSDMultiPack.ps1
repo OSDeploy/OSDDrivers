@@ -327,26 +327,29 @@ function Save-OSDMultiPack {
                         $OSDWmiQuery | Show-OSDWmiQuery | Out-File "$PackagedDriverGroup\WmiQuery.txt" -Force
                     }
                 } #>
+                #===================================================================================================
+                #   Generate DRVPACK
+                #===================================================================================================
                 $OSDDriver | ConvertTo-Json | Out-File -FilePath "$PackagePath\$($OSDDriver.DriverName).drvpack" -Force
                 #===================================================================================================
                 #   MultiPack
                 #===================================================================================================
                 $MultiPackFiles = @()
                 $SourceContent = @()
-                if ($Make -eq 'Dell') {
+                if ($OSDGroup -eq 'DellModel') {
                     if ($OsArch -eq 'x86') {
                         $SourceContent = Get-ChildItem "$ExpandedDriverPath\*\*\x86\*\*" -Directory | Select-Object -Property *
                     } else {
                         $SourceContent = Get-ChildItem "$ExpandedDriverPath\*\*\x64\*\*" -Directory | Select-Object -Property *
                     }
                 }
-                if ($Make -eq 'Hp') {
+                if ($OSDGroup -eq 'HpModel') {
                     $SourceContent = Get-ChildItem "$ExpandedDriverPath\*\*\*\*\*" -Directory | Select-Object -Property *
                 }
                 #===================================================================================================
                 #   Dell
                 #===================================================================================================
-                if ($Make -eq 'Dell') {
+                if ($OSDGroup -eq 'DellModel') {
                     if ($SaveAudioDrivers -eq $false) {$SourceContent = $SourceContent | Where-Object {$_.FullName -notmatch '\\Audio\\'}}
                     #if ($RemoveVideo.IsPresent) {$SourceContent = $SourceContent | Where-Object {$_.FullName -notmatch '\\Video\\'}}
                     foreach ($DriverDir in $SourceContent) {
@@ -379,7 +382,7 @@ function Save-OSDMultiPack {
                 #===================================================================================================
                 #   HP
                 #===================================================================================================
-                if ($Make -eq 'Hp') {
+                if ($OSDGroup -eq 'HpModel') {
                     if ($SaveAudioDrivers -eq $false) {$SourceContent = $SourceContent | Where-Object {"$($_.Parent.Parent)" -ne 'audio'}}
                     #if ($RemoveVideo.IsPresent) {$SourceContent = $SourceContent | Where-Object {"$($_.Parent.Parent)" -ne 'graphics'}}
                     if ($SaveAmdVideo -eq $false) {$SourceContent = $SourceContent | Where-Object {"$($_.FullName)" -notmatch '\\graphics\\amd\\'}}

@@ -9,11 +9,13 @@ function Get-DriverIntelWireless {
     #   DriverWebContentRaw
     #===================================================================================================
     $DriverWebContentRaw = @()
+    Write-Host ""
+    Write-Verbose "Connecting to $Uri" -Verbose
     try {
         $DriverWebContentRaw = (Invoke-WebRequest $Uri).Links
     }
     catch {
-        Write-Error "Could not connect to $Uri" -ErrorAction Stop
+        Write-Error "OSDDrivers uses Internet Explorer to parse the HTML data.  Make sure you can open the URL in Internet Explorer and that you dismiss any first run wizards" -ErrorAction Stop
     }
     #===================================================================================================
     #   DriverWebContent
@@ -54,6 +56,7 @@ function Get-DriverIntelWireless {
         #   Driver Filter
         #===================================================================================================
         $UrlDownloads = ($DriverInfoContent).Links
+        $UrlDownloads = $UrlDownloads | Where-Object {$_.innerText -notmatch 'Download'}
         $UrlDownloads = $UrlDownloads | Where-Object {$_.'data-direct-path' -like "*.zip"}
         $UrlDownloads = $UrlDownloads | Where-Object {$_.innerText -notlike "*wifi*all*"}
         $UrlDownloads = $UrlDownloads | Where-Object {$_.innerText -notlike "*proset*"}

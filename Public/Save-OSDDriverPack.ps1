@@ -92,7 +92,7 @@ function Save-OSDDriverPack {
             $OSDGroup = 'IntelPack'
             $OSDDrivers = Get-IntelPack
         }
-        if ($DriverPack -eq 'Nvidia') {
+        if ($DriverPack -eq 'NvidiaPack') {
             $OSDGroup = 'NvidiaPack'
             $OSDDrivers = Get-NvidiaPack
         }
