@@ -29,7 +29,7 @@ Removes Intel Video Drivers from being added to a MultiPack
 .PARAMETER RemoveNvidiaVideo
 Removes Nvidia Video Drivers from being added to the CAB or MultiPack
 #>
-function Update-DellMultiPack {
+function Update-OSDMultiPack {
     [CmdletBinding()]
     Param (
         #====================================================================
@@ -53,18 +53,15 @@ function Update-DellMultiPack {
         #[switch]$SkipGridView
         #====================================================================
     )
-
+    
     #===================================================================================================
-    #   Get-OSDWorkspace Home
+    #   Defaults
     #===================================================================================================
     $OSDWorkspace = Get-PathOSDD -Path $WorkspacePath
     Write-Verbose "Workspace Path: $OSDWorkspace" -Verbose
-    #===================================================================================================
-    #   Get-OSDWorkspace Children
-    #===================================================================================================
+
     $WorkspaceDownload = Get-PathOSDD -Path (Join-Path $OSDWorkspace 'Download')
     Write-Verbose "Workspace Download: $WorkspaceDownload" -Verbose
-    Publish-OSDDriverScripts -PublishPath (Join-Path $WorkspaceDownload 'DellModel')
 
     $WorkspaceExpand = Get-PathOSDD -Path (Join-Path $OSDWorkspace 'Expand')
     Write-Verbose "Workspace Expand: $WorkspaceExpand" -Verbose

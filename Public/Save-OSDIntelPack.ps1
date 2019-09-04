@@ -31,7 +31,7 @@ Creates a CAB file from the downloaded Intel Driver
 .PARAMETER SkipGridView
 Skips GridView for Automation
 #>
-function Save-IntelPack {
+function Save-OSDIntelPack {
     [CmdletBinding()]
     Param (
         #====================================================================

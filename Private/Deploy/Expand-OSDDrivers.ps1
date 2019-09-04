@@ -194,6 +194,9 @@ function Expand-OSDDrivers {
     $SystemSKUNumber = (Get-CimInstance -ClassName Win32_ComputerSystem).SystemSKUNumber
     if ($SetSku) {$SystemSKUNumber = $SetSku}
     Write-Verbose "System SKUNumber: $SystemSKUNumber" -Verbose
+
+    $BaseBoardProduct = (Get-CimInstance -ClassName Win32_BaseBoard).Product
+    Write-Verbose "BaseBoard Product: $BaseBoardProduct" -Verbose
     #===================================================================================================
     #   Save-MyHardware
     #===================================================================================================
@@ -211,6 +214,7 @@ function Expand-OSDDrivers {
 
     $DriverPacks = @()
     $MultiPacks = @()
+    $AmdPacks = @()
     $NvidiaPacks = @()
     #===================================================================================================
     #   DriverTaskFile
@@ -319,6 +323,38 @@ function Expand-OSDDrivers {
             }
         }
         #===================================================================================================
+        #   ModelPack HpModel
+        #===================================================================================================
+        if ($DriverTask.OSDType -eq 'ModelPack' -and $DriverTask.OSDGroup -eq 'HpModel') {
+            if ($DriverTask.Model -or $DriverTask.SystemSku) {
+                $ExpandDriverPackage = $false
+                foreach ($item in $DriverTask.Model) {
+                    if ($SystemModel -eq $item) {
+                        $ExpandDriverPackage = $true
+                        Write-Verbose "OSDDriver is compatible with $SystemModel"
+                        #$ExpandDrivers += $DriverPackage
+                        Continue
+                    }
+                }
+                foreach ($item in $DriverTask.SystemSku) {
+                    if ($BaseBoardProduct -eq $item) {
+                        $ExpandDriverPackage = $true
+                        Write-Verbose "OSDDriver is compatible with BaseBoardProduct $BaseBoardProduct"
+                        #$ExpandDrivers += $DriverPackage
+                        Continue
+                    }
+                }
+                if ($ExpandDriverPackage -eq $false) {
+                    Write-Verbose "OSDDriver is not compatible with SystemModel $SystemModel $BaseBoardProduct"
+                    Continue
+                } else {
+                    Write-Verbose "OSDDriver $DriverTaskBaseName is compatible with $SystemModel"
+                    #$ExpandDrivers += $DriverPackage
+                    #Continue
+                }
+            }
+        }
+        #===================================================================================================
         #   MakeNotMatch
         #===================================================================================================
         if ($DriverTask.MakeNotMatch) {
@@ -361,6 +397,10 @@ function Expand-OSDDrivers {
         #===================================================================================================
         if (Test-Path "$DriverTaskMultiPack") {
             $MultiPacks += $DriverTaskFile
+            Continue
+        }
+        if ($DriverTask.OSDGroup -eq 'AmdPack') {
+            $AmdPacks += $DriverTaskFile
             Continue
         }
         if ($DriverTask.OSDGroup -eq 'NvidiaPack') {
@@ -437,6 +477,77 @@ function Expand-OSDDrivers {
         }
     }
     #===================================================================================================
+    #   Process AmdPacks
+    #===================================================================================================
+    if ($AmdPacks) {
+        Write-Host "Processing AmdPacks ..." -ForegroundColor Green
+        $ExpandAmdPacks = @()
+        $ExpandAmdTasks = @()
+        foreach ($DriverTaskFile in $AmdPacks) {
+            $DriverTaskBaseName     = $DriverTaskFile.BaseName
+            $DriverTaskDirectory    = $DriverTaskFile.DirectoryName
+            $DriverTaskFullName     = $DriverTaskFile.FullName
+            
+            $DriverTaskGroup         = Split-Path $DriverTaskDirectory -Leaf
+    
+            $DriverTaskCab          = "$(Join-Path $DriverTaskDirectory $DriverTaskBaseName).cab"
+            $DriverTaskZip          = "$(Join-Path $DriverTaskDirectory $DriverTaskBaseName).zip"
+            $DriverTaskPnp          = "$(Join-Path $DriverTaskDirectory $DriverTaskBaseName).drvpnp"
+            $DriverTaskMultiPack      = "$(Join-Path $DriverTaskDirectory $DriverTaskBaseName).multipack"
+    
+    
+            Write-Verbose "DriverTaskGroup: $DriverTaskGroup"
+            Write-Verbose "DriverTaskBaseName: $DriverTaskBaseName"
+            Write-Verbose "DriverTaskDirectory: $DriverTaskDirectory"
+            Write-Verbose "DriverTaskFullName: $DriverTaskFullName"
+            Write-Verbose "DriverTaskCab: $DriverTaskCab"
+            Write-Verbose "DriverTaskPnp: $DriverTaskPnp"
+            Write-Verbose "DriverTaskMultiPack: $DriverTaskMultiPack"
+    
+            Write-Host -ForegroundColor Gray "$($DriverTaskFile.FullName)"
+    
+            if (Test-Path $DriverTaskPnp) {
+                $ExpandDriverPackage = $false
+                $HardwareIdMatches = @()
+                $OSDPnpFile = @()
+                $OSDPnpFile = Import-CliXml -Path "$DriverTaskPnp"
+            
+                foreach ($PnpDriverId in $OSDPnpFile) {
+                    $HardwareDescription = $($PnpDriverId.HardwareDescription)
+                    $HardwareId = $($PnpDriverId.HardwareId)
+            
+                    if ($MyHardware -like "*$HardwareId*") {
+                        #Write-Host "$HardwareDescription $HardwareId " -Foregroundcolor Cyan
+                        $ExpandDriverPackage = $true
+                        $HardwareIdMatches += "$HardwareDescription $HardwareId"
+                    }
+                }
+    
+                if ($ExpandDriverPackage -eq $false) {
+                    Write-Verbose "Driver does not support the Hardware in this system"
+                    Continue
+                }
+                if ($HardwareIdMatches) {
+                    #Write-Host "HardwareID Match"
+                    foreach ($HardwareIdMatch in $HardwareIdMatches) {
+                        Write-Verbose "$($HardwareIdMatch)" -Verbose
+                    }
+                }
+            }
+            if (Test-Path $DriverTaskCab) {
+                $ExpandAmdTasks += $DriverTaskFullName
+                $ExpandAmdPacks += $DriverTaskCab
+                Continue
+            }
+            if (Test-Path $DriverTaskZip) {
+                $ExpandAmdTasks += $DriverTaskFullName
+                $ExpandAmdPacks += $DriverTaskZip
+                Continue
+            }
+            $ExpandAmdTasks += $DriverTaskFullName
+        }
+    }
+    #===================================================================================================
     #   Process NvidiaPacks
     #===================================================================================================
     if ($NvidiaPacks) {
@@ -508,6 +619,25 @@ function Expand-OSDDrivers {
         }
     }
     #===================================================================================================
+    #   Throw AmdPacks
+    #===================================================================================================
+    if ($ExpandAmdTasks) {
+        $ExpandAmdTasks = $ExpandAmdTasks | Sort-Object | Select-Object -Last 1
+
+        $AmdTask = @()
+        $AmdTask = Get-Content "$ExpandAmdTasks" | ConvertFrom-Json
+        Write-Verbose "Selecting AmdPack Grouping $($AmdTask.DriverGrouping)" -Verbose
+        Write-Verbose "Selecting AmdPack ReleaseId $($AmdTask.DriverReleaseId)" -Verbose
+
+        if ($TSEnv) {
+            Write-Verbose "Setting Task Sequence Variable AmdPackGrouping to $($AmdTask.DriverGrouping)" -Verbose
+            $TSEnv.Value('AmdPackGrouping') = "$($AmdTask.DriverGrouping)"
+            Write-Verbose "Setting Task Sequence Variable AmdPack to $($AmdTask.DriverReleaseId)" -Verbose
+            $TSEnv.Value('AmdPack') = "$($AmdTask.DriverReleaseId)"
+        }
+        $ExpandAmdPacks = $ExpandAmdPacks | Where-Object {$_ -match $AmdTask.DriverReleaseId}
+    }
+    #===================================================================================================
     #   Throw NvidiaPacks
     #===================================================================================================
     if ($ExpandNvidiaTasks) {
@@ -532,6 +662,38 @@ function Expand-OSDDrivers {
     if ($ExpandDriverPacks) {
         Write-Host "Expanding DriverPacks ..." -Foregroundcolor Green
         foreach ($ExpandDriverPack in $ExpandDriverPacks) {
+            $ExpandItem = Get-Item $ExpandDriverPack | Select-Object -Property *
+
+            $DriverPackageName = $ExpandItem.Name
+            $DriverPackageBaseName = $ExpandItem.BaseName
+            $DriverPackageFullName = $ExpandItem.FullName
+            $DriverPackageDirectoryName = $ExpandItem.DirectoryName
+
+            Write-Verbose "DriverPackageName: $DriverPackageName"
+            Write-Verbose "DriverPackageBaseName: $DriverPackageBaseName"
+            Write-Verbose "DriverPackageFullName: $DriverPackageFullName"
+            Write-Verbose "DriverPackageDirectoryName: $DriverPackageDirectoryName"
+
+            if (!(Test-Path "$ExpandDriverPath\$DriverPackageBaseName")) {
+                New-Item -Path "$ExpandDriverPath\$DriverPackageBaseName" -ItemType Directory -Force | Out-Null
+            }
+            if ($DriverPackageName -match '.cab') {
+                #Write-Host "Expanding CAB $DriverPackageFullName to $ExpandDriverPath\$DriverPackageBaseName" -ForegroundColor Cyan
+                Write-Verbose "Expanding $ExpandDriverPath\$DriverPackageBaseName" -Verbose
+                Expand -R "$DriverPackageFullName" -F:* "$ExpandDriverPath\$DriverPackageBaseName" | Out-Null
+            }
+            if ($DriverPackageName -match '.zip') {
+                Write-Host "Expanding ZIP $DriverPackageFullName to $ExpandDriverPath\$DriverPackageBaseName" -ForegroundColor Cyan
+                Expand-Archive -Path "$DriverPackageFullName" -DestinationPath "$ExpandDriverPath" -Force
+            }
+        }
+    }
+    #===================================================================================================
+    #   Expand AmdPacks
+    #===================================================================================================
+    if ($ExpandAmdPacks) {
+        Write-Host "Expanding AmdPacks ..." -Foregroundcolor Green
+        foreach ($ExpandDriverPack in $ExpandAmdPacks) {
             $ExpandItem = Get-Item $ExpandDriverPack | Select-Object -Property *
 
             $DriverPackageName = $ExpandItem.Name

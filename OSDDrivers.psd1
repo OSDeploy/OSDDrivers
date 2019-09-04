@@ -66,14 +66,13 @@ PowerShellVersion = '5.0'
 # NestedModules = @()
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-FunctionsToExport = 'Get-DellFamilyPack',
-                    'Get-DellModelPack','Get-HpModelPack',
-                    'Save-OSDFamilyPack','Save-OSDModelPack','Save-OSDMultiPack',
-                    'Update-OSDMultiPack',
-                    'Save-AmdPack','Save-IntelPack','Save-NvidiaPack',
+FunctionsToExport = 'Get-DellModelPack','Get-HpModelPack',
+                    'Save-OSDDriverPack','Save-OSDIntelPack',
+                    'Save-OSDModelPack','Save-OSDMultiPack',
                     'Show-OSDWmiQuery',
-                    'Update-OSDDriverScripts','Get-DellFamilyPack',
-                    'Update-ModuleOSDDrivers'
+                    'Update-OSDMultiPack',
+                    'Update-OSDDriverScripts',
+                    'Update-ModuleOSDDrivers','Get-OSDDrivers'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = @()
