@@ -1,15 +1,15 @@
 <#
 .SYNOPSIS
-Returns a PowerShell Object of the Dell Model Packs
+Returns a PowerShell Object of the HP Model Packs
 
 .DESCRIPTION
-Returns a PowerShell Object of the Dell Model Packs by parsing the Dell Driver Pack Catalog from http://downloads.dell.com/catalog/DriverPackCatalog.cab"
+Returns a PowerShell Object of the HP Model Packs by parsing the HP Client Driver Pack Catalog from https://ftp.hp.com/pub/caps-softpaq/cmit/HPClientDriverPackCatalog.cab"
 
 .PARAMETER DownloadPath
-Directory containing the downloaded Dell Model Packs.  This allows the function to validate if the Driver Pack was downloaded by updating OSDStatus
+Directory containing the downloaded HP Model Packs.  This allows the function to validate if the Driver Pack was downloaded by updating OSDStatus
 
 .LINK
-https://osddrivers.osdeploy.com/functions/get-dellmodelpack
+https://osddrivers.osdeploy.com/functions/get-hpmodelpack
 #>
 function Get-HpModelPack {
     [CmdletBinding()]

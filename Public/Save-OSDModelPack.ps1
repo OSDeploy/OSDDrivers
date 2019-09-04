@@ -1,9 +1,9 @@
 <#
 .SYNOPSIS
-Downloads Dell Model Packs
+Downloads Dell and HP Model Packs
 
 .DESCRIPTION
-Downloads Dell Model Packs to $WorkspacePath\Download\DellModel
+Downloads Dell and HP Model Packs
 Requires BITS for downloading the Downloads
 Requires Internet access
 
@@ -13,17 +13,17 @@ https://osddrivers.osdeploy.com/module/functions/save-osdmodelpack
 .PARAMETER WorkspacePath
 Directory to the OSDDrivers Workspace.  This contains the Download, Expand, and Package subdirectories
 
-.PARAMETER Expand
-Expands the downloaded Dell Model Pack
+.PARAMETER Make
+Select Dell or HP
 
 .PARAMETER Generation
-Generation of the Dell Model
+Generation of the Models
 
 .PARAMETER OsVersion
 Operating System Version of the Model Pack to be downloaded
 
-.PARAMETER SystemFamily
-Filters compatibility to Latitude, Optiplex, or Precision.  Venue, Vostro, and XPS are not included
+.PARAMETER Expand
+Expands the downloaded Model Packs
 #>
 function Save-OSDModelPack {
     [CmdletBinding()]

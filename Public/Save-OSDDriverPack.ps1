@@ -1,30 +1,36 @@
 <#
 .SYNOPSIS
-Downloads Amd Drivers
+Downloads and creates Amd and Nvidia Video Drivers
 
 .DESCRIPTION
-Downloads Amd Drivers
+Downloads and creates Amd and Nvidia Video Drivers
 Requires 7-Zip for EXE extraction
 Requires BITS for downloading the Downloads
 Requires Internet access
 
 .LINK
-https://osddrivers.osdeploy.com/module/functions/save-AmdPack
+https://osddrivers.osdeploy.com/module/functions/save-osddriverpack
 
 .PARAMETER WorkspacePath
 Directory to the OSDDrivers Workspace.  This contains the Download, Expand, and Package subdirectories
+
+.PARAMETER DriverPack
+Select AmdPack or NvidiaPack
+
+.PARAMETER AppendName
+Appends the string to the Driver Pack Name
+
+.PARAMETER Pack
+Creates a CAB file from the downloaded drivers
+
+.PARAMETER SkipGridView
+Skips GridView for Automation
 
 .PARAMETER OsArch
 Supported Operating System Architecture of the Driver
 
 .PARAMETER OsVersion
 Supported Operating Systems Version of the Driver.  This includes both Client and Server Operating Systems
-
-.PARAMETER Pack
-Creates a CAB file from the downloaded Amd Driver
-
-.PARAMETER SkipGridView
-Skips GridView for Automation
 #>
 function Save-OSDDriverPack {
     [CmdletBinding()]

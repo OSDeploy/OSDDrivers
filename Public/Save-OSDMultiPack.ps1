@@ -1,24 +1,26 @@
 <#
 .SYNOPSIS
-Downloads Hp Model Packs and creates a MultiPack
+Downloads Dell or Hp Model Packs and creates a MultiPack
 
 .DESCRIPTION
-Downloads Hp Model Packs to $WorkspacePath\Download\HpModel
-Creates a Hp MultiPack in $WorkspacePath\Packages\HpMultiPack
+Downloads Dell or Hp Model Packs and creates a MultiPack
 Requires BITS for downloading the Downloads
 Requires Internet access
 
 .LINK
-https://osddrivers.osdeploy.com/module/functions/save-HpMultiPack
+https://osddrivers.osdeploy.com/module/functions/save-osdmultipack
 
 .PARAMETER WorkspacePath
 Directory to the OSDDrivers Workspace.  This contains the Download, Expand, and Package subdirectories
 
+.PARAMETER Make
+Select Dell or HP
+
 .PARAMETER AppendName
-Appends the string to the HpMultiPack Name
+Appends the string to the MultiPack Name
 
 .PARAMETER Generation
-Generation of the Hp Model
+Generation of the Model Packs
 
 .PARAMETER OsArch
 Operating System Architecture of the Model Pack to be extracted
@@ -26,23 +28,17 @@ Operating System Architecture of the Model Pack to be extracted
 .PARAMETER OsVersion
 Operating System Version of the Model Pack to be extracted
 
-.PARAMETER SystemFamily
-Filters compatibility to Latitude, Optiplex, or Precision.  Venue, Vostro, and XPS are not included
+.PARAMETER SaveAudio
+Adds drivers in the Audio Directory to the MultiPack
 
-.PARAMETER Expand
-Expands the downloaded Hp Model Packs
+.PARAMETER SaveAmdVideo
+Adds AMD Video Drivers to the MultiPack
 
-.PARAMETER RemoveAudio
-Removes drivers in the Audio Directory from being added to the CAB or MultiPack
+.PARAMETER SaveIntelVideo
+Adds Intel Video Drivers to the MultiPack
 
-.PARAMETER RemoveAmdVideo
-Removes AMD Video Drivers from being added to the CAB or MultiPack
-
-.PARAMETER RemoveIntelVideo
-Removes Intel Video Drivers from being added to a MultiPack
-
-.PARAMETER RemoveNvidiaVideo
-Removes Nvidia Video Drivers from being added to the CAB or MultiPack
+.PARAMETER SaveNvidiaVideo
+Adds Nvidia Video Drivers to the MultiPack
 #>
 function Save-OSDMultiPack {
     [CmdletBinding()]
@@ -82,7 +78,7 @@ function Save-OSDMultiPack {
         #   Switches
         #====================================================================
         #[switch]$Expand,
-        [switch]$SaveAudioDrivers = $false,
+        [switch]$SaveAudio = $false,
         [switch]$SaveAmdVideo = $false,
         [switch]$SaveIntelVideo = $false,
         [switch]$SaveNvidiaVideo = $false
@@ -138,7 +134,7 @@ function Save-OSDMultiPack {
         #   Defaults
         #===================================================================================================
         $Expand = $true
-        if ($SaveAudioDrivers -eq $false) {Write-Warning "Audio Drivers will be removed from resulting packages"}
+        if ($SaveAudio -eq $false) {Write-Warning "Audio Drivers will be removed from resulting packages"}
         if ($SaveAmdVideo -eq $false) {Write-Warning "AMD Video Drivers will be removed from resulting packages"}
         if ($SaveIntelVideo -eq $false) {Write-Warning "Intel Video Drivers will be removed from resulting packages"}
         if ($SaveNvidiaVideo -eq $false) {Write-Warning "Nvidia Video Drivers will be removed from resulting packages"}
@@ -350,7 +346,7 @@ function Save-OSDMultiPack {
                 #   Dell
                 #===================================================================================================
                 if ($OSDGroup -eq 'DellModel') {
-                    if ($SaveAudioDrivers -eq $false) {$SourceContent = $SourceContent | Where-Object {$_.FullName -notmatch '\\Audio\\'}}
+                    if ($SaveAudio -eq $false) {$SourceContent = $SourceContent | Where-Object {$_.FullName -notmatch '\\Audio\\'}}
                     #if ($RemoveVideo.IsPresent) {$SourceContent = $SourceContent | Where-Object {$_.FullName -notmatch '\\Video\\'}}
                     foreach ($DriverDir in $SourceContent) {
                         if ($SaveAmdVideo -eq $false) {
@@ -383,7 +379,7 @@ function Save-OSDMultiPack {
                 #   HP
                 #===================================================================================================
                 if ($OSDGroup -eq 'HpModel') {
-                    if ($SaveAudioDrivers -eq $false) {$SourceContent = $SourceContent | Where-Object {"$($_.Parent.Parent)" -ne 'audio'}}
+                    if ($SaveAudio -eq $false) {$SourceContent = $SourceContent | Where-Object {"$($_.Parent.Parent)" -ne 'audio'}}
                     #if ($RemoveVideo.IsPresent) {$SourceContent = $SourceContent | Where-Object {"$($_.Parent.Parent)" -ne 'graphics'}}
                     if ($SaveAmdVideo -eq $false) {$SourceContent = $SourceContent | Where-Object {"$($_.FullName)" -notmatch '\\graphics\\amd\\'}}
                     if ($SaveIntelVideo -eq $false) {$SourceContent = $SourceContent | Where-Object {"$($_.FullName)" -notmatch '\\graphics\\intel\\'}}

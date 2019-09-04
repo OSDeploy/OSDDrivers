@@ -8,7 +8,7 @@ Requires BITS for downloading the Downloads
 Requires Internet access
 
 .LINK
-https://osddrivers.osdeploy.com/module/functions/save-intelpack
+https://osddrivers.osdeploy.com/module/functions/save-osdintelpack
 
 .PARAMETER WorkspacePath
 Directory to the OSDDrivers Workspace.  This contains the Download, Expand, and Package subdirectories
