@@ -68,6 +68,16 @@ function Save-OSDIntelPack {
 
     Begin {
         #===================================================================================================
+        #   Validate Admin Rights
+        #===================================================================================================
+        if ($Pack.IsPresent) {
+            $IsAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
+            If (!( $IsAdmin )) {
+                Write-Warning "Pack: Elevation is required to generate Driver PNP files"
+                Break
+            }
+        }
+        #===================================================================================================
         #   CustomName
         #===================================================================================================
         if ($AppendName -eq 'None') {
@@ -236,20 +246,22 @@ function Save-OSDIntelPack {
                 }
                 $OSDDriver.OSDStatus = 'Expanded'
                 #===================================================================================================
-                #   Save-OSDDriverPnp
+                #   PACK
                 #===================================================================================================
-                $OSDPnpClass = $OSDDriver.OSDPnpClass
-                $OSDPnpFile = "$($DriverName).drvpnp"
-
-                Write-Host "Save-OSDDriverPnp: Generating OSDDriverPNP (OSDPnpClass: $OSDPnpClass) ..." -ForegroundColor Gray
-                Save-OSDDriverPnp -ExpandedDriverPath "$ExpandedDriverPath" $OSDPnpClass
-                #===================================================================================================
-                #   ExpandedDriverPath OSDDriver Objects
-                #===================================================================================================
-                $OSDDriver | Export-Clixml -Path "$ExpandedDriverPath\OSDDriver.clixml" -Force
-                $OSDDriver | ConvertTo-Json | Out-File -FilePath "$ExpandedDriverPath\OSDDriver.drvpack" -Force
-
                 if ($Pack.IsPresent) {
+                    #===================================================================================================
+                    #   Save-OSDDriverPnp
+                    #===================================================================================================
+                    $OSDPnpClass = $OSDDriver.OSDPnpClass
+                    $OSDPnpFile = "$($DriverName).drvpnp"
+    
+                    Write-Host "Save-OSDDriverPnp: Generating OSDDriverPNP (OSDPnpClass: $OSDPnpClass) ..." -ForegroundColor Gray
+                    Save-OSDDriverPnp -ExpandedDriverPath "$ExpandedDriverPath" $OSDPnpClass
+                    #===================================================================================================
+                    #   ExpandedDriverPath OSDDriver Objects
+                    #===================================================================================================
+                    $OSDDriver | Export-Clixml -Path "$ExpandedDriverPath\OSDDriver.clixml" -Force
+                    $OSDDriver | ConvertTo-Json | Out-File -FilePath "$ExpandedDriverPath\OSDDriver.drvpack" -Force
                     #===================================================================================================
                     #   Create Package
                     #===================================================================================================

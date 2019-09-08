@@ -63,6 +63,16 @@ function Save-OSDDriverPack {
 
     Begin {
         #===================================================================================================
+        #   Validate Admin Rights
+        #===================================================================================================
+        if ($Pack.IsPresent) {
+            $IsAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
+            If (!( $IsAdmin )) {
+                Write-Warning "Pack: Elevation is required to generate Driver PNP files"
+                Break
+            }
+        }
+        #===================================================================================================
         #   Defaults
         #===================================================================================================
         $OSDWorkspace = Get-PathOSDD -Path $WorkspacePath
@@ -210,6 +220,19 @@ function Save-OSDDriverPack {
                     Write-Host "Downloading ..." -ForegroundColor Cyan
                     Write-Host "$DriverUrl" -ForegroundColor Gray
                     if ($OSDGroup -eq 'AmdPack') {
+                        #Thanks @manelrodero
+                        $AmdAsk = Invoke-WebRequest -Uri "$DriverInfo" -Method Get
+                        $Headers = @{ Referer = "$DriverInfo" ; Cookie = $AmdAsk.BaseResponse.Cookies }
+                        Invoke-WebRequest -Uri "$DriverUrl" -Method Get -Headers $Headers -OutFile "$DownloadedDriverPath"
+                    } else {
+                        Start-BitsTransfer -Source $DriverUrl -Destination "$DownloadedDriverPath" -ErrorAction Stop
+                    }
+                }
+                #===================================================================================================
+                #   AmdPack Manual Download
+                #===================================================================================================
+                if (-not (Test-Path "$DownloadedDriverPath")) {
+                    if ($OSDGroup -eq 'AmdPack') {
                         Write-Host ""
                         Write-Warning "AMD has blocked direct Driver downloads so use this workaround"
                         Write-Host "1) Open the following URL: " -NoNewline -ForegroundColor Cyan
@@ -220,8 +243,6 @@ function Save-OSDDriverPack {
                         Write-Host "$DownloadedDriverPath"
                         Write-Host ""
                         Pause
-                    } else {
-                        Start-BitsTransfer -Source $DriverUrl -Destination "$DownloadedDriverPath" -ErrorAction Stop
                     }
                 }
                 #===================================================================================================
@@ -259,27 +280,29 @@ function Save-OSDDriverPack {
                 }
                 $OSDDriver.OSDStatus = 'Expanded'
                 #===================================================================================================
-                #   Save-OSDDriverPnp
+                #   PACK
                 #===================================================================================================
-                $OSDPnpClass = $OSDDriver.OSDPnpClass
-                $OSDPnpFile = "$($DriverName).drvpnp"
-
-                Write-Host "Save-OSDDriverPnp: Generating OSDDriverPNP (OSDPnpClass: $OSDPnpClass) ..." -ForegroundColor Gray
-                Save-OSDDriverPnp -ExpandedDriverPath "$ExpandedDriverPath" $OSDPnpClass
-                #===================================================================================================
-                #   ExpandedDriverPath OSDDriver Objects
-                #===================================================================================================
-                $OSDDriver | Export-Clixml -Path "$ExpandedDriverPath\OSDDriver.clixml" -Force
-                $OSDDriver | ConvertTo-Json | Out-File -FilePath "$ExpandedDriverPath\OSDDriver.drvpack" -Force
-
-                Publish-OSDDriverScripts -PublishPath "$PackagePath Test"
-                New-Item "$PackagePath Test\$DriverGrouping" -ItemType Directory -Force | Out-Null
-                Copy-Item "$ExpandedDriverPath\OSDDriver.drvpack" "$PackagePath Test\$DriverGrouping\$DriverName.drvpack" -Force
-                Copy-Item "$ExpandedDriverPath\OSDDriver.drvpnp" "$PackagePath Test\$DriverGrouping\$DriverName.drvpnp" -Force
-                Copy-Item "$ExpandedDriverPath\OSDDriver-Devices.csv" "$PackagePath Test\$DriverGrouping\$DriverName.csv" -Force
-                Copy-Item "$ExpandedDriverPath\OSDDriver-Devices.txt" "$PackagePath Test\$DriverGrouping\$DriverName.txt" -Force
-
                 if ($Pack.IsPresent) {
+                    #===================================================================================================
+                    #   Save-OSDDriverPnp
+                    #===================================================================================================
+                    $OSDPnpClass = $OSDDriver.OSDPnpClass
+                    $OSDPnpFile = "$($DriverName).drvpnp"
+    
+                    Write-Host "Save-OSDDriverPnp: Generating OSDDriverPNP (OSDPnpClass: $OSDPnpClass) ..." -ForegroundColor Gray
+                    Save-OSDDriverPnp -ExpandedDriverPath "$ExpandedDriverPath" $OSDPnpClass
+                    #===================================================================================================
+                    #   ExpandedDriverPath OSDDriver Objects
+                    #===================================================================================================
+                    $OSDDriver | Export-Clixml -Path "$ExpandedDriverPath\OSDDriver.clixml" -Force
+                    $OSDDriver | ConvertTo-Json | Out-File -FilePath "$ExpandedDriverPath\OSDDriver.drvpack" -Force
+    
+                    Publish-OSDDriverScripts -PublishPath "$PackagePath Test"
+                    New-Item "$PackagePath Test\$DriverGrouping" -ItemType Directory -Force | Out-Null
+                    Copy-Item "$ExpandedDriverPath\OSDDriver.drvpack" "$PackagePath Test\$DriverGrouping\$DriverName.drvpack" -Force
+                    Copy-Item "$ExpandedDriverPath\OSDDriver.drvpnp" "$PackagePath Test\$DriverGrouping\$DriverName.drvpnp" -Force
+                    Copy-Item "$ExpandedDriverPath\OSDDriver-Devices.csv" "$PackagePath Test\$DriverGrouping\$DriverName.csv" -Force
+                    Copy-Item "$ExpandedDriverPath\OSDDriver-Devices.txt" "$PackagePath Test\$DriverGrouping\$DriverName.txt" -Force
                     #===================================================================================================
                     #   Create Package
                     #===================================================================================================
