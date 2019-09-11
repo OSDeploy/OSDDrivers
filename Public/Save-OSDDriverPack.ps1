@@ -284,13 +284,13 @@ function Save-OSDDriverPack {
                 #===================================================================================================
                 if ($Pack.IsPresent) {
                     #===================================================================================================
-                    #   Save-OSDDriverPnp
+                    #   Save-PnpOSDDriverPack
                     #===================================================================================================
                     $OSDPnpClass = $OSDDriver.OSDPnpClass
                     $OSDPnpFile = "$($DriverName).drvpnp"
     
-                    Write-Host "Save-OSDDriverPnp: Generating OSDDriverPNP (OSDPnpClass: $OSDPnpClass) ..." -ForegroundColor Gray
-                    Save-OSDDriverPnp -ExpandedDriverPath "$ExpandedDriverPath" $OSDPnpClass
+                    Write-Host "Save-PnpOSDDriverPack: Generating OSDDriverPNP (OSDPnpClass: $OSDPnpClass) ..." -ForegroundColor Gray
+                    Save-PnpOSDDriverPack -ExpandedDriverPath "$ExpandedDriverPath" $OSDPnpClass
                     #===================================================================================================
                     #   ExpandedDriverPath OSDDriver Objects
                     #===================================================================================================
@@ -314,6 +314,8 @@ function Save-OSDDriverPack {
                     } else {
                         New-CabFileOSDDriver -ExpandedDriverPath $ExpandedDriverPath -PublishPath $PackagedDriverGroup
                     }
+                    Copy-Item "$ExpandedDriverPath\OSDDriver-Devices.csv" "$PackagePath\$DriverGrouping\$DriverName.csv" -Force
+                    Copy-Item "$ExpandedDriverPath\OSDDriver-Devices.txt" "$PackagePath\$DriverGrouping\$DriverName.txt" -Force
                     #===================================================================================================
                     #   Verify Driver Package
                     #===================================================================================================

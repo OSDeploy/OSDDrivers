@@ -250,13 +250,13 @@ function Save-OSDIntelPack {
                 #===================================================================================================
                 if ($Pack.IsPresent) {
                     #===================================================================================================
-                    #   Save-OSDDriverPnp
+                    #   Save-PnpOSDIntelPack
                     #===================================================================================================
                     $OSDPnpClass = $OSDDriver.OSDPnpClass
                     $OSDPnpFile = "$($DriverName).drvpnp"
     
-                    Write-Host "Save-OSDDriverPnp: Generating OSDDriverPNP (OSDPnpClass: $OSDPnpClass) ..." -ForegroundColor Gray
-                    Save-OSDDriverPnp -ExpandedDriverPath "$ExpandedDriverPath" $OSDPnpClass
+                    Write-Host "Save-PnpOSDIntelPack: Generating OSDDriverPNP (OSDPnpClass: $OSDPnpClass) ..." -ForegroundColor Gray
+                    Save-PnpOSDIntelPack -ExpandedDriverPath "$ExpandedDriverPath" $OSDPnpClass
                     #===================================================================================================
                     #   ExpandedDriverPath OSDDriver Objects
                     #===================================================================================================
