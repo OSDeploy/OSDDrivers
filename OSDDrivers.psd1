@@ -7,7 +7,7 @@
 RootModule = 'OSDDrivers.psm1'
 
 # Version number of his module.
-ModuleVersion = '19.9.10.0'
+ModuleVersion = '19.9.11.0'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -26,7 +26,8 @@ Copyright = '(c) 2019 David Segura osdeploy.com. All rights reserved.'
 
 # Description of the functionality provided by this module
 Description = @'
-AmdPack and HP Release Version
+19.9.11: Modified AmdPack and NvidiaPack to include full Driver SUBSUS
+19.9.10: AmdPack and HP Release Version
 '@
 
 # Minimum version of the Windows PowerShell engine required by this module
