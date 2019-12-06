@@ -72,22 +72,22 @@ function Save-AmdPack {
         #===================================================================================================
         #   Get-OSDWorkspace Home
         #===================================================================================================
-        $OSDWorkspace = Get-PathOSDD -Path $WorkspacePath
-        Write-Verbose "Workspace Path: $OSDWorkspace" -Verbose
+        $GetOSDDriversHome = Get-PathOSDD -Path $WorkspacePath
+        Write-Verbose "Home: $GetOSDDriversHome" -Verbose
         #===================================================================================================
         #   Get-OSDWorkspace Children
         #===================================================================================================
-        $WorkspaceDownload = Get-PathOSDD -Path (Join-Path $OSDWorkspace 'Download')
-        Write-Verbose "Workspace Download: $WorkspaceDownload" -Verbose
+        $SetOSDDriversPathDownload = Get-PathOSDD -Path (Join-Path $GetOSDDriversHome 'Download')
+        Write-Verbose "Download: $SetOSDDriversPathDownload" -Verbose
 
-        $WorkspaceExpand = Get-PathOSDD -Path (Join-Path $OSDWorkspace 'Expand')
-        Write-Verbose "Workspace Expand: $WorkspaceExpand" -Verbose
+        $SetOSDDriversPathExpand = Get-PathOSDD -Path (Join-Path $GetOSDDriversHome 'Expand')
+        Write-Verbose "Expand: $SetOSDDriversPathExpand" -Verbose
 
-        $WorkspacePackages = Get-PathOSDD -Path (Join-Path $OSDWorkspace 'Packages')
-        Write-Verbose "Workspace Packages: $WorkspacePackages" -Verbose
-        Publish-OSDDriverScripts -PublishPath $WorkspacePackages
+        $SetOSDDriversPathPackages = Get-PathOSDD -Path (Join-Path $GetOSDDriversHome 'Packages')
+        Write-Verbose "Packages: $SetOSDDriversPathPackages" -Verbose
+        Publish-OSDDriverScripts -PublishPath $SetOSDDriversPathPackages
 
-        $PackagePath = Get-PathOSDD -Path (Join-Path $WorkspacePackages "$CustomName")
+        $PackagePath = Get-PathOSDD -Path (Join-Path $SetOSDDriversPathPackages "$CustomName")
         Write-Verbose "Package Path: $PackagePath" -Verbose
         Publish-OSDDriverScripts -PublishPath $PackagePath
         #===================================================================================================
@@ -117,13 +117,13 @@ function Save-AmdPack {
             $DriverGrouping = $OSDDriver.DriverGrouping
             #Write-Verbose "DriverGrouping: $DriverGrouping"
 
-            $DownloadedDriverGroup  = (Join-Path $WorkspaceDownload $OSDGroup)
+            $DownloadedDriverGroup  = (Join-Path $SetOSDDriversPathDownload $OSDGroup)
             Write-Verbose "DownloadedDriverGroup: $DownloadedDriverGroup"
 
-            $DownloadedDriverPath = (Join-Path $WorkspaceDownload (Join-Path $OSDGroup $DownloadFile))
+            $DownloadedDriverPath = (Join-Path $SetOSDDriversPathDownload (Join-Path $OSDGroup $DownloadFile))
             if (Test-Path "$DownloadedDriverPath") {$OSDDriver.OSDStatus = 'Downloaded'}
 
-            $ExpandedDriverPath = (Join-Path $WorkspaceExpand (Join-Path $OSDGroup $DriverName))
+            $ExpandedDriverPath = (Join-Path $SetOSDDriversPathExpand (Join-Path $OSDGroup $DriverName))
             if (Test-Path "$ExpandedDriverPath") {$OSDDriver.OSDStatus = 'Expanded'}
 
             $PackagedDriverPath = (Join-Path $PackagePath (Join-Path $DriverGrouping $OSDCabFile))
@@ -174,10 +174,10 @@ function Save-AmdPack {
                 $OSDCabFile = "$($DriverName).cab"
                 Write-Verbose "OSDCabFile: $OSDCabFile"
 
-                $DownloadedDriverPath = (Join-Path $WorkspaceDownload (Join-Path $OSDGroup $DownloadFile))
+                $DownloadedDriverPath = (Join-Path $SetOSDDriversPathDownload (Join-Path $OSDGroup $DownloadFile))
                 Write-Verbose "DownloadedDriverPath: $DownloadedDriverPath"
 
-                $ExpandedDriverPath = (Join-Path $WorkspaceExpand (Join-Path $OSDGroup $DriverName))
+                $ExpandedDriverPath = (Join-Path $SetOSDDriversPathExpand (Join-Path $OSDGroup $DriverName))
                 Write-Verbose "ExpandedDriverPath: $ExpandedDriverPath"
 
                 $PackagedDriverPath = (Join-Path $PackagePath (Join-Path $DriverGrouping $OSDCabFile))
@@ -189,7 +189,7 @@ function Save-AmdPack {
                 #===================================================================================================
                 Write-Host "Driver Download: $DownloadedDriverPath " -ForegroundColor Gray -NoNewline
 
-                $DownloadedDriverGroup = Get-PathOSDD -Path (Join-Path $WorkspaceDownload $OSDGroup)
+                $DownloadedDriverGroup = Get-PathOSDD -Path (Join-Path $SetOSDDriversPathDownload $OSDGroup)
 
                 if (Test-Path "$DownloadedDriverPath") {
                     Write-Host 'Complete!' -ForegroundColor Cyan

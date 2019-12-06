@@ -105,22 +105,22 @@ function Save-HpMultiPack {
         #===================================================================================================
         #   Get-OSDWorkspace Home
         #===================================================================================================
-        $OSDWorkspace = Get-PathOSDD -Path $WorkspacePath
-        Write-Verbose "Workspace Path: $OSDWorkspace" -Verbose
+        $GetOSDDriversHome = Get-PathOSDD -Path $WorkspacePath
+        Write-Verbose "Home: $GetOSDDriversHome" -Verbose
         #===================================================================================================
         #   Get-OSDWorkspace Children
         #===================================================================================================
-        $WorkspaceDownload = Get-PathOSDD -Path (Join-Path $OSDWorkspace 'Download')
-        Write-Verbose "Workspace Download: $WorkspaceDownload" -Verbose
+        $SetOSDDriversPathDownload = Get-PathOSDD -Path (Join-Path $GetOSDDriversHome 'Download')
+        Write-Verbose "Download: $SetOSDDriversPathDownload" -Verbose
 
-        $WorkspaceExpand = Get-PathOSDD -Path (Join-Path $OSDWorkspace 'Expand')
-        Write-Verbose "Workspace Expand: $WorkspaceExpand" -Verbose
+        $SetOSDDriversPathExpand = Get-PathOSDD -Path (Join-Path $GetOSDDriversHome 'Expand')
+        Write-Verbose "Expand: $SetOSDDriversPathExpand" -Verbose
 
-        $WorkspacePackages = Get-PathOSDD -Path (Join-Path $OSDWorkspace 'Packages')
-        Write-Verbose "Workspace Packages: $WorkspacePackages" -Verbose
-        Publish-OSDDriverScripts -PublishPath $WorkspacePackages
+        $SetOSDDriversPathPackages = Get-PathOSDD -Path (Join-Path $GetOSDDriversHome 'Packages')
+        Write-Verbose "Packages: $SetOSDDriversPathPackages" -Verbose
+        Publish-OSDDriverScripts -PublishPath $SetOSDDriversPathPackages
 
-        $PackagePath = Get-PathOSDD -Path (Join-Path $WorkspacePackages "$CustomName")
+        $PackagePath = Get-PathOSDD -Path (Join-Path $SetOSDDriversPathPackages "$CustomName")
         Write-Verbose "MultiPack Path: $PackagePath" -Verbose
         Publish-OSDDriverScripts -PublishPath $PackagePath
         #===================================================================================================
@@ -136,7 +136,7 @@ function Save-HpMultiPack {
         if ($RemoveAmdVideo -eq $true) {Write-Warning "AMD Video Drivers will be removed from resulting packages"}
         if ($RemoveIntelVideo -eq $true) {Write-Warning "Intel Video Drivers will be removed from resulting packages"}
         if ($RemoveNvidiaVideo -eq $true) {Write-Warning "Nvidia Video Drivers will be removed from resulting packages"}
-        Publish-OSDDriverScripts -PublishPath (Join-Path $WorkspaceDownload 'HpModel')
+        Publish-OSDDriverScripts -PublishPath (Join-Path $SetOSDDriversPathDownload 'HpModel')
         #===================================================================================================
         #   Get-OSDDrivers
         #===================================================================================================
@@ -145,8 +145,8 @@ function Save-HpMultiPack {
             $SkipGridView = $true
             $OSDDrivers = $InputObject
         } else {
-            $OSDDrivers = Get-HpModelPack -DownloadPath (Join-Path $WorkspaceDownload 'HpModel')
-            $OSDDrivers | Export-Clixml "$(Join-Path $WorkspaceDownload $(Join-Path 'HpModel' 'HpModelPack.clixml'))"
+            $OSDDrivers = Get-OSDDriverHpModel -DownloadPath (Join-Path $SetOSDDriversPathDownload 'HpModel')
+            $OSDDrivers | Export-Clixml "$(Join-Path $SetOSDDriversPathDownload $(Join-Path 'HpModel' 'HpModelPack.clixml'))"
         }
         #===================================================================================================
         #   Set-OSDStatus
@@ -158,13 +158,13 @@ function Save-HpMultiPack {
             $OSDGroup = $OSDDriver.OSDGroup
             $OSDType = $OSDDriver.OSDType
 
-            $DownloadedDriverGroup  = (Join-Path $WorkspaceDownload $OSDGroup)
+            $DownloadedDriverGroup  = (Join-Path $SetOSDDriversPathDownload $OSDGroup)
             Write-Verbose "DownloadedDriverGroup: $DownloadedDriverGroup"
 
-            $DownloadedDriverPath = (Join-Path $WorkspaceDownload (Join-Path $OSDGroup $DownloadFile))
+            $DownloadedDriverPath = (Join-Path $SetOSDDriversPathDownload (Join-Path $OSDGroup $DownloadFile))
             if (Test-Path "$DownloadedDriverPath") {$OSDDriver.OSDStatus = 'Downloaded'}
 
-            $ExpandedDriverPath = (Join-Path $WorkspaceExpand (Join-Path $OSDGroup $DriverName))
+            $ExpandedDriverPath = (Join-Path $SetOSDDriversPathExpand (Join-Path $OSDGroup $DriverName))
             if (Test-Path "$ExpandedDriverPath") {$OSDDriver.OSDStatus = 'Expanded'}
         }
         #===================================================================================================
@@ -187,11 +187,11 @@ function Save-HpMultiPack {
         #   Export MultiPack Object
         #===================================================================================================
         $OSDDrivers | Export-Clixml "$PackagePath\$CustomName $(Get-Date -Format yyMMddHHmmssfff).clixml" -Force
-        $OSDWmiQuery = @()
-        Get-ChildItem $PackagePath *.clixml | foreach {$OSDWmiQuery += Import-Clixml $_.FullName}
-        if ($OSDWmiQuery) {
-            $OSDWmiQuery | Show-OSDWmiQuery -Make HP -Result Model | Out-File "$PackagePath\WmiQuery.txt" -Force
-            $OSDWmiQuery | Show-OSDWmiQuery -Make HP -Result SystemId | Out-File "$PackagePath\WmiQuerySystemId.txt" -Force
+        $OSDDriverWmiQ = @()
+        Get-ChildItem $PackagePath *.clixml | foreach {$OSDDriverWmiQ += Import-Clixml $_.FullName}
+        if ($OSDDriverWmiQ) {
+            $OSDDriverWmiQ | Get-OSDDriverWmiQ -OSDGroup HpModel -Result Model | Out-File "$PackagePath\WmiQuery.txt" -Force
+            $OSDDriverWmiQ | Get-OSDDriverWmiQ -OSDGroup HpModel -Result SystemId | Out-File "$PackagePath\WmiQuerySystemId.txt" -Force
         }
         #===================================================================================================
         #   Execute
@@ -217,10 +217,10 @@ function Save-HpMultiPack {
                 $OSDCabFile = "$($DriverName).cab"
                 Write-Verbose "OSDCabFile: $OSDCabFile"
 
-                $DownloadedDriverGroup = (Join-Path $WorkspaceDownload $OSDGroup)
+                $DownloadedDriverGroup = (Join-Path $SetOSDDriversPathDownload $OSDGroup)
                 $DownloadedDriverPath =  (Join-Path $DownloadedDriverGroup $DownloadFile)
-                $ExpandedDriverPath = (Join-Path $WorkspaceExpand (Join-Path $OSDGroup $DriverName))
-                #$PackagedDriverPath = (Join-Path $WorkspacePackages (Join-Path $OSDGroup $OSDCabFile))
+                $ExpandedDriverPath = (Join-Path $SetOSDDriversPathExpand (Join-Path $OSDGroup $DriverName))
+                #$PackagedDriverPath = (Join-Path $SetOSDDriversPathPackages (Join-Path $OSDGroup $OSDCabFile))
 
                 if (-not(Test-Path "$DownloadedDriverGroup")) {New-Item $DownloadedDriverGroup -Directory -Force | Out-Null}
 
@@ -287,14 +287,14 @@ function Save-HpMultiPack {
                 #===================================================================================================
                 #$PackagedDriverGroup = Get-PathOSDD -Path (Join-Path $WorkspaceProject (Join-Path 'HpMultiPack' $CustomName = 'HpMultiPack'))
 <#                 if ($SplitGeneration.IsPresent) {
-                    $OSDWmiQuery = @()
-                    Get-ChildItem $PackagedDriverGroup *.clixml | foreach {$OSDWmiQuery += Import-Clixml $_.FullName}
-                    $OSDWmiQuery = $OSDWmiQuery | Where-Object {$_.Generation -match $OSDDriver.Generation}
+                    $OSDDriverWmiQ = @()
+                    Get-ChildItem $PackagedDriverGroup *.clixml | foreach {$OSDDriverWmiQ += Import-Clixml $_.FullName}
+                    $OSDDriverWmiQ = $OSDDriverWmiQ | Where-Object {$_.Generation -match $OSDDriver.Generation}
 
                     $PackagedDriverGroup = Get-PathOSDD -Path (Join-Path $WorkspaceProject (Join-Path 'HpMultiPack' (Join-Path $CustomName = 'HpMultiPack' "Hp $($OSDDriver.Generation)")))
 
-                    if ($OSDWmiQuery) {
-                        $OSDWmiQuery | Show-OSDWmiQuery | Out-File "$PackagedDriverGroup\WmiQuery.txt" -Force
+                    if ($OSDDriverWmiQ) {
+                        $OSDDriverWmiQ | Show-OSDWmiQuery | Out-File "$PackagedDriverGroup\WmiQuery.txt" -Force
                     }
                 } #>
                 $OSDDriver | ConvertTo-Json | Out-File -FilePath "$PackagePath\$($OSDDriver.DriverName).drvpack" -Force
