@@ -1,54 +1,76 @@
 <#
 .SYNOPSIS
-Downloads Dell Family Packs
+Downloads Dell Model Packs
 
 .DESCRIPTION
-Downloads Dell Family Packs to $WorkspacePath\Download\DellFamily
-Requires BITS for downloading the Downloads
+Downloads Dell Model Packs
+Requires BITS Transfer and Interactive Login
 Requires Internet access
 
 .LINK
-https://osddrivers.osdeploy.com/module/functions/save-dellfamilypack
-
-.PARAMETER WorkspacePath
-Directory to the OSDDrivers Workspace.  This contains the Download, Expand, and Package subdirectories
-Downloaded Dell Family Packs will be saved to $WorkspacePath\Download\DellFamily
-
-.PARAMETER Expand
-Expands the downloaded Dell Family Pack
+https://osddrivers.osdeploy.com/module/functions/save-osddriverdellmodel
 #>
-function Save-OSDFamilyPack {
+function Save-OSDDriverDellModel {
     [CmdletBinding()]
     Param (
-        #[Parameter(ValueFromPipeline = $true)]
-        #[Object[]]$InputObject,
-
+        #====================================================================
+        #   Mandatory
+        #====================================================================
+        #Directory of the OSDDrivers Workspace
+        #Contains the Download, Expand, and Package subdirectories
         [Parameter(Mandatory)]
         [string]$WorkspacePath,
+        #====================================================================
+        #   Filters
+        #====================================================================
+        #Generation of the Driver Pack
+        [ValidateSet ('X1','X2','X3','X4','X5','X6','X7','X8','X9','X10')]
+        [string]$Generation,
 
-        [switch]$Expand
+        #Operating System Version of the Driver Pack
+        [ValidateSet ('10.0','6.3','6.1')]
+        [string]$OsVersion,
+        #====================================================================
+        #   Switches
+        #====================================================================
+        #Automatically downloads Driver Packs that have been Superseded
+        #Does not remove Superseded Driver Packs
+        [Alias('Auto')]
+        [switch]$AutoUpdate,
+
+        #Expands the downloaded Driver Packs
+        [Alias('Expand')]
+        [switch]$ExpandDriver
+        #====================================================================
+        #   InputObject
+        #====================================================================
+        #[Parameter(ValueFromPipeline = $true)]
+        #[Object[]]$InputObject,
+        #====================================================================
     )
 
     Begin {
         #===================================================================================================
+        #   Defaults
+        #===================================================================================================
+        $global:OSDGroup = 'DellModel'
+        #===================================================================================================
         #   Get-OSDWorkspace Home
         #===================================================================================================
-        $GetOSDDriversHome = Get-PathOSDD -Path $WorkspacePath
-        Write-Verbose "Home: $GetOSDDriversHome" -Verbose
+        $OSDWorkspace = Get-PathOSDD -Path $WorkspacePath
+        Write-Verbose "Workspace Path: $OSDWorkspace" -Verbose
         #===================================================================================================
         #   Get-OSDWorkspace Children
         #===================================================================================================
-        $SetOSDDriversPathDownload = Get-PathOSDD -Path (Join-Path $GetOSDDriversHome 'Download')
-        Write-Verbose "Download: $SetOSDDriversPathDownload" -Verbose
+        $WorkspaceDownload = Get-PathOSDD -Path (Join-Path $OSDWorkspace 'Download')
+        Write-Verbose "Workspace Download: $WorkspaceDownload" -Verbose
 
-        $SetOSDDriversPathExpand = Get-PathOSDD -Path (Join-Path $GetOSDDriversHome 'Expand')
-        Write-Verbose "Expand: $SetOSDDriversPathExpand" -Verbose
+        $WorkspaceExpand = Get-PathOSDD -Path (Join-Path $OSDWorkspace 'Expand')
+        Write-Verbose "Workspace Expand: $WorkspaceExpand" -Verbose
 
-        if ($MyInvocation.MyCommand.Name -eq 'Save-DellModelPack') {
-            $WorkspacePackage = Get-PathOSDD -Path (Join-Path $GetOSDDriversHome 'Package')
-            Write-Verbose "Workspace Package: $WorkspacePackage" -Verbose
-            #Publish-OSDDriverScripts -PublishPath $WorkspacePackage
-        }
+        $WorkspacePackages = Get-PathOSDD -Path (Join-Path $OSDWorkspace 'Packages')
+        Write-Verbose "Workspace Packages: $WorkspacePackages" -Verbose
+        Publish-OSDDriverScripts -PublishPath $WorkspacePackages
         #===================================================================================================
     }
 
@@ -56,46 +78,11 @@ function Save-OSDFamilyPack {
         #===================================================================================================
         #   Defaults
         #===================================================================================================
-        if ($MyInvocation.MyCommand.Name -eq 'Save-OSDFamilyPack') {
-            $OSDGroup = 'DellFamily'
-            $OsVersion = '10.0'
-            $OsArch = 'x64'
-            $RemoveAudio = $true
-            $RemoveAmdVideo = $true
-            $RemoveNvidiaVideo = $true
-        }
-        if ($MyInvocation.MyCommand.Name -eq 'Save-DellModelPack') {
-            $OSDGroup = 'DellModel'
-            #$OsVersion = '10.0'
-            #$OsArch = 'x64'
-            #$RemoveAudio = $true
-            #$RemoveAmdVideo = $true
-            #$RemoveNvidiaVideo = $true
-            Publish-OSDDriverScripts -PublishPath (Join-Path $SetOSDDriversPathDownload 'DellModel')
-        }
-        if ($PSCmdlet.ParameterSetName -eq 'MultiPack') {
-            $Expand = $true
-            $OSDGroup = 'DellModel'
-            #$OsVersion = '10.0'
-            #$OsArch = 'x64'
-            #$RemoveAudio = $true
-            #$RemoveAmdVideo = $true
-            #$RemoveNvidiaVideo = $true
-            if ($RemoveAudio -eq $true) {Write-Warning "Audio Drivers will be removed from resulting packages"}
-            if ($RemoveAmdVideo -eq $true) {Write-Warning "AMD Video Drivers will be removed from resulting packages"}
-            if ($RemoveIntelVideo -eq $true) {Write-Warning "Intel Video Drivers will be removed from resulting packages"}
-            if ($RemoveNvidiaVideo -eq $true) {Write-Warning "Nvidia Video Drivers will be removed from resulting packages"}
-        } else {
-            $RemoveIntelVideo = $true
-        }
-
-        if ($PSCmdlet.ParameterSetName -eq 'Pack') {
-            $Expand = $true
-            if ($RemoveAudio -eq $true) {Write-Warning "Audio Drivers will be removed from resulting packages"}
-            Write-Warning "Intel Video Drivers will be removed from resulting packages by default"
-            if ($RemoveAmdVideo -eq $true) {Write-Warning "AMD Video Drivers will be removed from resulting packages"}
-            if ($RemoveNvidiaVideo -eq $true) {Write-Warning "Nvidia Video Drivers will be removed from resulting packages"}
-        }
+        if ($RemoveAudio -eq $true) {Write-Warning "Audio Drivers will be removed from resulting packages"}
+        if ($RemoveAmdVideo -eq $true) {Write-Warning "AMD Video Drivers will be removed from resulting packages"}
+        if ($RemoveIntelVideo -eq $true) {Write-Warning "Intel Video Drivers will be removed from resulting packages"}
+        if ($RemoveNvidiaVideo -eq $true) {Write-Warning "Nvidia Video Drivers will be removed from resulting packages"}
+        Publish-OSDDriverScripts -PublishPath (Join-Path $WorkspaceDownload $OSDGroup)
         #===================================================================================================
         #   Get-OSDDrivers
         #===================================================================================================
@@ -104,64 +91,71 @@ function Save-OSDFamilyPack {
             $SkipGridView = $true
             $OSDDrivers = $InputObject
         } else {
-            if ($MyInvocation.MyCommand.Name -eq 'Save-OSDFamilyPack') {$OSDDrivers = Get-DellFamilyPack}
-            if ($MyInvocation.MyCommand.Name -eq 'Save-DellModelPack') {$OSDDrivers = Get-DellModelPack -DownloadPath (Join-Path $SetOSDDriversPathDownload 'DellModel')}
+            $OSDDrivers = Get-DellModelPack -DownloadPath (Join-Path $WorkspaceDownload $OSDGroup)
+            $OSDDrivers | Export-Clixml "$(Join-Path $WorkspaceDownload $(Join-Path 'DellModel' 'DellModelPack.clixml'))"
         }
+        #===================================================================================================
+        #   Set-OSDDrivers
+        #===================================================================================================
+        foreach ($OSDDriver in $OSDDrivers) {
+            $DriverName = $OSDDriver.DriverName
+            $OSDCabFile = "$($DriverName).cab"
+            $DownloadFile = $OSDDriver.DownloadFile
+            $OSDGroup = $OSDDriver.OSDGroup
+            $OSDType = $OSDDriver.OSDType
+
+            $DownloadedDriverGroup  = (Join-Path $WorkspaceDownload $OSDGroup)
+            Write-Verbose "DownloadedDriverGroup: $DownloadedDriverGroup"
+        }
+        #===================================================================================================
+        #   Get-Existing Downloads
+        #===================================================================================================
+        $DownloadedDrvPacks = Get-ChildItem $DownloadedDriverGroup *.drvpack | Select-Object FullName
+        $DownloadedDriverPacks = @()
+        $DownloadedDriverPacks = foreach ($item in $DownloadedDrvPacks) {
+            Get-Content $item.FullName | ConvertFrom-Json
+        }
+        #foreach ($item in $DownloadedDriverPacks) {
+        #    $item.OSDStatus = 'Superseded'
+        #}
         #===================================================================================================
         #   Set-OSDStatus
         #===================================================================================================
         foreach ($OSDDriver in $OSDDrivers) {
-            Write-Verbose "==================================================================================================="
-            $DownloadFile       = $OSDDriver.DownloadFile
-            $DriverName         = $OSDDriver.DriverName
-            $OSDCabFile         = "$($DriverName).cab"
-            $OSDGroup           = $OSDDriver.OSDGroup
-            $OSDType            = $OSDDriver.OSDType
+            $DriverName = $OSDDriver.DriverName
+            $OSDCabFile = "$($DriverName).cab"
+            $DownloadFile = $OSDDriver.DownloadFile
+            $OSDGroup = $OSDDriver.OSDGroup
+            $OSDType = $OSDDriver.OSDType
 
-            $DownloadedDriverGroup  = (Join-Path $SetOSDDriversPathDownload $OSDGroup)
-            $DownloadedDriverPath   = (Join-Path $DownloadedDriverGroup $DownloadFile)
-            $ExpandedDriverPath     = (Join-Path $SetOSDDriversPathExpand (Join-Path $OSDGroup $DriverName))
-            #$PackagedDriverPath     = (Join-Path $WorkspacePackage (Join-Path $OSDGroup $OSDCabFile))
+            $DownloadedDriverGroup  = (Join-Path $WorkspaceDownload $OSDGroup)
             Write-Verbose "DownloadedDriverGroup: $DownloadedDriverGroup"
-            Write-Verbose "DownloadedDriverPath: $DownloadedDriverPath"
-            Write-Verbose "ExpandedDriverPath: $ExpandedDriverPath"
-            #Write-Verbose "PackagedDriverPath: $PackagedDriverPath"
 
+            if ($OSDDriver.DriverGrouping -in $DownloadedDriverPacks.DriverGrouping) {
+                $OSDDriver.OSDStatus = 'Update'
+            }
+
+            $DownloadedDriverPath = (Join-Path $WorkspaceDownload (Join-Path $OSDGroup $DownloadFile))
             if (Test-Path "$DownloadedDriverPath") {$OSDDriver.OSDStatus = 'Downloaded'}
+
+            $ExpandedDriverPath = (Join-Path $WorkspaceExpand (Join-Path $OSDGroup $DriverName))
             if (Test-Path "$ExpandedDriverPath") {$OSDDriver.OSDStatus = 'Expanded'}
         }
+        #$DownloadedDriverPacks = $DownloadedDriverPacks | Sort-Object DriverGrouping -Descending -Unique
         #===================================================================================================
-        #   OSArch
+        #   Filters
         #===================================================================================================
-        if ($OsArch) {$OSDDrivers = $OSDDrivers | Where-Object {$_.OsArch -match "$OsArch"}}
-        #===================================================================================================
-        #   OSVersion
-        #===================================================================================================
+        if ($AutoUpdate.IsPresent) {$OSDDrivers = $OSDDrivers | Where-Object {$_.OSDStatus -eq 'Update'}}
         if ($OsVersion) {$OSDDrivers = $OSDDrivers | Where-Object {$_.OsVersion -match "$OsVersion"}}
-        #===================================================================================================
-        #   Generation
-        #===================================================================================================
         if ($Generation) {$OSDDrivers = $OSDDrivers | Where-Object {$_.Generation -eq "$Generation"}}
-        #===================================================================================================
-        #   DriverFamily
-        #===================================================================================================
-        if ($SystemFamily) {$OSDDrivers = $OSDDrivers | Where-Object {$_.SystemFamily -match "$SystemFamily"}}
-        #===================================================================================================
-        #   Filter
-        #===================================================================================================
-        #if ($MyInvocation.MyCommand.Name -eq 'New-DellMultiPack') {$OSDDrivers = $OSDDrivers | Where-Object {$_.OSDStatus -ne ''}}
-        #$OSDDrivers = $OSDDrivers | Where-Object {$_.DriverFamily -ne 'Venue'}
-        #$OSDDrivers = $OSDDrivers | Where-Object {$_.DriverFamily -ne 'Vostro'}
-        #$OSDDrivers = $OSDDrivers | Where-Object {$_.DriverFamily -ne 'XPS'}
         #===================================================================================================
         #   GridView
         #===================================================================================================
         $OSDDrivers = $OSDDrivers | Sort-Object LastUpdate -Descending
-        if ($SkipGridView.IsPresent) {
-            Write-Warning "SkipGridView: Skipping Out-GridView"
+        if (($SkipGridView) -or ($AutoUpdate.IsPresent)) {
+            #Write-Warning "SkipGridView: Skipping Out-GridView"
         } else {
-            if ($PSCmdlet.ParameterSetName -eq 'MultiPack') {$OSDDrivers = $OSDDrivers | Out-GridView -PassThru -Title "Select Drivers to MultiPack and press OK"}
-            else {$OSDDrivers = $OSDDrivers | Out-GridView -PassThru -Title "Select Drivers to Download and press OK"}
+            $OSDDrivers = $OSDDrivers | Out-GridView -PassThru -Title "Select Driver Packs to Download and press OK"
         }
         #===================================================================================================
         #   Execute
@@ -176,7 +170,7 @@ function Save-OSDFamilyPack {
                 Write-Verbose "DriverUrl: $DriverUrl"
 
                 $DriverName = $OSDDriver.DriverName
-                Write-Verbose "DriverName: $DriverName"
+                Write-Verbose "DriverName: $DriverName" -Verbose
 
                 $DownloadFile = $OSDDriver.DownloadFile
                 Write-Verbose "DownloadFile: $DownloadFile"
@@ -187,10 +181,10 @@ function Save-OSDFamilyPack {
                 $OSDCabFile = "$($DriverName).cab"
                 Write-Verbose "OSDCabFile: $OSDCabFile"
 
-                $DownloadedDriverGroup = (Join-Path $SetOSDDriversPathDownload $OSDGroup)
+                $DownloadedDriverGroup = (Join-Path $WorkspaceDownload $OSDGroup)
                 $DownloadedDriverPath =  (Join-Path $DownloadedDriverGroup $DownloadFile)
-                $ExpandedDriverPath = (Join-Path $SetOSDDriversPathExpand (Join-Path $OSDGroup $DriverName))
-                #$PackagedDriverPath = (Join-Path $WorkspacePackage (Join-Path $OSDGroup $OSDCabFile))
+                $ExpandedDriverPath = (Join-Path $WorkspaceExpand (Join-Path $OSDGroup $DriverName))
+                #$PackagedDriverPath = (Join-Path $WorkspacePackages (Join-Path $OSDGroup $OSDCabFile))
 
                 if (-not(Test-Path "$DownloadedDriverGroup")) {New-Item $DownloadedDriverGroup -Directory -Force | Out-Null}
 
@@ -199,12 +193,12 @@ function Save-OSDFamilyPack {
                 #Write-Verbose "PackagedDriverPath: $PackagedDriverPath"
 
                 Write-Host "$DriverName" -ForegroundColor Green
+                $DownloadModels = $OSDDriver.Model | Sort-Object
+                foreach ($Model in $DownloadModels) {Write-Host "$($Model)"}
                 #===================================================================================================
                 #   Driver Download
                 #===================================================================================================
                 Write-Host "Driver Download: $DownloadedDriverPath " -ForegroundColor Gray -NoNewline
-
-
                 if (Test-Path "$DownloadedDriverPath") {
                     Write-Host 'Complete!' -ForegroundColor Cyan
                 } else {
@@ -226,7 +220,7 @@ function Save-OSDFamilyPack {
                 #===================================================================================================
                 #   Driver Expand
                 #===================================================================================================
-                if ($Expand.IsPresent) {
+                if ($Expand) {
                     Write-Host "Driver Expand: $ExpandedDriverPath " -ForegroundColor Gray -NoNewline
                     if (Test-Path "$ExpandedDriverPath") {
                         Write-Host 'Complete!' -ForegroundColor Cyan
@@ -241,6 +235,11 @@ function Save-OSDFamilyPack {
                             }
                             Expand -R "$DownloadedDriverPath" -F:* "$ExpandedDriverPath" | Out-Null
                         }
+                        if ($DownloadFile -match '.exe') {
+                            #Thanks Maurice @ Driver Automation Tool
+                            $HPSoftPaqSilentSwitches = "-PDF -F" + "$ExpandedDriverPath" + " -S -E"
+                            Start-Process -FilePath "$DownloadedDriverPath" -ArgumentList $HPSoftPaqSilentSwitches -Verb RunAs -Wait
+                        }
                     }
                 } else {
                     Continue
@@ -249,12 +248,26 @@ function Save-OSDFamilyPack {
                 #   Verify Driver Expand
                 #===================================================================================================
                 if (Test-Path "$ExpandedDriverPath") {
-                    $OSDDriver | Export-Clixml -Path "$ExpandedDriverPath\OSDDriver.clixml" -Force
+                    if ($OSDGroup -eq 'DellModel') {
+                        $NormalizeContent = Get-ChildItem "$ExpandedDriverPath\*\*\*\*\*" -Directory | Where-Object {($_.Name -match '_A') -and ($_.Name -notmatch '_A00-00')}
+                        foreach ($FunkyNameDriver in $NormalizeContent) {
+                            $NewBaseName = ($FunkyNameDriver.Name -split '_')[0]
+                            Write-Verbose "Renaming '$($FunkyNameDriver.FullName)' to '$($NewBaseName)_A00-00'" -Verbose
+                            Rename-Item "$($FunkyNameDriver.FullName)" -NewName "$($NewBaseName)_A00-00" -Force | Out-Null
+                        }
+                    }
                 } else {
                     Write-Warning "Driver Expand: Could not expand Driver to $ExpandedDriverPath ... Exiting"
                     Continue
                 }
                 $OSDDriver.OSDStatus = 'Expanded'
+                #===================================================================================================
+                #   OSDDriver Objects
+                #===================================================================================================
+                #$PackagedDriverGroup = Get-PathOSDD -Path (Join-Path $WorkspacePackages $OSDGroup)
+                $OSDDriver | Export-Clixml -Path "$ExpandedDriverPath\OSDDriver.clixml" -Force
+                $OSDDriver | ConvertTo-Json | Out-File -FilePath "$ExpandedDriverPath\OSDDriver.drvpack" -Force
+                Continue
             }
         } else {
             Return $OSDDrivers

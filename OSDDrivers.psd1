@@ -7,7 +7,7 @@
 RootModule = 'OSDDrivers.psm1'
 
 # Version number of his module.
-ModuleVersion = '19.9.11.0'
+ModuleVersion = '19.12.6.0'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -49,7 +49,9 @@ PowerShellVersion = '5.0'
 # ProcessorArchitecture = ''
 
 # Modules that must be imported into the global environment prior to importing this module
-# RequiredModules = @()
+RequiredModules = @(
+    @{ModuleName = 'OSD'; ModuleVersion = '19.12.6.3'; Guid = '9fe5b9b6-0224-4d87-9018-a8978529f6f5'}
+)
 
 # Assemblies that must be loaded prior to importing this module
 # RequiredAssemblies = @()
@@ -67,12 +69,12 @@ PowerShellVersion = '5.0'
 # NestedModules = @()
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-FunctionsToExport = 'Get-DellModelPack','Get-HpModelPack',
-                    'Save-OSDDriverPack','Save-OSDIntelPack',
-                    'Save-OSDModelPack','Save-OSDMultiPack',
-                    'Show-OSDWmiQuery',
-                    'Update-OSDMultiPack','Update-OSDDriverScripts','Update-ModuleOSDDrivers'
-
+FunctionsToExport = 'Get-OSDDrivers',
+                    'Save-OSDDriversModelPack',
+                    'Save-OSDDriversMultiPack',
+                    'Save-OSDDriversPack',
+                    'Update-OSDDriversMultiPack',
+                    'Update-OSDDriversScripts'
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = @()
 
