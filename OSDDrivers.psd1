@@ -7,7 +7,7 @@
 RootModule = 'OSDDrivers.psm1'
 
 # Version number of his module.
-ModuleVersion = '19.12.9.0'
+ModuleVersion = '19.12.10.0'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -26,6 +26,7 @@ Copyright = '(c) 2019 David Segura osdeploy.com. All rights reserved.'
 
 # Description of the functionality provided by this module
 Description = @'
+19.12.10: Full redesign ... you may want to wait for some documentation
 19.9.11: Modified AmdPack and NvidiaPack to include full Driver SUBSUS
 19.9.10: AmdPack and HP Release Version
 '@

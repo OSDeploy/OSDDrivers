@@ -82,17 +82,22 @@ function Get-OSDDrivers {
         if ($null -eq $global:GetOSDDrivers.PublicJson) {
             Write-Verbose "OSDDrivers $($global:GetOSDDrivers.VersionOSDDrivers) | OSD $($global:GetOSDDrivers.VersionOSD) | OFFLINE" -Verbose
         } else {
-            if ($global:GetOSDDrivers.VersionOSD -ge $global:GetOSDDrivers.VersionOSDPublic) {
-                Write-Host "OSD $($global:GetOSDDrivers.VersionOSD) " -ForegroundColor Green -NoNewline
-            } else {
-                Write-Host "OSD $($global:GetOSDDrivers.VersionOSD) " -ForegroundColor Yellow -NoNewline
-            }
-            Write-Host "| " -ForegroundColor White -NoNewline
+
             if ($global:GetOSDDrivers.VersionOSDDrivers -ge $global:GetOSDDrivers.VersionOSDDriversPublic) {
-                Write-Host "OSDDrivers $($global:GetOSDDrivers.VersionOSDDrivers) " -ForegroundColor Green
+                Write-Host "OSDDrivers $($global:GetOSDDrivers.VersionOSDDrivers) " -ForegroundColor Green -NoNewline
             } else {
-                Write-Host "OSDDrivers $($global:GetOSDDrivers.VersionOSDDrivers) " -ForegroundColor Yellow
+                Write-Host "OSDDrivers $($global:GetOSDDrivers.VersionOSDDrivers) " -ForegroundColor Yellow -NoNewline
             }
+
+            Write-Host "| " -ForegroundColor White -NoNewline
+            
+            if ($global:GetOSDDrivers.VersionOSD -ge $global:GetOSDDrivers.VersionOSDPublic) {
+                Write-Host "OSD $($global:GetOSDDrivers.VersionOSD) " -ForegroundColor Green
+            } else {
+                Write-Host "OSD $($global:GetOSDDrivers.VersionOSD) " -ForegroundColor Yellow
+            }
+
+
         }
     }
     #===================================================================================================
@@ -174,7 +179,7 @@ function Get-OSDDrivers {
             #   Shortcuts
             #===================================================================================================
             Write-Host ''
-            Write-Host "Shortcuts:" -ForegroundColor Gray
+            Write-Host "Commands:" -ForegroundColor Gray
             Write-Host 'OSDDrivers -CreatePaths             '           -ForegroundColor DarkGray -NoNewline
             Write-Host 'Create OSDDrivers Directory Structure'          -ForegroundColor DarkGray
             Write-Host 'OSDDrivers -Initialize              '           -ForegroundColor DarkGray -NoNewline
@@ -184,6 +189,12 @@ function Get-OSDDrivers {
             Write-Host 'OSDDrivers -UpdateModule            '           -ForegroundColor DarkGray -NoNewline
             Write-Host 'Update the OSDDrivers Module'                   -ForegroundColor DarkGray
         
+            Write-Host 'Save-OSDDriversModelPack            '           -ForegroundColor DarkGray -NoNewline
+            Write-Host 'Downloads Dell and HP Model Packs'              -ForegroundColor DarkGray
+            Write-Host 'Save-OSDDriversMultiPack            '           -ForegroundColor DarkGray -NoNewline
+            Write-Host 'Create or Modify a Dell or HP MultiPack'        -ForegroundColor DarkGray
+            Write-Host 'Save-OSDDriversPack                 '           -ForegroundColor DarkGray -NoNewline
+            Write-Host 'AMD Intel and Nvidia Drivers'                   -ForegroundColor DarkGray
             Write-Host 'Update-OSDDriverMultiPack           '           -ForegroundColor DarkGray -NoNewline
             Write-Host 'Update existing MultiPacks'                     -ForegroundColor DarkGray
             Write-Host 'Update-OSDDriverScripts             '           -ForegroundColor DarkGray -NoNewline
