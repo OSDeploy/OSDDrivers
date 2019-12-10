@@ -16,7 +16,7 @@ ModuleVersion = '19.12.10.0'
 GUID = '57d04b85-3049-42ff-9e2e-323695224eb6'
 
 # Author of this module
-Author = 'David Segura'
+Author = 'David Segura @SeguraOSD'
 
 # Company or vendor of this module
 CompanyName = 'osdeploy.com'
@@ -26,6 +26,8 @@ Copyright = '(c) 2019 David Segura osdeploy.com. All rights reserved.'
 
 # Description of the functionality provided by this module
 Description = @'
+https://osddrivers.osdeploy.com
+
 19.12.10: Full redesign ... you may want to wait for some documentation
 19.9.11: Modified AmdPack and NvidiaPack to include full Driver SUBSUS
 19.9.10: AmdPack and HP Release Version
@@ -100,16 +102,16 @@ PrivateData = @{
     PSData = @{
 
         # Tags applied to this module. These help with module discovery in online galleries.
-        Tags = @('OSDeploy','OSD','Drivers','OSDDriver','OSDDrivers')
+        Tags = @('OSD','OSDeploy','Drivers','OSDDriver','OSDDrivers')
 
         # A URL to the license for this module.
-        # LicenseUri = ''
+        # LicenseUri = 'https://github.com/OSDeploy/OSDDrivers/blob/master/LICENSE'
 
         # A URL to the main website for this project.
-        ProjectUri = 'https://osddrivers.osdeploy.com/'
+        ProjectUri = 'https://github.com/OSDeploy/OSDDrivers'
 
         # A URL to an icon representing this module.
-        # IconUri = ''
+        IconUri = 'https://raw.githubusercontent.com/OSDeploy/OSDDrivers/master/OSDDrivers.png'
 
         # ReleaseNotes of this module
         ReleaseNotes = 'https://osddrivers.osdeploy.com/release'
