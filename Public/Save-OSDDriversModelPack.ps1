@@ -10,11 +10,11 @@ Requires Internet access
 .LINK
 https://osddrivers.osdeploy.com/module/functions/save-osddrivermodelpack
 #>
-function Save-OSDDriverModelPack {
+function Save-OSDDriversModelPack {
     [CmdletBinding()]
     Param (
         #Manufacturer of the Computer Model
-        [Parameter(Mandatory)]
+        [Parameter (Mandatory, ValueFromPipelineByPropertyName = $true)]
         [ValidateSet ('Dell','HP')]
         [string]$Make,
         
@@ -28,11 +28,8 @@ function Save-OSDDriverModelPack {
         [ValidateSet ('10.0','6.3','6.1')]
         [string]$OsVersion = '10.0',
         
-        #Expand the Driver Pack after Download
-        [switch]$Expand,
-        
         #InputObject
-        [Parameter(ValueFromPipeline = $true)]
+        [Parameter (ValueFromPipeline = $true)]
         [Object[]]$InputObject
     )
 
@@ -42,23 +39,17 @@ function Save-OSDDriverModelPack {
         #===================================================================================================
         Get-OSDDrivers -CreatePaths -HideDetails
         #===================================================================================================
-        #   Defaults
-        #===================================================================================================
-        if ($Make -eq 'Dell') {
-            $OSDGroup = 'DellModel'
-            $MultiPack = 'DellMultiPack'
-        }
-        if ($Make -eq 'HP') {
-            $OSDGroup = 'HpModel'
-            $MultiPack = 'HpMultiPack'
-        }
-        #===================================================================================================
         #   Display Paths
         #===================================================================================================
-        Write-Verbose "Home: $global:GetOSDDriversHome" -Verbose
-        Write-Verbose "Download: $global:SetOSDDriversPathDownload" -Verbose
-        Write-Verbose "Expand: $global:SetOSDDriversPathExpand" -Verbose
-        Write-Verbose "Packages: $global:SetOSDDriversPathPackages" -Verbose
+        Write-Host "Home: $GetOSDDriversHome" -ForegroundColor Gray
+        Write-Host "Download: $SetOSDDriversPathDownload" -ForegroundColor Gray
+        Write-Host "Expand: $SetOSDDriversPathExpand" -ForegroundColor Gray
+        Write-Host "Packages: $SetOSDDriversPathPackages" -ForegroundColor Gray
+        Publish-OSDDriverScripts -PublishPath $SetOSDDriversPathPackages
+        #===================================================================================================
+        #   Defaults
+        #===================================================================================================
+        $Expand = $true
         #===================================================================================================
     }
 
@@ -67,11 +58,15 @@ function Save-OSDDriverModelPack {
         Write-Verbose $MyInvocation.MyCommand.Name -Verbose
         #===================================================================================================
         #   Defaults
-        #===================================================================================================
-        if ($RemoveAudio -eq $true) {Write-Warning "Audio Drivers will be removed from resulting packages"}
-        if ($RemoveAmdVideo -eq $true) {Write-Warning "AMD Video Drivers will be removed from resulting packages"}
-        if ($RemoveIntelVideo -eq $true) {Write-Warning "Intel Video Drivers will be removed from resulting packages"}
-        if ($RemoveNvidiaVideo -eq $true) {Write-Warning "Nvidia Video Drivers will be removed from resulting packages"}
+        #===================================================================================================        
+        if ($Make -eq 'Dell') {
+            $OSDGroup = 'DellModel'
+            $MultiPack = 'DellMultiPack'
+        }
+        if ($Make -eq 'HP') {
+            $OSDGroup = 'HpModel'
+            $MultiPack = 'HpMultiPack'
+        }
         Publish-OSDDriverScripts -PublishPath (Join-Path $global:SetOSDDriversPathDownload $OSDGroup)
         #===================================================================================================
         #   Get-OSDDrivers
@@ -172,10 +167,10 @@ function Save-OSDDriverModelPack {
             $OSDCabFile = "$($DriverName).cab"
             Write-Verbose "OSDCabFile: $OSDCabFile"
 
-            $DownloadedDriverGroup = (Join-Path $global:SetOSDDriversPathDownload $OSDGroup)
+            $DownloadedDriverGroup = (Join-Path $SetOSDDriversPathDownload $OSDGroup)
             $DownloadedDriverPath =  (Join-Path $DownloadedDriverGroup $DownloadFile)
-            $ExpandedDriverPath = (Join-Path $global:SetOSDDriversPathExpand (Join-Path $OSDGroup $DriverName))
-            #$PackagedDriverPath = (Join-Path $global:SetOSDDriversPathPackages (Join-Path $OSDGroup $OSDCabFile))
+            $ExpandedDriverPath = (Join-Path $SetOSDDriversPathExpand (Join-Path $OSDGroup $DriverName))
+            #$PackagedDriverPath = (Join-Path $SetOSDDriversPathPackages (Join-Path $OSDGroup $OSDCabFile))
 
             if (-not(Test-Path "$DownloadedDriverGroup")) {New-Item $DownloadedDriverGroup -Directory -Force | Out-Null}
 
@@ -251,12 +246,10 @@ function Save-OSDDriverModelPack {
             }
             $OSDDriver.OSDStatus = 'Expanded'
             #===================================================================================================
-            #   OSDDriver Objects
+            #   Generate DRVPACK
             #===================================================================================================
-            #$PackagedDriverGroup = Get-PathOSDD -Path (Join-Path $global:SetOSDDriversPathPackages $OSDGroup)
             $OSDDriver | Export-Clixml -Path "$ExpandedDriverPath\OSDDriver.clixml" -Force
-            $OSDDriver | ConvertTo-Json | Out-File -FilePath "$ExpandedDriverPath\OSDDriver.drvpack" -Force
-            Continue
+            $OSDDriver | ConvertTo-Json | Out-File -FilePath "$ExpandedDriverPath\$($OSDDriver.DriverName).drvpack" -Force
         }
     }
     End {

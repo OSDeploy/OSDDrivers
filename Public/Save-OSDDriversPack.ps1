@@ -26,6 +26,7 @@ function Save-OSDDriversPack {
             'NvidiaPack 6.1 x64',
             'NvidiaPack 6.1 x86',
             'NvidiaPack 10.0 x64',
+            'NvidiaPack 10.0 x64 DCH',
             'NvidiaPack 10.0 x86'
         )]
         [string]$QuickPack,
@@ -67,6 +68,11 @@ function Save-OSDDriversPack {
         #   Get-OSDDrivers
         #===================================================================================================
         Get-OSDDrivers -CreatePaths -HideDetails
+    }
+
+    Process {
+        Write-Host '========================================================================================' -ForegroundColor Green
+        Write-Host "$($MyInvocation.MyCommand.Name)" -ForegroundColor Green
         #===================================================================================================
         #   ParameterSet
         #===================================================================================================
@@ -74,6 +80,8 @@ function Save-OSDDriversPack {
             $CustomName = $QuickPack
             $Pack = $true
             $SkipGridView = $true
+
+            Write-Host "QuickPack: $QuickPack" -ForegroundColor Gray
 
             if ($QuickPack -match 'AmdPack') {$PackType = 'AmdPack'}
             if ($QuickPack -match 'IntelPack') {$PackType = 'IntelPack'}
@@ -92,6 +100,7 @@ function Save-OSDDriversPack {
                 $CustomName = "$PackType $AppendName"
             }
         }
+        Write-Host "CustomName: $CustomName" -ForegroundColor Gray
         #===================================================================================================
         #   Require 7-Zip
         #===================================================================================================
@@ -117,23 +126,18 @@ function Save-OSDDriversPack {
         #===================================================================================================
         #   Display Paths
         #===================================================================================================
-        Write-Verbose "Home: $GetOSDDriversHome" -Verbose
-        Write-Verbose "Download: $SetOSDDriversPathDownload" -Verbose
-        Write-Verbose "Expand: $SetOSDDriversPathExpand" -Verbose
-        Write-Verbose "Packages: $SetOSDDriversPathPackages" -Verbose
+        Write-Host "Home: $GetOSDDriversHome" -ForegroundColor Gray
+        Write-Host "Download: $SetOSDDriversPathDownload" -ForegroundColor Gray
+        Write-Host "Expand: $SetOSDDriversPathExpand" -ForegroundColor Gray
+        Write-Host "Packages: $SetOSDDriversPathPackages" -ForegroundColor Gray
         #===================================================================================================
         #   Publish Paths
         #===================================================================================================
         Publish-OSDDriverScripts -PublishPath $SetOSDDriversPathPackages
         $PackagePath = Get-PathOSDD -Path (Join-Path $SetOSDDriversPathPackages "$CustomName")
-        Write-Verbose "Package Path: $PackagePath" -Verbose
+        Write-Host "Package Path: $PackagePath" -ForegroundColor Gray
         Publish-OSDDriverScripts -PublishPath $PackagePath
         #===================================================================================================
-    }
-
-    Process {
-        Write-Verbose '========================================================================================' -Verbose
-        Write-Verbose $MyInvocation.MyCommand.Name -Verbose
         #===================================================================================================
         #   Get-OSDDriver
         #===================================================================================================
@@ -145,8 +149,21 @@ function Save-OSDDriversPack {
             if ($PackType -eq 'IntelPack') {
                 $OSDDrivers += Get-OSDDriver IntelDisplay
                 $OSDDrivers += Get-OSDDriver IntelWireless
-            } else {
+            } elseif ($PackType -eq 'AmdPack') {
                 $OSDDrivers = Get-OSDDriver AmdDisplay
+            } elseif ($PackType -eq 'NvidiaPack') {
+                $OSDDrivers = Get-OSDDriver NvidiaDisplay
+                if ($PSCmdlet.ParameterSetName -eq 'QuickPack') {
+                    if ($QuickPack -match 'DCH') {
+                        $OSDDrivers = $OSDDrivers | Where-Object {$_.DriverName -match 'DCH'}
+                    }
+                    if ($QuickPack -notmatch 'DCH') {
+                        $OSDDrivers = $OSDDrivers | Where-Object {$_.DriverName -notmatch 'DCH'}
+                    }
+                }
+            } else {
+                Write-Warning "Unable to determine PackType"
+                Break
             }
         }
         #===================================================================================================
@@ -199,35 +216,31 @@ function Save-OSDDriversPack {
             Write-Verbose "DriverUrl: $DriverUrl"
 
             $DriverName = $OSDDriver.DriverName
-            Write-Verbose "DriverName: $DriverName"
+            Write-Host "Driver Name: $DriverName" -ForegroundColor Green
 
             $DriverGrouping = $OSDDriver.DriverGrouping
-            Write-Verbose "DriverGrouping: $DriverGrouping"
+            #Write-Host "DriverGrouping: $DriverGrouping" -ForegroundColor Gray
 
             $DownloadFile = $OSDDriver.DownloadFile
-            Write-Verbose "DownloadFile: $DownloadFile"
+            #Write-Host "DownloadFile: $DownloadFile" -ForegroundColor Gray
 
             $OSDGroup = $OSDDriver.OSDGroup
-            Write-Verbose "OSDGroup: $OSDGroup"
+            #Write-Host "OSDGroup: $OSDGroup" -ForegroundColor Gray
 
             $OSDCabFile = "$($DriverName).cab"
-            Write-Verbose "OSDCabFile: $OSDCabFile"
+            #Write-Host "OSDCabFile: $OSDCabFile" -ForegroundColor Gray
 
             $DownloadedDriverPath = (Join-Path $SetOSDDriversPathDownload (Join-Path $OSDGroup $DownloadFile))
-            Write-Verbose "DownloadedDriverPath: $DownloadedDriverPath"
+            #Write-Host "Driver Download Path: $DownloadedDriverPath" -ForegroundColor Gray
 
             $ExpandedDriverPath = (Join-Path $SetOSDDriversPathExpand (Join-Path $OSDGroup $DriverName))
-            Write-Verbose "ExpandedDriverPath: $ExpandedDriverPath"
+            #Write-Host "Driver Expand Path: $ExpandedDriverPath" -ForegroundColor Gray
 
 			if ($PackType -eq 'IntelPack'){
-				$PackagedDriverPath = (Join-Path $PackagePath (Join-Path $DriverGrouping $OSDCabFile))
-				Write-Verbose "PackagedDriverPath: $PackagedDriverPath"
-			} else {
 				$PackagedDriverPath = (Join-Path $PackagePath (Join-Path $OSDGroup $OSDCabFile))
-				Write-Verbose "PackagedDriverPath: $PackagedDriverPath" -Verbose
+			} else {
+				$PackagedDriverPath = (Join-Path $PackagePath (Join-Path $DriverGrouping $OSDCabFile))
 			}
-
-            Write-Host "$DriverName" -ForegroundColor Green
             #===================================================================================================
             #   Driver Download
             #===================================================================================================
@@ -315,6 +328,14 @@ function Save-OSDDriversPack {
             #   PACK
             #===================================================================================================
             if ($Pack -eq $true) {
+                Write-Host "Driver Package: $PackagedDriverPath " -ForegroundColor Gray -NoNewline
+        
+                if (Test-Path "$PackagedDriverPath") {
+                    Write-Host 'Complete!' -ForegroundColor Cyan
+                    Continue
+                } else {
+                    Write-Host "Building ..." -ForegroundColor Cyan
+                }
                 #===================================================================================================
                 #   Save-PnpOSDDriverPack or Save-PnpOSDIntelPack
                 #===================================================================================================
@@ -327,15 +348,22 @@ function Save-OSDDriversPack {
 				} else {
 					Write-Host "Save-PnpOSDDriverPack: Generating OSDDriverPNP (OSDPnpClass: $OSDPnpClass) ..." -ForegroundColor Gray
 					Save-PnpOSDDriverPack -ExpandedDriverPath "$ExpandedDriverPath" $OSDPnpClass
-				}
+                }
                 #===================================================================================================
                 #   ExpandedDriverPath OSDDriver Objects
                 #===================================================================================================
                 $OSDDriver | Export-Clixml -Path "$ExpandedDriverPath\OSDDriver.clixml" -Force
                 $OSDDriver | ConvertTo-Json | Out-File -FilePath "$ExpandedDriverPath\OSDDriver.drvpack" -Force
-                if ($PackType -ne 'IntelPack') {
+                #===================================================================================================
+                #   Create Test Group
+                #===================================================================================================
+                if (($PackType -eq 'AmdPack') -or ($PackType -eq 'NvidiaPack')) {
+                    Write-Host "Publishing Scripts to $PackagePath Test" -ForegroundColor Gray
+
                     Publish-OSDDriverScripts -PublishPath "$PackagePath Test"
                     New-Item "$PackagePath Test\$DriverGrouping" -ItemType Directory -Force | Out-Null
+
+                    Write-Host "Publishing Test Driver Metadata to $PackagePath Test\$DriverGrouping" -ForegroundColor Gray
                     Copy-Item "$ExpandedDriverPath\OSDDriver.drvpack" "$PackagePath Test\$DriverGrouping\$DriverName.drvpack" -Force
                     Copy-Item "$ExpandedDriverPath\OSDDriver.drvpnp" "$PackagePath Test\$DriverGrouping\$DriverName.drvpnp" -Force
                     Copy-Item "$ExpandedDriverPath\OSDDriver-Devices.csv" "$PackagePath Test\$DriverGrouping\$DriverName.csv" -Force
@@ -346,12 +374,13 @@ function Save-OSDDriversPack {
                 #===================================================================================================
                 if ($PackType -eq 'IntelPack') {
                     $PackagedDriverGroup = Get-PathOSDD -Path (Join-Path $PackagePath $OSDGroup)
-                    Write-Verbose "Verify: $PackagedDriverPath"
                 } else {
                     $PackagedDriverGroup = Get-PathOSDD -Path (Join-Path $PackagePath $DriverGrouping)
-                    Write-Verbose "PackagedDriverGroup: $PackagedDriverGroup" -Verbose
-                    Write-Verbose "PackagedDriverPath: $PackagedDriverPath" -Verbose
                 }
+
+                Write-Host "PackagedDriverGroup: $PackagedDriverGroup" -ForegroundColor Green
+                Write-Host "PackagedDriverPath: $PackagedDriverPath" -ForegroundColor Green
+
                 if (Test-Path "$PackagedDriverPath") {
                     #Write-Warning "Compress-OSDDriver: $PackagedDriverPath already exists"
                 } else {

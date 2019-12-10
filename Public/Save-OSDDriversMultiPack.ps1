@@ -10,7 +10,7 @@ Requires Internet access
 .LINK
 https://osddrivers.osdeploy.com/module/functions/save-osddrivermultipack
 #>
-function Save-OSDDriverMultiPack {
+function Save-OSDDriversMultiPack {
     [CmdletBinding()]
     Param (
         #Manufacturer of the Computer Model
@@ -58,13 +58,37 @@ function Save-OSDDriverMultiPack {
         #===================================================================================================
         Get-OSDDrivers -CreatePaths -HideDetails
         #===================================================================================================
+        #   Display Paths
+        #===================================================================================================
+        Write-Host "Home: $GetOSDDriversHome" -ForegroundColor Gray
+        Write-Host "Download: $SetOSDDriversPathDownload" -ForegroundColor Gray
+        Write-Host "Expand: $SetOSDDriversPathExpand" -ForegroundColor Gray
+        Write-Host "Packages: $SetOSDDriversPathPackages" -ForegroundColor Gray
+        Publish-OSDDriverScripts -PublishPath $SetOSDDriversPathPackages
+        #===================================================================================================
         #   Defaults
         #===================================================================================================
+        $Expand = $true
+        #===================================================================================================
+    }
+
+    Process {
+        Write-Verbose '========================================================================================' -Verbose
+        Write-Verbose $MyInvocation.MyCommand.Name -Verbose
+        #===================================================================================================
+        #   Defaults
+        #===================================================================================================
+        $Expand = $true
+
+        if ($SaveAudio -eq $false) {Write-Warning "Audio Drivers will be removed from resulting Packages"}
+        if ($SaveAmdVideo -eq $false) {Write-Warning "AMD Video Drivers will be removed from resulting Packages"}
+        if ($SaveIntelVideo -eq $false) {Write-Warning "Intel Video Drivers will be removed from resulting Packages"}
+        if ($SaveNvidiaVideo -eq $false) {Write-Warning "Nvidia Video Drivers will be removed from resulting Packages"}
+
         if ($Make -eq 'Dell') {
             $OSDGroup = 'DellModel'
             $MultiPack = 'DellMultiPack'
-        }
-        if ($Make -eq 'HP') {
+        } elseif ($Make -eq 'HP') {
             $OSDGroup = 'HpModel'
             $MultiPack = 'HpMultiPack'
         }
@@ -77,33 +101,11 @@ function Save-OSDDriverMultiPack {
             $CustomName = "$MultiPack $OsVersion $OsArch $AppendName"
         }
         #===================================================================================================
-        #   Display Paths
-        #===================================================================================================
-        Write-Verbose "Home: $GetOSDDriversHome" -Verbose
-        Write-Verbose "Download: $SetOSDDriversPathDownload" -Verbose
-        Write-Verbose "Expand: $SetOSDDriversPathExpand" -Verbose
-        Write-Verbose "Packages: $SetOSDDriversPathPackages" -Verbose
-        #===================================================================================================
         #   Publish Paths
         #===================================================================================================
-        Publish-OSDDriverScripts -PublishPath $SetOSDDriversPathPackages
         $PackagePath = Get-PathOSDD -Path (Join-Path $SetOSDDriversPathPackages "$CustomName")
         Write-Verbose "MultiPack Path: $PackagePath" -Verbose
         Publish-OSDDriverScripts -PublishPath $PackagePath
-        #===================================================================================================
-    }
-
-    Process {
-        Write-Verbose '========================================================================================' -Verbose
-        Write-Verbose $MyInvocation.MyCommand.Name -Verbose
-        #===================================================================================================
-        #   Defaults
-        #===================================================================================================
-        $Expand = $true
-        if ($SaveAudio -eq $false) {Write-Warning "Audio Drivers will be removed from resulting Packages"}
-        if ($SaveAmdVideo -eq $false) {Write-Warning "AMD Video Drivers will be removed from resulting Packages"}
-        if ($SaveIntelVideo -eq $false) {Write-Warning "Intel Video Drivers will be removed from resulting Packages"}
-        if ($SaveNvidiaVideo -eq $false) {Write-Warning "Nvidia Video Drivers will be removed from resulting Packages"}
         Publish-OSDDriverScripts -PublishPath (Join-Path $SetOSDDriversPathDownload $OSDGroup)
         #===================================================================================================
         #   Get-OSDDrivers
@@ -246,9 +248,7 @@ function Save-OSDDriverMultiPack {
                 Write-Warning "Driver Download: Could not download Driver to $DownloadedDriverPath ... Exiting"
                 Continue
             } else {
-                if ($DownloadFile -match '.cab') {
-                    $OSDDriver | ConvertTo-Json | Out-File -FilePath "$DownloadedDriverGroup\$((Get-Item $DownloadedDriverPath).BaseName).drvpack" -Force
-                }
+                $OSDDriver | ConvertTo-Json | Out-File -FilePath "$DownloadedDriverGroup\$((Get-Item $DownloadedDriverPath).BaseName).drvpack" -Force
             }
             #===================================================================================================
             #   Driver Expand
@@ -294,6 +294,10 @@ function Save-OSDDriverMultiPack {
                 Continue
             }
             $OSDDriver.OSDStatus = 'Expanded'
+            #===================================================================================================
+            #   OSDDriver Object
+            #===================================================================================================
+            $OSDDriver | Export-Clixml -Path "$ExpandedDriverPath\OSDDriver.clixml" -Force
             #===================================================================================================
             #   Generate DRVPACK
             #===================================================================================================
@@ -374,7 +378,7 @@ function Save-OSDDriverMultiPack {
 
     End {
         #===================================================================================================
-        #   Publish-OSDDriverScripts
+        #   Complete
         #===================================================================================================
         Write-Host "Complete!" -ForegroundColor Green
         #===================================================================================================

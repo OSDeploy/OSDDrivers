@@ -22,14 +22,14 @@ function Update-OSDDriversScripts {
         #   Update PathDownload
         #===================================================================================================
         Get-ChildItem $SetOSDDrivers.PathDownload Deploy-OSDDrivers.psm1 -Recurse | ForEach-Object {
-            Write-Verbose $_.Directory -Verbose
+            Write-Host "Updating: $($_.Directory)" -ForegroundColor Gray
             Publish-OSDDriverScripts -PublishPath $_.Directory
         }
         #===================================================================================================
         #   Update PathPackages
         #===================================================================================================
         Get-ChildItem $SetOSDDrivers.PathPackages Deploy-OSDDrivers.psm1 -Recurse | ForEach-Object {
-            Write-Verbose $_.Directory -Verbose
+            Write-Host "Updating: $($_.Directory)" -ForegroundColor Gray
             Publish-OSDDriverScripts -PublishPath $_.Directory
         }
     }
