@@ -209,13 +209,15 @@ function Update-OSDDriversMultiPack {
                     } else {
                         Write-Host "Downloading ..." -ForegroundColor Cyan
                         Write-Host "$DriverUrl" -ForegroundColor Gray
-                        Start-BitsTransfer -Source $DriverUrl -Destination "$DownloadedDriverPath" -ErrorAction Stop
+                        Start-BitsTransfer -Source $DriverUrl -Destination "$DownloadedDriverPath"
                     }
                     #===================================================================================================
                     #   Validate Driver Download
                     #===================================================================================================
                     if (-not (Test-Path "$DownloadedDriverPath")) {
-                        Write-Warning "Driver Download: Could not download Driver to $DownloadedDriverPath ... Exiting"
+                        Write-Warning "Could not download Driver from $DriverUrl"
+                        Write-Warning "Setting RemoveSuperseded to False"
+                        $RemoveSuperseded = $false
                         Continue
                     } else {
                         $OSDDriver | ConvertTo-Json | Out-File -FilePath "$DownloadedDriverGroup\$((Get-Item $DownloadedDriverPath).BaseName).drvpack" -Force

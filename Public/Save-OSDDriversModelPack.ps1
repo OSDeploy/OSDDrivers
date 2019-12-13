@@ -17,6 +17,9 @@ function Save-OSDDriversModelPack {
         [Parameter (Mandatory, ValueFromPipelineByPropertyName = $true)]
         [ValidateSet ('Dell','HP')]
         [string]$Make,
+
+        #Expand the Driver Pack after Download
+        [switch]$Expand,
         
         #Generation of the Computer Model
         #Hp G0 - G6
@@ -49,7 +52,7 @@ function Save-OSDDriversModelPack {
         #===================================================================================================
         #   Defaults
         #===================================================================================================
-        $Expand = $true
+        #$Expand = $true
         #===================================================================================================
     }
 
