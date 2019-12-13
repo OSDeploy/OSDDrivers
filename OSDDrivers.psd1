@@ -28,9 +28,7 @@ Copyright = '(c) 2019 David Segura osdeploy.com. All rights reserved.'
 Description = @'
 https://osddrivers.osdeploy.com
 
-19.12.10: Full redesign ... you may want to wait for some documentation
-19.9.11: Modified AmdPack and NvidiaPack to include full Driver SUBSUS
-19.9.10: AmdPack and HP Release Version
+For detailed changes see the Release Notes at https://osddrivers.osdeploy.com/release
 '@
 
 # Minimum version of the Windows PowerShell engine required by this module
