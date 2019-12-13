@@ -109,7 +109,7 @@ PrivateData = @{
         ProjectUri = 'https://github.com/OSDeploy/OSDDrivers'
 
         # A URL to an icon representing this module.
-        IconUri = 'https://raw.githubusercontent.com/OSDeploy/OSDDrivers/master/OSDDrivers.png'
+        IconUri = 'https://raw.githubusercontent.com/OSDeploy/OSD/master/OSD.png'
 
         # ReleaseNotes of this module
         ReleaseNotes = 'https://osddrivers.osdeploy.com/release'
