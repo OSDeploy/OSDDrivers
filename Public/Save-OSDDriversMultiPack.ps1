@@ -23,8 +23,8 @@ function Save-OSDDriversMultiPack {
 
         #Generation of the Computer Model
         #Hp G0 - G6
-        #Dell X1 - X10
-        [ValidateSet ('G0','G1','G2','G3','G4','G5','G6','X1','X2','X3','X4','X5','X6','X7','X8','X9','X10')]
+        #Dell X1 - X11
+        [ValidateSet ('G0','G1','G2','G3','G4','G5','G6','X1','X2','X3','X4','X5','X6','X7','X8','X9','X10','X11')]
         [string]$Generation,
 
         #Driver Pack supported Operating System Architecture
