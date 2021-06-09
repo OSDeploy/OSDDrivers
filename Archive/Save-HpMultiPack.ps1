@@ -262,7 +262,8 @@ function Save-HpMultiPack {
                         Write-Host 'Expanding ...' -ForegroundColor Cyan
                         #Thanks Maurice @ Driver Automation Tool
                         $HPSoftPaqSilentSwitches = "-PDF -F" + "$ExpandedDriverPath" + " -S -E"
-                        Start-Process -FilePath "$DownloadedDriverPath" -ArgumentList $HPSoftPaqSilentSwitches -Verb RunAs -Wait
+                        #Start-Process -FilePath "$DownloadedDriverPath" -ArgumentList $HPSoftPaqSilentSwitches -Verb RunAs -Wait
+                        Start-Process -FilePath "$DownloadedDriverPath" -ArgumentList "/s /e /f `"$ExpandedDriverPath`"" -Verb RunAs -Wait
                     }
                 } else {
                     Continue
