@@ -32,7 +32,7 @@ function Save-OSDDriversMultiPack {
         [string]$OsArch = 'x64',
 
         #Driver Pack supported Operating System Version
-        [ValidateSet ('10.0','6.3','6.1')]
+        [ValidateSet ('Win11','Win10','10.0','6.3','6.1')]
         [string]$OsVersion = '10.0',
 
         #Doesn't remove the Audio Drivers from the MultiPack
