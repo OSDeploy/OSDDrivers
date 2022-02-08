@@ -1,16 +1,13 @@
-# Module Manifest
-#
-
 @{
 
 # Script module or binary module file associated with this manifest.
 RootModule = 'OSDDrivers.psm1'
 
-# Version number of his module.
-ModuleVersion = '21.11.4.1'
+# Version number of this module.
+ModuleVersion = '22.2.8.1'
 
 # Supported PSEditions
-# CompatiblePSEditions = @()
+CompatiblePSEditions = @('Desktop')
 
 # ID used to uniquely identify this module
 GUID = '57d04b85-3049-42ff-9e2e-323695224eb6'
@@ -22,13 +19,11 @@ Author = 'David Segura @SeguraOSD'
 CompanyName = 'osdeploy.com'
 
 # Copyright statement for this module
-Copyright = '(c) 2021 David Segura osdeploy.com. All rights reserved.'
+Copyright = '(c) 2022 David Segura osdeploy.com. All rights reserved.'
 
 # Description of the functionality provided by this module
 Description = @'
 https://osddrivers.osdeploy.com
-
-For detailed changes see the Release Notes at https://osddrivers.osdeploy.com/release
 '@
 
 # Minimum version of the Windows PowerShell engine required by this module
@@ -51,7 +46,7 @@ PowerShellVersion = '5.0'
 
 # Modules that must be imported into the global environment prior to importing this module
 RequiredModules = @(
-    @{ModuleName = 'OSD'; ModuleVersion = '21.11.4.1'; Guid = '9fe5b9b6-0224-4d87-9018-a8978529f6f5'}
+    @{ModuleName = 'OSD'; ModuleVersion = '22.2.8.1'; Guid = '9fe5b9b6-0224-4d87-9018-a8978529f6f5'}
 )
 
 # Assemblies that must be loaded prior to importing this module
