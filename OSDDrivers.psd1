@@ -4,7 +4,7 @@
 RootModule = 'OSDDrivers.psm1'
 
 # Version number of this module.
-ModuleVersion = '22.2.8.1'
+ModuleVersion = '22.2.11.1'
 
 # Supported PSEditions
 CompatiblePSEditions = @('Desktop')
@@ -46,7 +46,7 @@ PowerShellVersion = '5.1'
 
 # Modules that must be imported into the global environment prior to importing this module
 RequiredModules = @(
-    @{ModuleName = 'OSD'; ModuleVersion = '22.2.8.1'; Guid = '9fe5b9b6-0224-4d87-9018-a8978529f6f5'}
+    @{ModuleName = 'OSD'; ModuleVersion = '22.2.11.1'; Guid = '9fe5b9b6-0224-4d87-9018-a8978529f6f5'}
 )
 
 # Assemblies that must be loaded prior to importing this module
@@ -66,6 +66,7 @@ RequiredModules = @(
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
 FunctionsToExport = 'Get-OSDDrivers',
+                    'Save-OSDDriversDellModelPack',
                     'Save-OSDDriversModelPack',
                     'Save-OSDDriversMultiPack',
                     'Save-OSDDriversPack',
